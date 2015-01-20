@@ -6,16 +6,31 @@ Welcome to the Noah's Ark of Computing, where I keep snippets, opinions and idea
 Languages
 :::::::::
 
-* :wiki:`C/C++`
-* :wiki:`Go`
+* :wiki:`Shell`
+* :wiki:`JavaScript`
 * :wiki:`PHP`
 * :wiki:`Python`
-* :wiki:`Ruby`
 
-Daemons
-:::::::
+Frameworks
+::::::::::
 
+* :wiki:`JavaScript/Meteor`
+* :wiki:`PHP/Symfony`
+* :wiki:`Python/Django`
+* :wiki:`Python/Flask`
+
+Server Software
+:::::::::::::::
+
+* :wiki:`Server/Docker`
+* :wiki:`Server/nginx`
 
 Systems
 :::::::
+
+* :wiki:`System/Debian`
+* :wiki:`System/Ubuntu`
+* :wiki:`System/CoreOS`
+* :wiki:`System/OSX`
+
 
