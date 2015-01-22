@@ -33,4 +33,5 @@ Systems
 * :wiki:`System/CoreOS`
 * :wiki:`System/OSX`
 
+Auto update via hooks ?
 
