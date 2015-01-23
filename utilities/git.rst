@@ -2,7 +2,7 @@ Git
 ===
 
 Aliases
-=======
+:::::::
 
 .. code-block:: shell
 
@@ -13,7 +13,7 @@ Aliases
 	git config --global alias.lg log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 
 User setup
-==========
+::::::::::
 
 .. code-block:: shell
 
@@ -21,7 +21,7 @@ User setup
 	git config --global user.email "romain@dorgueil.net"
 
 Colors (not required after git 1.8.4)
-=====================================
+:::::::::::::::::::::::::::::::::::::
 
 .. code-block:: shell
 
@@ -37,6 +37,6 @@ or
 	git config --global color.ui true
 	
 References
-==========
+::::::::::
 
 * `Original article with my git config and aliases <http://romain.dorgueil.net/blog/en/git/2014/12/16/git-config.html>`_
