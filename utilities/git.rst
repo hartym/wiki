@@ -35,3 +35,8 @@ or
 .. code-block:: shell
 
 	git config --global color.ui true
+	
+References
+==========
+
+* `Original article with my git config and aliases <http://romain.dorgueil.net/blog/en/git/2014/12/16/git-config.html>`_
