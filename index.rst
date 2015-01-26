@@ -30,11 +30,11 @@ Server Software
 * :wiki:`Server/Docker`
 * :wiki:`Server/nginx`
 
-Systems
-:::::::
+System Administration
+:::::::::::::::::::::
 
 * :wiki:`System/Debian`
-* :wiki:`System/Ubuntu`
 * :wiki:`System/CoreOS`
 * :wiki:`System/OSX`
+* :wiki:`System/SSL`
 
