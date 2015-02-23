@@ -6,10 +6,11 @@ Welcome to the Noah's Ark of Computing, where I keep snippets, opinions and idea
 Languages
 :::::::::
 
-* :wiki:`Shell`
+* :wiki:`Go`
 * :wiki:`JavaScript`
 * :wiki:`PHP`
 * :wiki:`Python`
+* :wiki:`Shell`
 
 Utilities
 :::::::::
