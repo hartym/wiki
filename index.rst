@@ -3,6 +3,10 @@ Noah's Ark of Computing
 
 Welcome to the Noah's Ark of Computing, where I keep snippets, opinions and ideas about computer related tools.
 
+.. note::
+
+    This section is new, and lacks a lot of content as of now (early 2015). It will be completed as time passes, and everyone is welcome to contribute.
+
 Languages
 :::::::::
 
