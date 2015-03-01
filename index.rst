@@ -43,3 +43,7 @@ System Administration
 * :wiki:`System/OSX`
 * :wiki:`System/SSL`
 
+Links
+:::::::::::::::::::::
+
+* :wiki:`Misc/ComputerGo`
