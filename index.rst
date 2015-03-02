@@ -46,6 +46,8 @@ System Administration
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
 
+This section contains various related and unrelated things I want to keep around.
+
 * :wiki:`Misc/ComputerGo`
 * :wiki:`Misc/Comics`
 * :wiki:`Misc/Music`
