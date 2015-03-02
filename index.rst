@@ -48,3 +48,4 @@ Miscellaneous stuff, links, papers
 
 * :wiki:`Misc/ComputerGo`
 * :wiki:`Misc/Comics`
+* :wiki:`Misc/Music`
