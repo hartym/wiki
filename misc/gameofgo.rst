@@ -8,7 +8,7 @@ If you don't know what it is about, you can discover the game of go on http://se
 Game resources
 ::::::::::::::
 
-* Charles Matthews Article Series On Your Side (about fuseki): http://gobase.org/studying/articles/matthews/fuseki/
+* Charles Matthews' "On Your Side" (fuseki): http://gobase.org/studying/articles/matthews/fuseki/
 * http://senseis.xmp.net/
 * http://francois.mizessyn.pagesperso-orange.fr/ (french)
 
