@@ -50,4 +50,5 @@ This section contains various related and unrelated things I want to keep around
 
 * :wiki:`Misc/ComputerGo`
 * :wiki:`Misc/Comics`
+* :wiki:`Misc/DomainNames`
 * :wiki:`Misc/Music`
