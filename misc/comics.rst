@@ -14,3 +14,4 @@ The daily struggle
 * http://bloglaurel.com/studio5
 * http://bloglaurel.com/studio6
 * http://bloglaurel.com/studio7
+* http://bloglaurel.com/studio8
