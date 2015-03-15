@@ -43,30 +43,13 @@ System Administration
 * :wiki:`System/OSX`
 * :wiki:`System/SSL`
 
-Applications
-::::::::::::
+Applications and Services
+:::::::::::::::::::::::::
 
-Monitoring
-----------
-
-Generic / multipurpose
-......................
-
-* Datadog: https://www.datadoghq.com/ (SaaS, ~15 $ / month / host)
-
-Status page applications
-........................
-
-* Statuspage: https://www.statuspage.io/ (SaaS, 30 to 400 $ / month)
-* Cachet: https://github.com/cachethq/Cachet (PHP)
-* Stashboard: https://github.com/twilio/stashboard (Python on GAE)
-
-Software
-........
-
-* New relic: http://newrelic.com/ (SaaS, 50 to 150 $ / month, free lite version available too)
-* Sentry: https://github.com/getsentry/sentry (Python/Django)
-* Hosted Sentry: https://getsentry.com/welcome/ (SaaS, 20 to 200 $ / month)
+* :wiki:`App/Virtualization`
+* :wiki:`App/Database`
+* :wiki:`App/Monitoring`
+* :wiki:`App/WebServer`
 
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
