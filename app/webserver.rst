@@ -1,4 +1,4 @@
 Web servers
 ===========
 
-* :wiki:`Server/nginx`
+* :wiki:`App/WebServer/nginx`
