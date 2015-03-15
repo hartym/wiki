@@ -1,6 +1,14 @@
 Python
 ======
 
+Magic methods
+:::::::::::::
+
+* http://www.rafekettler.com/magicmethods.html
+
+Misc
+::::
+
 ::
 
   The Zen of Python, by Tim Peters
