@@ -29,12 +29,6 @@ Frameworks
 * :wiki:`Python/Django`
 * :wiki:`Python/Flask`
 
-Server Software
-:::::::::::::::
-
-* :wiki:`Server/Docker`
-* :wiki:`Server/nginx`
-
 System Administration
 :::::::::::::::::::::
 
