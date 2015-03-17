@@ -9,6 +9,11 @@ Magic methods
 Libraries
 :::::::::
 
+OAuth
+-----
+
+* RAuth: https://rauth.readthedocs.org/en/latest/
+
 Web forms
 ---------
 
