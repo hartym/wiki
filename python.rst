@@ -6,6 +6,14 @@ Magic methods
 
 * http://www.rafekettler.com/magicmethods.html
 
+Libraries
+:::::::::
+
+Web forms
+---------
+
+* :wiki:`Python/WTForms`
+
 Misc
 ::::
 
