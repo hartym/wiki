@@ -11,6 +11,7 @@ Game resources
 * Charles Matthews' "On Your Side" (fuseki): http://gobase.org/studying/articles/matthews/fuseki/
 * http://senseis.xmp.net/
 * http://francois.mizessyn.pagesperso-orange.fr/ (french)
+* http://internetgoschool.com/
 
 Computer Go
 :::::::::::
