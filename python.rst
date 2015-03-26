@@ -19,6 +19,13 @@ Web forms
 
 * :wiki:`Python/WTForms`
 
+Cookbook
+::::::::
+
+.. code-block:: python
+
+    __path__ = os.path.dirname(os.path.join(os.getcwd(), __file__))
+
 Misc
 ::::
 
