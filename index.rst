@@ -45,6 +45,11 @@ Applications and Services
 * :wiki:`App/Monitoring`
 * :wiki:`App/WebServer`
 
+Automation
+::::::::::
+
+* :wiki:`Automation/Scrapping`
+
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
 
