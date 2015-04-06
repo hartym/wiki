@@ -1,0 +1,9 @@
+Misc
+====
+
+Chrome extension development
+::::::::::::::::::::::::::::
+
+Where to find source for installed chrome extensions:
+
+* http://dev.chromium.org/user-experience/user-data-directory
