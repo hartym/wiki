@@ -59,3 +59,6 @@ This section contains various related and unrelated things I want to keep around
 * :wiki:`Misc/DomainNames`
 * :wiki:`Misc/GameOfGo`
 * :wiki:`Misc/Music`
+
+
+* Things I could not sort somewhere else for now ... :wiki:`Misc`
