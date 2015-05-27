@@ -14,6 +14,7 @@ Languages
 * :wiki:`JavaScript`
 * :wiki:`PHP`
 * :wiki:`Python`
+* :wiki:`Ruby`
 * :wiki:`Shell`
 
 Utilities
