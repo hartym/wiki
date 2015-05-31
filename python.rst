@@ -28,5 +28,3 @@ Cookbook
 
 * OrderedDict subclass implementing insertion methods to adjust the order: https://gist.github.com/jaredks/6276032
 
-
-a
