@@ -27,3 +27,5 @@ Cookbook
     __path__ = os.path.dirname(os.path.join(os.getcwd(), __file__))
 
 * OrderedDict subclass implementing insertion methods to adjust the order: https://gist.github.com/jaredks/6276032
+
+small test
