@@ -13,4 +13,8 @@ Ruby
 
 * Discourse full https (including oauth callbacks ...)
 
+In file `config/initializers/09-omniauth.rb`:
+
+.. code-block:: ruby
+
     OmniAuth.config.full_host = 'https://...domain...'
