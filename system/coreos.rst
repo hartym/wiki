@@ -27,3 +27,6 @@ In journal::
     Jun 10 19:58:35 core3.c.rdorgueil.internal fleetd[1386]: ERROR reconcile.go:79: Unable to determine agent's current state: failed fetching unit states from UnitManager: Unit name nginx@.service is not valid.
 
 Only solution found (https://github.com/coreos/fleet/issues/969) is to reboot faulty instances after destroying the faulty units.
+
+
+        docker run -it --link postgres.1:postgres --rm postgres sh -c 'exec psql -h "$POSTGRES_PORT_5432_TCP_ADDR" -p "$POSTGRES_PORT_5432_TCP_PORT" -U postgres'
