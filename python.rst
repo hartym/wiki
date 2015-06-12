@@ -12,6 +12,7 @@ Libraries
 OAuth
 -----
 
+* Python-Social-Auth: http://psa.matiasaguirre.net/ (with web framework adapters)
 * RAuth: https://rauth.readthedocs.org/en/latest/
 
 Web forms
