@@ -25,10 +25,12 @@ Utilities
 System Administration
 :::::::::::::::::::::
 
-* :wiki:`System/Debian`
 * :wiki:`System/CoreOS`
+* :wiki:`System/Debian`
+* :wiki:`System/Docker`
 * :wiki:`System/OSX`
 * :wiki:`System/SSL`
+* :wiki:`System/SystemD`
 
 Applications and Services
 :::::::::::::::::::::::::
