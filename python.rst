@@ -20,6 +20,13 @@ Web forms
 
 * :wiki:`Python/WTForms`
 
+Web frameworks
+--------------
+
+* :wiki:`Python/Django`
+* :wiki:`Python/Flask`
+* :wiki:`Python/Pyramid`
+
 Cookbook
 ::::::::
 
