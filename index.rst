@@ -26,7 +26,7 @@ System Administration
 * :wiki:`System/Debian`
 * :wiki:`System/OSX`
 * :wiki:`System/SSL`
-* :wiki:`System/SystemD`
+* :wiki:`System/systemd`
 
 Linux containers and friends
 ::::::::::::::::::::::::::::
