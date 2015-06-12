@@ -27,10 +27,22 @@ System Administration
 
 * :wiki:`System/CoreOS`
 * :wiki:`System/Debian`
-* :wiki:`System/Docker`
 * :wiki:`System/OSX`
 * :wiki:`System/SSL`
 * :wiki:`System/SystemD`
+
+Linux containers and friends
+::::::::::::::::::::::::::::
+
+* :wiki:`Containers/Docker`
+* :wiki:`Containers/Rocket`
+
+Cloud computing
+:::::::::::::::
+
+* :wiki:`Cloud/AmazonWebServices`
+* :wiki:`Cloud/DigitalOcean`
+* :wiki:`Cloud/GoogleCloudPlatform`
 
 Applications and Services
 :::::::::::::::::::::::::
