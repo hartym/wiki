@@ -22,14 +22,6 @@ Utilities
 
 * :wiki:`Utilities/Git`
 
-Frameworks
-::::::::::
-
-* :wiki:`JavaScript/Meteor`
-* :wiki:`PHP/Symfony`
-* :wiki:`Python/Django`
-* :wiki:`Python/Flask`
-
 System Administration
 :::::::::::::::::::::
 
@@ -50,6 +42,14 @@ Automation
 ::::::::::
 
 * :wiki:`Automation/Scrapping`
+
+Web frameworks
+::::::::::::::
+
+* :wiki:`JavaScript/Meteor`
+* :wiki:`PHP/Symfony`
+* :wiki:`Python/Django`
+* :wiki:`Python/Flask`
 
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
