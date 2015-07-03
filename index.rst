@@ -18,6 +18,7 @@ Utilities
 :::::::::
 
 * :wiki:`Utilities/Git`
+* :wiki:`Utilities/ImageMagick`
 
 System Administration
 :::::::::::::::::::::
