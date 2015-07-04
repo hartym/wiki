@@ -42,6 +42,7 @@ Cloud computing
 * :wiki:`Cloud/DigitalOcean`
 * :wiki:`Cloud/GoogleCloudPlatform`
 
+
 Applications and Services
 :::::::::::::::::::::::::
 
@@ -72,6 +73,7 @@ This section contains various related and unrelated things I want to keep around
 * :wiki:`Misc/DomainNames`
 * :wiki:`Misc/GameOfGo`
 * :wiki:`Misc/GIS`
+* :wiki:`Misc/Hardware`
 * :wiki:`Misc/Music`
 
 
