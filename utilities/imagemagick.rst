@@ -8,4 +8,6 @@ ImageMagick (and GraphicsMagick)
 
 .. code-block:: shell
 
-    for i in *; do convert -resize 1800x $i -quality 80 ../bgo/$i; done
+    for i in *.jpg; do
+        convert -strip -interlace Plane -gaussian-blur 0.05 -quality 75% -resize 1800x $i output/$i
+    done
