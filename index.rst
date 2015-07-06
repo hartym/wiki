@@ -70,6 +70,7 @@ Miscellaneous stuff, links, papers
 This section contains various related and unrelated things I want to keep around.
 
 * :wiki:`Misc/Comics`
+* :wiki:`Misc/Documentation`
 * :wiki:`Misc/DomainNames`
 * :wiki:`Misc/GameOfGo`
 * :wiki:`Misc/GIS`
