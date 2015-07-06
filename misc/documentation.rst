@@ -14,7 +14,7 @@ Building documentation
 * Simplest thing : GitHub wiki & pages
 * As a service (installable version exists too) : Confluence
 * API doc as a service : http://readme.io/
-* Tool : `Sphinx <http://sphinx-doc.org/>`
+* Tool : `Sphinx <http://sphinx-doc.org/>`_
 
 Make it visual
 ::::::::::::::
