@@ -6,8 +6,7 @@ Documentation
 Mind-mapping
 ::::::::::::
 
-* `FreeMind 
-<http://freemind.sourceforge.net/wiki/index.php/Main_Page>`_ 
+* `FreeMind <http://freemind.sourceforge.net/wiki/index.php/Main_Page>`_ 
 
 Building documentation
 ::::::::::::::::::::::
