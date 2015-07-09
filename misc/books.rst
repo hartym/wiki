@@ -24,3 +24,9 @@ Patterns of Enterprise Application Architecture
 * http://martinfowler.com/books/eaa.html
 * http://martinfowler.com/eaaCatalog/
 
+The Art of Computer Programming
+:::::::::::::::::::::::::::::::
+
+Only try to read it if you have a lifetime you can dedicate to it.
+
+http://www.amazon.fr/Computer-Programming-Volumes-1-4A-Boxed/dp/0321751043/ref=sr_1_1?s=books&ie=UTF8&qid=1436458611&sr=1-1&keywords=the+art+of+computer+programming&pebp=1436458614038&perid=0429W5SZC97A1VZ86N9Y
