@@ -20,6 +20,10 @@ List of tools to review about writing/versionning/testing/releasing/deploying co
 * http://www.mot.la/2014-12-07-amazon-lambda-best-practices-development-and-deployment.html
 * https://github.com/rebelmail/node-lambda
 * https://github.com/rebelmail/node-lambda-template
+* http://fr.slideshare.net/AmazonWebServices/aws-lambda-eventdriven-code-in-the-cloud-50364719
+* https://aws.amazon.com/fr/blogs/compute/new-deployment-options-for-aws-lambda/
+* https://aws.amazon.com/fr/blogs/compute/category/aws-lambda/
+
 
 Amazon Cloudfront
 :::::::::::::::::
