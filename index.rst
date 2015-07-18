@@ -69,6 +69,11 @@ Web frameworks
 * :wiki:`Python/Django`
 * :wiki:`Python/Flask`
 
+Analytics, Metrics and Business Intelligence
+::::::::::::::::::::::::::::::::::::::::::::
+
+* :wiki:`Google
+
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
 
