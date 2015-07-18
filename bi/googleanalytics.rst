@@ -1,7 +1,7 @@
 Google Analytics
 ================
 
-..code-block:: javascript
+.. code-block:: javascript
 
     ga(‘send’, ‘pageview’, ‘name of your virtual page’);
     ga(‘send’, ‘event’, ‘event category ‘, ‘event action’, ‘event label’, event value);
