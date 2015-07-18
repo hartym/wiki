@@ -72,7 +72,7 @@ Web frameworks
 Analytics, Metrics and Business Intelligence
 ::::::::::::::::::::::::::::::::::::::::::::
 
-* :wiki:`Google
+* :wiki:`GoogleAnalytics`
 
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
