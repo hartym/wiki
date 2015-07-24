@@ -1,13 +1,34 @@
-Books (computing)
-=================
+Books
+=====
+
+Business books
+::::::::::::::
+
+The four step to the Epiphany (Steve Blank)
+-------------------------------------------
+
+* http://www.amazon.com/Four-Steps-Epiphany-Steve-Blank/dp/0989200507
+
+Lean Startup (Eric Ries)
+------------------------
+
+* http://theleanstartup.com/book
+
+Running Lean (Ash Maurya)
+-------------------------
+
+* http://www.amazon.fr/Running-Lean-2e-Ash-Maurya/dp/1449305172/ref=sr_1_1
+
+Computer science books
+::::::::::::::::::::::
 
 The Pragmatic Programmer: From Journeyman to Master
-:::::::::::::::::::::::::::::::::::::::::::::::::::
+---------------------------------------------------
 
 * http://www.amazon.fr/The-Pragmatic-Programmer-Journeyman-Master/dp/020161622X
 
 Design Patterns
-:::::::::::::::
+---------------
 
 Must read.
 
@@ -19,13 +40,13 @@ If you need to remember only one thing, it should be the two rules of Object Ori
 * Program to an interface, not an implementation
 
 Patterns of Enterprise Application Architecture
-:::::::::::::::::::::::::::::::::::::::::::::::
+-----------------------------------------------
 
 * http://martinfowler.com/books/eaa.html
 * http://martinfowler.com/eaaCatalog/
 
 The Art of Computer Programming
-:::::::::::::::::::::::::::::::
+-------------------------------
 
 Only try to read it if you have a lifetime you can dedicate to it.
 
