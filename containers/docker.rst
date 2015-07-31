@@ -22,7 +22,7 @@ Boot2Docker / Docker machine on OSX
 No space left
 -------------
 
-Kill all, recreate a machine with more disk. Way more efficient than trying to resize the virtual machine disk.
+Kill the box, recreate a machine with more disk. Way more efficient than trying to resize the virtual machine disk.
 
 .. code-block:: shell
 
