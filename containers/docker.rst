@@ -22,11 +22,9 @@ Boot2Docker / Docker machine on OSX
 No space left
 -------------
 
-Resize the boot2docker mount
+Kill all, recreate a machine with more disk. Way more efficient than trying to resize the virtual machine disk.
 
 .. code-block:: shell
 
-    cd .docker/machine/machines/machine-name
-    vboxmanage clonehd $PWD/disk.vmdk $PWD/disk.vdi --format VDI --variant Standard
-
-cf https://docs.docker.com/articles/b2d_volume_resize/
+    docker-machine create --virtualbox-disk-size 50000 -d virtualbox dev
+    
