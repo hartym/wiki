@@ -1,4 +1,5 @@
 Docker
 ======
 
-.. moved to :wiki:`Containers/Docker`
+
+moved to :wiki:`Containers/Docker`
