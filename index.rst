@@ -74,6 +74,8 @@ Analytics, Metrics and Business Intelligence
 
 * :wiki:`BI`
 * :wiki:`BI/GoogleAnalytics`
+* :wiki:`BI/Graphite`
+* :wiki:`BI/ELK`
 
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
