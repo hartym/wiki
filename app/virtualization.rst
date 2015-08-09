@@ -1,4 +1,4 @@
-Virtualization and containerization
-:::::::::::::::::::::::::::::::::::
+Virtualization
+::::::::::::::
 
 * :wiki:`App/Virtualization/Docker`
