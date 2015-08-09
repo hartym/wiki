@@ -54,6 +54,8 @@ Applications and Services
 Databases
 :::::::::
 
+* :wiki:`Database/PostgreSQL`
+* :wiki:`Database/PostGIS`
 * :wiki:`Database/Presto`
 
 Automation
