@@ -29,4 +29,13 @@ In journal::
 Only solution found (https://github.com/coreos/fleet/issues/969) is to reboot faulty instances after destroying the faulty units.
 
 
-        docker run -it --link postgres.1:postgres --rm postgres sh -c 'exec psql -h "$POSTGRES_PORT_5432_TCP_ADDR" -p "$POSTGRES_PORT_5432_TCP_PORT" -U postgres'
+.. code-block:: shell
+
+    docker run -it --link postgres.1:postgres --rm postgres sh -c 'exec psql -h "$POSTGRES_PORT_5432_TCP_ADDR" -p "$POSTGRES_PORT_5432_TCP_PORT" -U postgres'
+
+Local cluster tools
+:::::::::::::::::::
+
+* https://github.com/coreos/coreos-vagrant
+* https://github.com/rimusz/coreos-osx-gui-kubernetes-solo
+* https://github.com/rimusz/coreos-osx-gui-kubernetes-cluster
