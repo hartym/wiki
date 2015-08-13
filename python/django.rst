@@ -37,6 +37,7 @@ Settings
 .. code-block:: python
 
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_DEFAULT_FROM = '...'
     EMAIL_HOST = 'smtp.example.com'
     EMAIL_HOST_USER = '...'
     EMAIL_HOST_PASSWORD = '...'
