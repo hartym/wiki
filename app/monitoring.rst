@@ -4,7 +4,7 @@ Monitoring
 Generic / multipurpose
 ----------------------
 
-* Datadog: https://www.datadoghq.com/ (SaaS, ~15 $ / month / host)
+* :wiki:`App/Monitoring/Datadog`: https://www.datadoghq.com/ (SaaS, ~15 $ / month / host)
 
 Status page applications
 ------------------------
