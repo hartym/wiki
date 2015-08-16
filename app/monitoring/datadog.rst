@@ -1,6 +1,8 @@
 Datadog
 =======
 
+Pretty standard monitoring app, run as a service. Possible to run the agent in a privileged container.
+
 CoreOS unit to run agent
 ::::::::::::::::::::::::
 
@@ -25,3 +27,27 @@ CoreOS unit to run agent
     
     [X-Fleet]
     Global=true
+
+Add etcd watcher
+::::::::::::::::
+
+Grab default config to host (needed to mount the volume above anyway)::
+
+    docker cp dd-agent:/etc/dd-agent .
+    
+dd-agent/conf.d/etcd.yaml::
+
+    init_config:
+
+    instances:
+      - url: "http://10.1.65.1:2379"
+        timeout: 5
+    
+To find the host IP address useable in the agent container, exec a bash and run `ip route`, the default gateway is the host.
+
+To check if we're good::
+
+    docker exec dd-agent service datadog-agent info
+    
+    
+
