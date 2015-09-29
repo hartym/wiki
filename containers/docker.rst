@@ -28,3 +28,5 @@ Kill the box, recreate a machine with more disk. Way more efficient than trying 
 
     docker-machine create --virtualbox-disk-size 50000 -d virtualbox dev
     
+
+Container related stuff : https://www.mindmeister.com/fr/389671722/open-container-ecosystem-formerly-docker-ecosystem
