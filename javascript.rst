@@ -27,7 +27,7 @@ Webpack
 
 Example config for use within a django project, with hot module replacement plugin setup:
 
-.. code-block:: json
+.. code-block:: javascript
 
     var path = require("path")
     var webpack = require('webpack')
