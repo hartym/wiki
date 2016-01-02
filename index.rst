@@ -1,7 +1,9 @@
 Noah's Ark of Computing
 =======================
 
-Welcome to the my little wiki, where I keep snippets, opinions and ideas about computer related tools. This may, or may not, prove usefull for you.
+Welcome to the my little knowledge base, where I keep code snippets, opinions and ideas about computer related tools.
+
+This may, or may not, prove useful for you. And honestly, I don't give a fuck.
 
 Manifesto
 :::::::::
