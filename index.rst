@@ -71,7 +71,7 @@ Databases
 Automation
 ::::::::::
 
-* :wiki:`Automation/Scrapping`
+* :wiki:`Automation/Scraping`
 
 Web frameworks
 ::::::::::::::
