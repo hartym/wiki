@@ -1,6 +1,5 @@
-Scrapping
-=========
-
+Web Scraping
+============
 
 Recipes
 :::::::
