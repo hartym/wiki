@@ -17,3 +17,118 @@ Testing frameworks
 
 - Jasmine - http://jasmine.github.io/
 
+React / Flux
+::::::::::::
+
+- http://survivejs.com/webpack_react/introduction/
+
+Webpack
+:::::::
+
+Example config for use within a django project, with hot module replacement plugin setup:
+
+.. code-block:: json
+
+    var path = require("path")
+    var webpack = require('webpack')
+    var BundleTracker = require('webpack-bundle-tracker')
+    
+    module.exports = {
+        context: __dirname,
+        entry: {
+            package1: [
+                'webpack-dev-server/client?http://localhost:3000',
+                'webpack/hot/only-dev-server',
+                './my_assets_path/package1'
+            ],
+            package2: [
+                'webpack-dev-server/client?http://localhost:3000',
+                'webpack/hot/only-dev-server',
+                './my_assets_path/package2'
+            ]
+        },
+        output: {
+            path: path.resolve('./static/'),
+            filename: '[name]-[hash].js',
+            publicPath: 'http://localhost:3000/'
+        },
+        plugins: [
+            new webpack.HotModuleReplacementPlugin(),
+            new webpack.NoErrorsPlugin(),
+            new BundleTracker({filename: './webpack-stats.json'})
+        ],
+        module: {
+            loaders: [
+                {test: /\.s[ac]ss$/, loaders: ["style", "css", "sass?sourceMap"]},
+                {test: /\.jsx?$/, exclude: /node_modules/, loaders: ['react-hot', 'babel']},
+            ]
+        },
+        resolve: {
+            modulesDirectories: ['node_modules', 'bower_components'],
+            extensions: ['', '.js', '.jsx']
+        },
+        externals: {
+            'jquery': 'jQuery',
+        }
+    }
+    
+Example ``server.js`` used instead of ``webpack --watch`` for hot reload:
+
+.. code-block:: javascript
+
+    var webpack = require('webpack')
+    var WebpackDevServer = require('webpack-dev-server')
+    var config = require('./webpack.config')
+    
+    new WebpackDevServer(webpack(config), {
+      publicPath: config.output.publicPath,
+      hot: true,
+      inline: true,
+      historyApiFallback: true
+    }).listen(3000, '0.0.0.0', function (err, result) {
+      if (err) {
+        console.log(err)
+      }
+    
+      console.log('Listening at 0.0.0.0:3000')
+    })
+
+Node dependencies (``package.json``):
+
+.. code-block:: json
+
+    {
+      "name": "acme",
+      "version": "...",
+      "description": "Boilerplate",
+      "main": "server.js",
+      "repository": {
+        "type": "git",
+        "url": "git+ssh://git@...acme.git"
+      },
+      "author": "",
+      "license": "GFYL",
+      "homepage": "https://.../...#readme",
+      "devDependencies": {
+        "babel": "^6.3.26",
+        "babel-core": "^6.3.26",
+        "babel-loader": "^6.2.0",
+        "babel-preset-es2015": "^6.3.13",
+        "babel-preset-react": "^6.3.13",
+        "babel-preset-stage-0": "^6.3.13",
+        "babel-preset-stage-1": "^6.3.13",
+        "babel-preset-stage-2": "^6.3.13",
+        "css-loader": "^0.23.1",
+        "node-sass": "^3.4.2",
+        "react": "^0.14.3",
+        "react-hot-loader": "^1.3.0",
+        "sass-loader": "^3.1.2",
+        "style-loader": "^0.13.0",
+        "webpack": "^1.12.9",
+        "webpack-bundle-tracker": "0.0.9",
+        "webpack-dev-server": "^1.14.0"
+      },
+      "dependencies": {
+        "bootstrap": "^4.0.0-alpha.2",
+      }
+    }
