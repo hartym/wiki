@@ -29,8 +29,8 @@ References
 * Git-flow: http://nvie.com/posts/a-successful-git-branching-model/
 
 
-*Deprecated*: Colors (not required after git 1.8.4)
-:::::::::::::::::::::::::::::::::::::::::::::::::::
+*Deprecated* - Colors (not required after git 1.8.4)
+::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 .. code-block:: shell
 
