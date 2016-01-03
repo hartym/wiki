@@ -15,6 +15,11 @@ Comme convenu (The daily struggle)
 * http://bloglaurel.com/studio6
 * http://bloglaurel.com/studio7
 * http://bloglaurel.com/studio8
+* http://bloglaurel.com/studio9
+* http://bloglaurel.com/studio10
+* http://bloglaurel.com/studio11
+* http://bloglaurel.com/studio12
+* http://bloglaurel.com/studio13
 
 CommitStrip
 -----------
