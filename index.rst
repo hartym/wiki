@@ -8,11 +8,10 @@ This may, or may not, prove useful for you. And honestly, I don't give a fuck.
 Manifesto
 :::::::::
 
-* Simple is better than complex. Although simple is harder to achieve than complex.
-* Nothing is absolute, tools or technologies can only be better than others in a given context.
-* Value comes from what a given choice brings to the product, from a market point of view. The rest is pointless.
-* Tools are means, not goals.
-
+* *Simple* is better than complex. Although simple is harder to achieve than complex.
+* *Technical choices* depends on the human, legacy, time and market contexts. 
+* *Value* comes from what the customer gets.
+* *Tools* are means, not goals.
 
 Languages
 :::::::::
