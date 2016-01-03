@@ -10,7 +10,7 @@ Manifesto
 
 * *Simple* is better than complex. Although simple is harder to achieve than complex.
 * *Technical choices* depends on the human, legacy, time and market contexts. 
-* *Value* comes from what the customer gets.
+* *Value* is what the customer gets.
 * *Tools* are means, not goals.
 
 Languages
