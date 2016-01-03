@@ -20,8 +20,17 @@ User setup
 	git config --global user.name "Romain Dorgueil"
 	git config --global user.email "romain@dorgueil.net"
 
-Colors (not required after git 1.8.4)
-:::::::::::::::::::::::::::::::::::::
+	
+References
+::::::::::
+
+* `Original article with my git config and aliases <http://romain.dorgueil.net/blog/en/git/2014/12/16/git-config.html>`_
+* Github flow: https://guides.github.com/introduction/flow/
+* Git-flow: http://nvie.com/posts/a-successful-git-branching-model/
+
+
+*Deprecated*: Colors (not required after git 1.8.4)
+:::::::::::::::::::::::::::::::::::::::::::::::::::
 
 .. code-block:: shell
 
@@ -35,8 +44,3 @@ or
 .. code-block:: shell
 
 	git config --global color.ui true
-	
-References
-::::::::::
-
-* `Original article with my git config and aliases <http://romain.dorgueil.net/blog/en/git/2014/12/16/git-config.html>`_
