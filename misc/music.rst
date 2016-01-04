@@ -77,4 +77,21 @@ Linton Kwesi Johnson
 
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VI4nQxyiNBqr58wcCZeyJ" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
     
+Electronic
+==========
+
+Badmarsh & Shri
+---------------
+
+.. raw:: html
+
+     <iframe src="https://embed.spotify.com/?uri=spotify%3Auser%3Ahartym%3Aplaylist%3A78CgdU4XiajHmJUpssgwqZ" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+
+Talvin Singh — Sounds of the Asian Underground
+----------------------------------------------
+
+.. raw:: html
+
+     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A6juVfzllRuiQSLqzfbYGph" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    
     
