@@ -32,3 +32,13 @@ Hiromi's Sonicbloom
 .. raw:: html
 
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1vWPuQZaBbe6TBqlKWStnX" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+
+Classics
+::::::::
+
+Frank Zappa
+-----------
+
+.. raw:: html
+
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
