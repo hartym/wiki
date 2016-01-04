@@ -42,3 +42,11 @@ Frank Zappa
 .. raw:: html
 
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    
+Weather Report
+--------------
+
+.. raw:: html
+
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7jJy9H10KQmIINyrOgomq2" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+
