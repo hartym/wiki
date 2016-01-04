@@ -14,14 +14,14 @@ Avishai Cohen
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1KG80lbbuBCXolc9iWO7Fw" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1KG80lbbuBCXolc9iWO7Fw" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
 
 Esperanza Spalding
 ------------------
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4JY0pT22MDOxKnIlTCr75G" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4JY0pT22MDOxKnIlTCr75G" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
 
 Hiromi's Sonicbloom
 -------------------
@@ -31,14 +31,14 @@ Hiromi's Sonicbloom
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1vWPuQZaBbe6TBqlKWStnX" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1vWPuQZaBbe6TBqlKWStnX" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
     
 RH Factor
 ---------
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VpT3uWEAT9ozXckDD9Xgq" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VpT3uWEAT9ozXckDD9Xgq" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
 
 Classics
 ::::::::
@@ -48,20 +48,20 @@ Frank Zappa
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
     
 Weather Report
 --------------
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7jJy9H10KQmIINyrOgomq2" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7jJy9H10KQmIINyrOgomq2" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
 
 Reggae & Dub
 ::::::::::::
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VI4nQxyiNBqr58wcCZeyJ" width="300" height="190" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VI4nQxyiNBqr58wcCZeyJ" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
     
     
