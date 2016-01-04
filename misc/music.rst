@@ -1,11 +1,6 @@
 Music
 =====
 
-Latin
-:::::
-
-* http://www.thekevinsun.com/2012/10/papo-lucca-montunos.html
-
 Jazz, funk & Fusion
 :::::::::::::::::::
 
@@ -40,22 +35,30 @@ RH Factor
 
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VpT3uWEAT9ozXckDD9Xgq" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
 
+Afro-cuban
+::::::::::
+
+Mongo Santamaria
+----------------
+
+.. raw:: html
+
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A2iFioZh6zo3ZoWTTcvI50i" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+
+Pappo Lucca
+-----------
+
+* http://www.thekevinsun.com/2012/10/papo-lucca-montunos.html
+
 Classics
 ::::::::
 
-Frank Zappa — Hot Rats
-----------------------
+Frank Zappa
+-----------
 
 .. raw:: html
 
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
-
-The Police — Synchronicity
---------------------------
-    
-.. raw:: html
-
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A28eOriEfl7IGbQDNvWIWXK" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
     
 Weather Report
 --------------
@@ -66,6 +69,9 @@ Weather Report
 
 Reggae & Dub
 ::::::::::::
+
+Linton Kwesi Johnson
+--------------------
 
 .. raw:: html
 
