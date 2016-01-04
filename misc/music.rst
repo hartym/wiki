@@ -38,6 +38,13 @@ RH Factor
 Afro-cuban
 ::::::::::
 
+Kenny Dorham
+------------
+
+.. raw:: html
+
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7hPFS8GU0hBHZGR01y74mI" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+
 Mongo Santamaria
 ----------------
 
