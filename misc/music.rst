@@ -6,8 +6,8 @@ Latin
 
 * http://www.thekevinsun.com/2012/10/papo-lucca-montunos.html
 
-Fusion
-::::::
+Jazz, funk & Fusion
+:::::::::::::::::::
 
 :wiki:`Misc/Music/Fusion`
 
