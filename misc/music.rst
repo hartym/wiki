@@ -92,7 +92,7 @@ Badmarsh & Shri
 
 .. raw:: html
 
-     <iframe src="https://embed.spotify.com/?uri=spotify%3Auser%3Ahartym%3Aplaylist%3A78CgdU4XiajHmJUpssgwqZ" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Auser%3Ahartym%3Aplaylist%3A78CgdU4XiajHmJUpssgwqZ" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
 
 Talvin Singh — Sounds of the Asian Underground
 ----------------------------------------------
