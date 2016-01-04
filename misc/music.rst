@@ -43,12 +43,19 @@ RH Factor
 Classics
 ::::::::
 
-Frank Zappa
------------
+Frank Zappa — Hot Rats
+----------------------
 
 .. raw:: html
 
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+
+The Police — Synchronicity
+--------------------------
+    
+.. raw:: html
+
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A28eOriEfl7IGbQDNvWIWXK" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
     
 Weather Report
 --------------
