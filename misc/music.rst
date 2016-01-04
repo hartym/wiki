@@ -21,7 +21,7 @@ Esperanza Spalding
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A50ZGiAqYPxQpDVs7QT2ys8" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4JY0pT22MDOxKnIlTCr75G" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
 
 Hiromi's Sonicbloom
 -------------------
