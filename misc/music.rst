@@ -97,7 +97,7 @@ Electronic
 ==========
 
 
-Badmarsh & Shri
+Badmarsh Shri
 ---------------
 
 .. raw:: html
