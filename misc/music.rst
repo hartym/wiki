@@ -55,7 +55,7 @@ The Police — Synchronicity
     
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A28eOriEfl7IGbQDNvWIWXK" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A28eOriEfl7IGbQDNvWIWXK" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
     
 Weather Report
 --------------
