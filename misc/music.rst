@@ -57,3 +57,11 @@ Weather Report
 
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7jJy9H10KQmIINyrOgomq2" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
 
+Reggae & Dub
+::::::::::::
+
+.. raw:: html
+
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VI4nQxyiNBqr58wcCZeyJ" width="300" height="190" frameborder="0" allowtransparency="true"></iframe>
+    
+    
