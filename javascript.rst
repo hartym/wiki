@@ -1,6 +1,8 @@
 JavaScript
 ==========
 
+- https://github.com/vasanthk/js-bits
+
 ES6 / ES2015
 ::::::::::::
 
@@ -21,6 +23,8 @@ React / Flux
 ::::::::::::
 
 - http://survivejs.com/webpack_react/introduction/
+- http://redux.js.org/
+- https://egghead.io/series/getting-started-with-redux
 
 Webpack
 :::::::
