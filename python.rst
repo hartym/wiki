@@ -6,6 +6,11 @@ Magic methods
 
 * http://www.rafekettler.com/magicmethods.html
 
+Coroutines
+::::::::::
+
+* http://www.dabeaz.com/coroutines/Coroutines.pdf
+
 Libraries
 :::::::::
 
