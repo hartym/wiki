@@ -80,6 +80,11 @@ Web frameworks
 * :wiki:`Python/Django`
 * :wiki:`Python/Flask`
 
+Design, User experience, User interfaces and resources
+::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+* :wiki:`Design/Resources`
+
 Analytics, Metrics and Business Intelligence
 ::::::::::::::::::::::::::::::::::::::::::::
 
