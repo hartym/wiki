@@ -39,3 +39,6 @@ Local cluster tools
 * https://github.com/coreos/coreos-vagrant
 * https://github.com/rimusz/coreos-osx-gui-kubernetes-solo
 * https://github.com/rimusz/coreos-osx-gui-kubernetes-cluster
+* https://github.com/TheNewNormal/kube-cluster-osx
+
+The above tools have a lot of problems on my laptop, but the idea sound promising.
