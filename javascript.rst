@@ -1,7 +1,21 @@
 JavaScript
 ==========
 
-- https://github.com/vasanthk/js-bits
+Universal React / Redux / Webpack Starter
+:::::::::::::::::::::::::::::::::::::::::
+
+Struggling to find a react+redux+webpack starter kit that:
+
+1. Does not make a lot more choices than that (no, I don't give a fuck about gulp, grunt or whatever tool your grandma wrote yesterday).
+2. Works out of the box (no time to debug your shit, bro).
+3. Is maintainable and extensible.
+4. The author does not change his socks' color and favorite tools each other week.
+
+Current status (may change until I'm fully satisfied with my attempts):
+
+* https://github.com/bdefore/universal-redux
+* https://github.com/bdefore/universal-redux-starter
+* Above inspired from https://github.com/erikras/react-redux-universal-hot-example
 
 ES6 / ES2015
 ::::::::::::
@@ -136,3 +150,8 @@ Node dependencies (``package.json``):
         "bootstrap": "^4.0.0-alpha.2",
       }
     }
+
+Misc
+::::
+
+- https://github.com/vasanthk/js-bits
