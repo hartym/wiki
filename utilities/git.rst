@@ -13,6 +13,8 @@ Data Model
 * Commit (Object)
 
   A commit represents a snapshot of files, in a time-like topology that cannot determine "time" for sure, but that has the notion of ancestors and descendants, so one can follow the logical history of changes.
+  
+  Example::
 
     tree 0fdc764f4c477e55f9326b1340af175cd823518c # root tree describing this commit's snapshot
     parent 723781bf7cc1a6eb8bdecd987975b8af7ed960bb # 0, 1 or more parent commits (0 is first commit, 1 is normal commit, more is merge commit)
