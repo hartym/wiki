@@ -49,7 +49,7 @@ More Informations
 * https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
 
 .. image:: http://2.bp.blogspot.com/-OupR0nuuahY/UT5t7BLWjzI/AAAAAAAABRM/lH9DCK6UaaA/s1600/GitUML.png
-   :scale: 50 %
+   :scale: 25%
 
 Aliases
 :::::::
