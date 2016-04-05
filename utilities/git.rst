@@ -4,15 +4,15 @@ Git
 Data Model
 ::::::::::
 
-* Object := (sha1) -> (headers, body)
+* **Object** := (sha1) -> (headers, body)
 
   * The sha1 is always the full content hash (headers + body) and thus is a signature of the object and dependant objects.
   
   * TODO : find links to proofs of what can be forged and what can't be. For example, I have the feeling from Linus talks that a commit in the middle of an history can't be forged, because it's impossible not to modify the subsequent commits by doing it. But is it possible to forge a blob content to choose its hash? Or even a leaf commit?
 
-* Commit (Object)
+* **Commit** (Object)
 
-  A commit represents a snapshot of files, in a time-like topology that cannot determine "time" for sure, but that has the notion of ancestors and descendants, so one can follow the logical history of changes.
+  A **commit** represents a snapshot of files, in a time-like topology that cannot determine "time" for sure, but that has the notion of ancestors and descendants, so one can follow the logical history of changes.
   
   Example::
 
@@ -29,18 +29,18 @@ Data Model
   * ``parent`` represent one of this commit's ancestors. There can be 0, 1 or more parents (0 is first commit in a given history, 1 is normal/most common commit, more than one is merge commit, a.k.a a commit that makes two or more divergent histories converge).
   * ``author`` and ``committer`` headers represents the author and commiter of the commit (what a surprise), along with the time at which the event happens. Mostly provided as an information, can not and should not be trusted unless you trust the person that provided the information.
 
-* Tree (Object)
+* **Tree** (Object)
 
-  A tree has no header, only contains a list (one by line) of children, whith (perms, type, sha1, filename) as tab separated values. It represents what a regular filesystem would call a «directory», replacing inodes by hashes so the sub-nodes are identified in a universal namespace instead of a locally determined namespace.
+  A **tree** has no header, only contains a list (one by line) of children, whith (perms, type, sha1, filename) as tab separated values. It represents what a regular filesystem would call a «directory», replacing inodes by hashes so the sub-nodes are identified in a universal namespace instead of a locally determined namespace.
     
   Example::
 
     40000   tree  67a00caf3712f4a38c9da6d14a07420530714fb5   doc
     100755  blob  d22a068dc89ac8d25532b0fea8829832e278ee7a   docker-compose.yml
     
-* Blob (Object)
+* **Blob** (Object)
 
-  A blob is representing a file content. It's important to understand that it only represents the content, and not where is it in the filesystem or what name points to it.
+  A **blob** is representing a file content. It's important to understand that it only represents the content, and not where is it in the filesystem or what name points to it.
   For example, if two files have the exact same content, it will be stored only once in the git object database, and the two tree entries (either in two different trees or even in the same tree) will point to the same sha1 hash.
 
 Aliases
