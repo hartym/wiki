@@ -6,8 +6,8 @@ Data Model
 
 * Object := (sha1) -> (headers, body)
 
-    * The sha1 is always the full content hash (headers + body) and thus is a signature of the object and dependant objects.
-    * TODO : find links to proofs of what can be forged and what can't be. For example, I have the feeling from Linus talks that a commit in the middle of an history can't be forged, because it's impossible not to modify the subsequent commits by doing it. But is it possible to forge a blob content to choose its hash? Or even a leaf commit?
+  * The sha1 is always the full content hash (headers + body) and thus is a signature of the object and dependant objects.
+  * TODO : find links to proofs of what can be forged and what can't be. For example, I have the feeling from Linus talks that a commit in the middle of an history can't be forged, because it's impossible not to modify the subsequent commits by doing it. But is it possible to forge a blob content to choose its hash? Or even a leaf commit?
 
 * Commit (Object)::
 
