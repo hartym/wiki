@@ -11,11 +11,16 @@ Struggling to find a react+redux+webpack starter kit that:
 3. Is maintainable and extensible.
 4. The author does not change his socks' color and favorite tools each other week.
 
-Current status (may change until I'm fully satisfied with my attempts):
+Current options:
+
+Most minimalistic option
+------------------------
 
 * https://github.com/bdefore/universal-redux
 * https://github.com/bdefore/universal-redux-starter
 * Above inspired from https://github.com/erikras/react-redux-universal-hot-example
+
+
 
 ES6 / ES2015
 ::::::::::::
