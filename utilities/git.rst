@@ -17,9 +17,9 @@ Data Model
   Example::
 
     tree 0fdc764f4c477e55f9326b1340af175cd823518c 
-    parent 723781bf7cc1a6eb8bdecd987975b8af7ed960bb # 0, 1 or more parent commits 
-    author Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200 (author and authored date)
-    committer Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200 (committer and committed date)
+    parent 723781bf7cc1a6eb8bdecd987975b8af7ed960bb
+    author Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200
+    committer Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200
     
     commit message is the body
     
@@ -27,6 +27,7 @@ Data Model
   
   * ``tree`` is the root tree describing this commit's snapshot content. There needs to be one, and only one.
   * ``parent`` represent one of this commit's ancestors. There can be 0, 1 or more parents (0 is first commit in a given history, 1 is normal/most common commit, more than one is merge commit, a.k.a a commit that makes two or more divergent histories converge).
+  * ``author`` and ``committer`` headers represents the author and commiter of the commit (what a surprise), along with the time at which the event happens. Mostly provided as an information, can not and should not be trusted unless you trust the person that provided the information.
 
 * Tree (Object)
 
