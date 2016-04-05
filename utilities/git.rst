@@ -43,6 +43,12 @@ Data Model
   A **blob** is representing a file content. It's important to understand that it only represents the content, and not where is it in the filesystem or what name points to it.
   For example, if two files have the exact same content, it will be stored only once in the git object database, and the two tree entries (either in two different trees or even in the same tree) will point to the same sha1 hash.
 
+More Informations
+-----------------
+
+* https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
+* .. image:: http://2.bp.blogspot.com/-OupR0nuuahY/UT5t7BLWjzI/AAAAAAAABRM/lH9DCK6UaaA/s1600/GitUML.png
+
 Aliases
 :::::::
 
