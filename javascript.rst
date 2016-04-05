@@ -20,6 +20,10 @@ Most minimalistic option
 * https://github.com/bdefore/universal-redux-starter
 * Above inspired from https://github.com/erikras/react-redux-universal-hot-example
 
+Most opinionated option
+-----------------------
+
+* https://github.com/combine/react-redux-starter
 
 Additional tools
 ::::::::::::::::
