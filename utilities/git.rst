@@ -47,9 +47,10 @@ More Informations
 -----------------
 
 * https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
+* Not perfect, but here is an UML-like schema of what is said above (TODO: make a better one)
 
-.. image:: http://2.bp.blogspot.com/-OupR0nuuahY/UT5t7BLWjzI/AAAAAAAABRM/lH9DCK6UaaA/s1600/GitUML.png
-   :width: 600px
+  .. image:: http://2.bp.blogspot.com/-OupR0nuuahY/UT5t7BLWjzI/AAAAAAAABRM/lH9DCK6UaaA/s1600/GitUML.png
+     :width: 800px
 
 Aliases
 :::::::
