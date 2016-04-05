@@ -1,6 +1,7 @@
 JavaScript
 ==========
 
+
 Universal React / Redux / Webpack Starter
 :::::::::::::::::::::::::::::::::::::::::
 
@@ -11,7 +12,6 @@ Struggling to find a react+redux+webpack starter kit that:
 3. Is maintainable and extensible.
 4. The author does not change his socks' color and favorite tools each other week.
 
-Current options:
 
 Most minimalistic option
 ------------------------
@@ -21,11 +21,11 @@ Most minimalistic option
 * Above inspired from https://github.com/erikras/react-redux-universal-hot-example
 
 
+Additional tools
+::::::::::::::::
 
-ES6 / ES2015
-::::::::::::
+* https://github.com/nfl/react-helmet
 
-- http://babeljs.io/
 
 Testing frameworks
 ::::::::::::::::::
@@ -38,6 +38,7 @@ Testing frameworks
 
 - Jasmine - http://jasmine.github.io/
 
+
 React / Flux
 ::::::::::::
 
@@ -45,8 +46,9 @@ React / Flux
 - http://redux.js.org/
 - https://egghead.io/series/getting-started-with-redux
 
-Webpack
-:::::::
+
+Webpack with Django
+:::::::::::::::::::
 
 Example config for use within a django project, with hot module replacement plugin setup:
 
@@ -156,7 +158,7 @@ Node dependencies (``package.json``):
       }
     }
 
-Misc
-::::
+Miscellaneous
+:::::::::::::
 
 - https://github.com/vasanthk/js-bits
