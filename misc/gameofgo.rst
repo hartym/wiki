@@ -20,6 +20,8 @@ Go is interesting for a computer scientist because 1) the possible combinations 
 
 Traditionaly, people tried to make computers play go with algorithms that mimics human reflection and strategy, achieving very poor results (any good beginner could beat the strongest bot). Since a few years, new approaches have come up, like the use of "Monte Carlo" based algorithms (basically bots that play based on the statistics obtained by playing a high number of random games from the actual position, can run massively on parralel independant computers) or CNN (machine learning approach trained on databases of professional games).
 
+* AlphaGo vs Fan Hui: http://www.britgo.org/deepmind2016/summary
+* AlphaGo vs Lee Sedol: https://en.wikipedia.org/wiki/AlphaGo_versus_Lee_Sedol
 
 Convolutional Neural Networks
 -----------------------------
