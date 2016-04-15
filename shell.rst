@@ -3,7 +3,7 @@ Shell script
 
 .. image:: http://turnoff.us/image/en/bash-on-windows.png
 
-    Image: http://turnoff.us/image/en/bash-on-windows.png
+Source: http://turnoff.us/image/en/bash-on-windows.png
 
 
 Cookbook
