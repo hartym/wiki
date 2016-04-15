@@ -1,6 +1,9 @@
 Shell script
 ============
 
+.. image:: http://turnoff.us/image/en/bash-on-windows.png
+
+    Image: http://turnoff.us/image/en/bash-on-windows.png
 
 
 Cookbook
