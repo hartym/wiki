@@ -1,6 +1,10 @@
 JavaScript
 ==========
 
+.. image:: http://turnoff.us/image/en/love-ecmascript6.png
+    :width: 600px
+
+Source: http://turnoff.us/image/en/love-ecmascript6.png
 
 Universal React / Redux / Webpack Starter
 :::::::::::::::::::::::::::::::::::::::::
