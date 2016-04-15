@@ -2,7 +2,7 @@ Shell script
 ============
 
 .. image:: http://turnoff.us/image/en/bash-on-windows.png
-    :scale: 25 %
+    :width: 400 px
     
 Source: http://turnoff.us/image/en/bash-on-windows.png
 
