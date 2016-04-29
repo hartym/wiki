@@ -63,9 +63,8 @@ Applications and Services
 Databases
 :::::::::
 
-* :wiki:`Database/Family/Graphs`
-* :wiki:`Database/Family/TimeSeries`
-* :wiki:`Database/Family/GeographicInformationSystems`
+* :wiki:`Database/Family
+
 * :wiki:`Database/PostgreSQL`
 * :wiki:`Database/PostGIS`
 * :wiki:`Database/Presto`
