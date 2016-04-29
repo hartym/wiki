@@ -6,8 +6,7 @@ http://govhack-toolkit.readthedocs.io/technical/graph-dbs/.
 Govhack Toolkit is published under CC BY 3.0 AU (CreativeCommons
 Attribution) License. Changes made here are our own views.
 
-Intro to graph databases
-::::::::::::::::::::::::
+----
 
 Graph databases were conceived of as a means to make the task of
 exploring the connections and networks between entities much easier.
@@ -41,7 +40,7 @@ Editor <http://openuplabs.tso.co.uk/demos/sparqleditor>`__ (for
 interactive SPARQL query building) are useful too.
 
 Graph DB Software
------------------
+:::::::::::::::::
 
 `Neo4j <http://neo4j.com/>`__ is the popular kid on the graph database
 block and has a wealth of supporting tools and documentation; and a
@@ -84,10 +83,10 @@ and become database largely agnostic. Gremlin also supports a simple
 data browser application to test execution of queries.
 
 Analysis
---------
+::::::::
 
 NetworkX (Python)
-.................
+-----------------
 
 `NetworkX <http://networkx.lanl.gov/index.html>`__ (from the Los Alamos
 National Laboratory) is a social network analysis library for Python.
@@ -98,7 +97,7 @@ with
 NetworkX <http://www.cl.cam.ac.uk/~cm542/teaching/2011/stna-pdfs/stna-lecture11.pdf>`__.
 
 R (Arrr!)
-.........
+---------
 
 **Of course** there are R packages for graph databases!
 
@@ -110,7 +109,7 @@ and `RNeo4j <http://nicolewhite.github.io/RNeo4j/>`__ should get you
 pointing in the right direction.
 
 Visualisation
--------------
+:::::::::::::
 
 Graph databases represent complex networks, so it turns out creating
 useful visualisation can be a tad hard - for an intro to the subject see
@@ -118,7 +117,7 @@ useful visualisation can be a tad hard - for an intro to the subject see
 Hairball <http://www.slideshare.net/OReillyStrata/visualizing-networks-beyond-the-hairball>`__.
 
 Tree and hierarchy visualisation
-................................
+--------------------------------
 
 What if your network isn't actually a network and more like a tree or
 straight hierarchy (i.e. it has no interconnections between entities)?
@@ -136,7 +135,7 @@ represet <http://bl.ocks.org/mbostock/4063530>`__ your tree structure
 than an actual tree would.
 
 Flow visualisation
-..................
+------------------
 
 But sometimes you care less about the connections in your network and
 more about the weight those connections have (e.g. the # emails sent
@@ -145,7 +144,7 @@ a `sankey diagram <http://bost.ocks.org/mike/sankey/>`__ that will
 visualise the magnitude of flow between nodes in a network
 
 Other visualisation tools
-.........................
+-------------------------
 
 `NodeXL <http://nodexl.codeplex.com/>`__ for Excel allows you to
 visualise networks/graphs quickly from right inside Excel.
