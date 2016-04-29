@@ -1,7 +1,10 @@
 Graph Oriented Databases
 ========================
 
-The following informations has been extracted mostly from http://govhack-toolkit.readthedocs.io/technical/graph-dbs/ and was copied mostly to avoid the potential loss of this excellent resource. Govhack Toolkit is published under CC BY 3.0 AU (CreativeCommons Attribution) License. Changes made here are our own views.
+Most of the following informations has been extracted from
+http://govhack-toolkit.readthedocs.io/technical/graph-dbs/.
+Govhack Toolkit is published under CC BY 3.0 AU (CreativeCommons
+Attribution) License. Changes made here are our own views.
 
 Intro to graph databases
 ::::::::::::::::::::::::
@@ -172,7 +175,11 @@ cetera can export. Sigma.js also supports `filtering and
 searching <https://github.com/jacomyal/osdc2012-sigmajs-demo>`__ the
 visualisations it generates.
 
-Links
-:::::
+Links (to be sorted ...)
+::::::::::::::::::::::::
 
 * http://govcampau.wikispaces.com/useful+tools
+* http://www.yworks.com
+* http://www.expdev.net/lope/ (bigraphs)
+* http://linkurio.us/
+* http://thinkaurelius.github.io/titan/
