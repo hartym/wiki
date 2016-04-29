@@ -180,8 +180,9 @@ Links (to be sorted ...)
 * http://govcampau.wikispaces.com/useful+tools
 * http://www.yworks.com
 * Bigraphs
-** http://www.expdev.net/lope/
-** http://www.bcs.org/upload/pdf/keynote-milner.pdf
-** http://www.cl.cam.ac.uk/archive/rm135/Bigraphs-draft.pdf
+  * http://www.expdev.net/lope/
+  * http://www.bcs.org/upload/pdf/keynote-milner.pdf
+  * http://www.cl.cam.ac.uk/archive/rm135/Bigraphs-draft.pdf
+
 * http://linkurio.us/
 * http://thinkaurelius.github.io/titan/
