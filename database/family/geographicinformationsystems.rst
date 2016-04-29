@@ -1,6 +1,11 @@
 Geographic Information Systems / Geo Databases
 ==============================================
 
+* :wiki:`Database/PostGIS`
+
+Miscellaneous
+:::::::::::::
+
 * WGS 84 (World Geodetic System 1984 : système géodésique mondial, révision de 1984): format standard.
 * Lambert II : autre système de coordonées.
 
