@@ -1,5 +1,5 @@
-Database families
-=================
+Families
+========
 
 * :wiki:`Database/Family/Graphs`
 * :wiki:`Database/Family/TimeSeries`
