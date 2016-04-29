@@ -187,3 +187,8 @@ Links (to be sorted ...)
 
 * http://linkurio.us/
 * http://thinkaurelius.github.io/titan/
+* Ariane (graph database application for information/computer systems mapping)
+
+  * https://github.com/echinopsii/net.echinopsii.ariane.community.core.mapping/tree/master/taitale/src/main/webapp/ariane
+  * http://ariane.echinopsii.net/taitale/
+  
