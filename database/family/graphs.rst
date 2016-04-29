@@ -1,6 +1,10 @@
 Graph Oriented Databases
 ========================
 
+Graphs: http://faculty.cs.niu.edu/~freedman/340/340notes/340graph.htm
+
+----
+
 Most of the following informations has been extracted from
 http://govhack-toolkit.readthedocs.io/technical/graph-dbs/.
 Govhack Toolkit is published under CC BY 3.0 AU (CreativeCommons
