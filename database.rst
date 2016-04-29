@@ -3,8 +3,8 @@ Databases
 
 See also: :wiki:`Database/Family`.
 
-Document Oriented Databases and :wiki:`Database/Family/KeyValue`
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:wiki:`Database/Family/Document` and :wiki:`Database/Family/KeyValue`
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 * CouchDB
 * MongoDB
