@@ -60,8 +60,8 @@ Applications and Services
 * :wiki:`App/Monitoring`
 * :wiki:`App/WebServer`
 
-Databases (see also :wiki:`Database/Family`)
-::::::::::::::::::::::::::::::::::::::::::::
+:wiki:`Database` (see also :wiki:`Database/Family`)
+:::::::::::::::::::::::::::::::::::::::::::::::::::
 
 * :wiki:`Database/PostgreSQL`
 * :wiki:`Database/PostGIS`
