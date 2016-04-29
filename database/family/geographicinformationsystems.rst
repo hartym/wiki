@@ -1,5 +1,5 @@
-Geographic Information Systems / Geo Databases
-==============================================
+Geographic Information Systems
+==============================
 
 * :wiki:`Database/PostGIS`
 
