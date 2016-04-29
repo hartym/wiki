@@ -171,3 +171,8 @@ the network. And it also speaks the same formats that Neo4J, Gephi, et
 cetera can export. Sigma.js also supports `filtering and
 searching <https://github.com/jacomyal/osdc2012-sigmajs-demo>`__ the
 visualisations it generates.
+
+Links
+:::::
+
+* http://govcampau.wikispaces.com/useful+tools
