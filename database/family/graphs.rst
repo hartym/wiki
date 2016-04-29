@@ -1,6 +1,8 @@
 Graph Oriented Databases
 ========================
 
+.. image:: http://faculty.cs.niu.edu/~freedman/340/340notes/gifImages/340graph2.gif
+
 Graphs: http://faculty.cs.niu.edu/~freedman/340/340notes/340graph.htm
 
 ----
