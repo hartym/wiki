@@ -63,8 +63,7 @@ Applications and Services
 Databases
 :::::::::
 
-* :wiki:`Database/Family
-
+* :wiki:`Database/Family`
 * :wiki:`Database/PostgreSQL`
 * :wiki:`Database/PostGIS`
 * :wiki:`Database/Presto`
