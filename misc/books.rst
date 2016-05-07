@@ -1,31 +1,10 @@
 Books
 =====
 
-Business books
-::::::::::::::
+See also: :wiki:`Business/Books`
 
-Zero to One (Peter Thiel)
--------------------------
-
-* http://zerotoonebook.com/
-
-The four step to the Epiphany (Steve Blank)
--------------------------------------------
-
-* http://www.amazon.com/Four-Steps-Epiphany-Steve-Blank/dp/0989200507
-
-Lean Startup (Eric Ries)
-------------------------
-
-* http://theleanstartup.com/book
-
-Running Lean (Ash Maurya)
--------------------------
-
-* http://www.amazon.fr/Running-Lean-2e-Ash-Maurya/dp/1449305172/ref=sr_1_1
-
-Computer science books
-::::::::::::::::::::::
+Computer science
+::::::::::::::::
 
 The Pragmatic Programmer: From Journeyman to Master
 ---------------------------------------------------
