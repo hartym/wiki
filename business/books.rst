@@ -23,7 +23,7 @@ The four step to the Epiphany — Steve Blank
 .. image:: http://d.gr-assets.com/books/1347394098l/762542.jpg
     :height: 196px
     :target: http://www.amazon.com/Four-Steps-Epiphany-Steve-Blank/dp/0989200507
-    :alt: Zero to One — Peter Thiel
+    :alt: The four step to the Epiphany — Steve Blank
     :class: pull-left p-x-1
 
 .. class:: clearfix
@@ -40,8 +40,16 @@ The four step to the Epiphany — Steve Blank
 Lean Startup — Eric Ries
 ::::::::::::::::::::::::
 
-* http://theleanstartup.com/book
+.. image:: http://d.gr-assets.com/books/1333576876l/10127019.jpg
+    :height: 196px
+    :target: http://theleanstartup.com/book
+    :alt: Lean Startup — Eric Ries
+    :class: pull-left p-x-1
 
+.. class:: clearfix
+
+    Most startups fail. But many of those failures are preventable. `The Lean Startup <http://theleanstartup.com/book>`_
+    is a new approach being adopted across the globe, changing the way companies are built and new products are launched. 
 
 Running Lean — Ash Maurya
 :::::::::::::::::::::::::
