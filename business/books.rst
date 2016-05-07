@@ -13,8 +13,9 @@ Zero to One — Peter Thiel
     
 .. class:: clearfix
     
-    `Zero to One: Notes on Startups, or How to Build the Future <http://zerotoonebook.com/>`_
-    Going from 1 to n is a growth thing, but when you do something new, you need to go from 0 to 1.
+    `Zero to One: Notes on Startups, or How to Build the Future <http://zerotoonebook.com/>`_ is a
+    must-read by former Paypal cofounder Pether Thiel, exploring the subject of pure creation.
+    Going from 1 to n is a growth thing, but when you build something new, you need to go from 0 to 1.
 
 The four step to the Epiphany — Steve Blank
 :::::::::::::::::::::::::::::::::::::::::::
