@@ -51,7 +51,21 @@ Lean Startup — Eric Ries
     Most startups fail. But many of those failures are preventable. `The Lean Startup <http://theleanstartup.com/book>`_
     is a new approach being adopted across the globe, changing the way companies are built and new products are launched. 
 
+
 Running Lean — Ash Maurya
 :::::::::::::::::::::::::
 
-* http://www.amazon.fr/Running-Lean-2e-Ash-Maurya/dp/1449305172/ref=sr_1_1
+.. image:: http://d.gr-assets.com/books/1344712076l/13078769.jpg
+    :height: 196px
+    :target: http://www.amazon.fr/Running-Lean-2e-Ash-Maurya/dp/1449305172/ref=sr_1_1
+    :alt: Running Lean — Ash Maurya
+    :class: pull-left p-x-1
+
+.. class:: clearfix
+
+    We live in an age of unparalleled opportunity for innovation. We’re building more products 
+    than ever before, but most of them fail—not because we can’t complete what we set out to 
+    build, but because we waste time, money, and effort building the wrong product. What we need 
+    is a systematic process for quickly vetting product ideas and raising our odds of success. 
+    That’s the promise of `Running Lean <http://www.amazon.fr/Running-Lean-2e-Ash-Maurya/dp/1449305172/ref=sr_1_1>`_.
+
