@@ -10,9 +10,6 @@ Zero to One — Peter Thiel
     :alt: Zero to One — Peter Thiel
     :class: pull-left p-x-1
    
-    The legend consists of all elements after the caption.  In this
-    case, the legend consists of this paragraph and the following
-    table:
     
 .. note::
     :class: clearfix
