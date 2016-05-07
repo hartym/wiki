@@ -13,7 +13,9 @@ Zero to One — Peter Thiel
     
 .. class:: clearfix
     
-    test
+    `Zero to One: Notes on Startups, or How to Build the Future <http://zerotoonebook.com/>`
+    
+    Going from 1 to n is a growth thing, but when you do something new, you need to go from 0 to 1.
 
 The four step to the Epiphany — Steve Blank
 :::::::::::::::::::::::::::::::::::::::::::
