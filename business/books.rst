@@ -11,8 +11,7 @@ Zero to One — Peter Thiel
     :class: pull-left p-x-1
    
     
-.. note::
-    :class: clearfix
+.. class:: clearfix
     
     test
 
