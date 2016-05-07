@@ -8,6 +8,7 @@ Zero to One — Peter Thiel
     :height: 196px
     :target: http://zerotoonebook.com/
     :alt: Zero to One — Peter Thiel
+    :class: pull-left
 
 The four step to the Epiphany — Steve Blank
 :::::::::::::::::::::::::::::::::::::::::::
