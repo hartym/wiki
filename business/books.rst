@@ -42,6 +42,7 @@ Lean Startup — Eric Ries
 
 * http://theleanstartup.com/book
 
+
 Running Lean — Ash Maurya
 :::::::::::::::::::::::::
 
