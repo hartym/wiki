@@ -4,6 +4,8 @@ Business books
 Zero to One — Peter Thiel
 :::::::::::::::::::::::::
 
+.. image:: http://d.gr-assets.com/books/1414347376l/18050143.jpg
+
 * http://zerotoonebook.com/
 
 The four step to the Epiphany — Steve Blank
