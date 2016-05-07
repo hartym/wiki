@@ -29,6 +29,11 @@ CommitStrip
 English
 :::::::
 
+CommitStrip (in english)
+------------------------
+
+* http://www.commitstrip.com/en/
+
 Not invented here
 -----------------
 
