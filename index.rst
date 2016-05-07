@@ -13,6 +13,12 @@ Manifesto
 * *Value* is what the customer gets.
 * *Tools* are means, not goals.
 
+Business
+::::::::
+
+* :wiki:`Business/Books`
+* :wiki:`Business/Decks`
+
 Languages
 :::::::::
 
