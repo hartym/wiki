@@ -8,7 +8,7 @@ Zero to One — Peter Thiel
     :height: 196px
     :target: http://zerotoonebook.com/
     :alt: Zero to One — Peter Thiel
-    :class: pull-left
+    :class: pull-left p-x-1
     
 .. note::
     :class: clearfix
