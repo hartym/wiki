@@ -116,5 +116,4 @@ This section contains various related and unrelated things I want to keep around
 * :wiki:`Misc/Music`
 * :wiki:`Misc/Web`
 
-
 * Things I could not sort somewhere else for now ... :wiki:`Misc`
