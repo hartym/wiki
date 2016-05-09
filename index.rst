@@ -22,7 +22,7 @@ Business
 * :wiki:`Business/CustomerDevelopment`
 * :wiki:`Business/LeanStartup`
 
-Programming languages
+Programming Languages
 :::::::::::::::::::::
 
 * :wiki:`Go`
@@ -32,8 +32,8 @@ Programming languages
 * :wiki:`Ruby`
 * :wiki:`Shell`
 
-Utilities
-:::::::::
+Development Tools
+:::::::::::::::::
 
 * :wiki:`Utilities/Git`
 * :wiki:`Utilities/ImageMagick`
@@ -47,19 +47,18 @@ System Administration
 * :wiki:`System/SSL`
 * :wiki:`System/systemd`
 
-Linux containers and friends
-::::::::::::::::::::::::::::
+Lightweight Virtualization and Containers
+:::::::::::::::::::::::::::::::::::::::::
 
 * :wiki:`Containers/Docker`
 * :wiki:`Containers/Rocket`
 
-Cloud computing
+Cloud Computing
 :::::::::::::::
 
 * :wiki:`Cloud/AmazonWebServices`
 * :wiki:`Cloud/DigitalOcean`
 * :wiki:`Cloud/GoogleCloudPlatform`
-
 
 Applications and Services
 :::::::::::::::::::::::::
@@ -94,8 +93,8 @@ Design, User experience, User interfaces and resources
 
 * :wiki:`Design/Resources`
 
-Analytics, Metrics and Business Intelligence
-::::::::::::::::::::::::::::::::::::::::::::
+Business Intelligence and Analytics
+:::::::::::::::::::::::::::::::::::
 
 * :wiki:`BI`
 * :wiki:`BI/GoogleAnalytics`
