@@ -1,5 +1,5 @@
-Metrics & KPIs
-==============
+Metrics and KPIs
+================
 
 AARRR a.k.a the Pirate Metrics
 ::::::::::::::::::::::::::::::
