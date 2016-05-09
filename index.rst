@@ -18,6 +18,8 @@ Business
 
 * :wiki:`Business/Books`
 * :wiki:`Business/Decks`
+* :wiki:`Business/CustomerDevelopment`
+* :wiki:`Business/LeanStartup`
 
 Languages
 :::::::::
