@@ -22,8 +22,8 @@ Business
 * :wiki:`Business/CustomerDevelopment`
 * :wiki:`Business/LeanStartup`
 
-Languages
-:::::::::
+Programming languages
+:::::::::::::::::::::
 
 * :wiki:`Go`
 * :wiki:`JavaScript`
