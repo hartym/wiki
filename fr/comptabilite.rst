@@ -44,23 +44,34 @@ Bilan
 Le bilan donne une image (photo), à une date d'arrêté, des ressources et des emplois. Jamais remis à zéro, évolue dans le temps. 
 
 * Ressources, par ordre d'exigibilité croissante
+
   * Actionnaires (capitaux propres)
+  
     * Capital
     * Résultat
+    
   * Dettes à long terme (plus d'une année, aussi appelées passif non courant)
+  
     * Banquiers
+    
   * Dettes à court terme (inférieur à un an, aussi appelées passif courant)
+  
     * Crédits accordés par les fournisseurs (60 jours ...)
     * État, TVA
     * Trésorerie passive
+    
       * Découvert, facilité de caisse ...
  
 * Emplois, par ordre de liquidité croissante
+
   * Emplois à long terme (plus d'une année, aussi appelés actifs non courants)
+  
     * Terrains
     * Construction
     * Machine
+    
   * Emplois à court terme (moins d'un an, aussi appelés actifs courants)
+  
     * Stocks
     * Crédits aux clients (60 jours ...)
     * Trésorerie / disponibilités (ressources immédiatement liquides)
