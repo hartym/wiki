@@ -20,3 +20,12 @@ Si conflit entre régularité et fidélité, la régularité prime. Le principe 
 Références:
 
 * https://fr.wikipedia.org/wiki/Bernard_Colasse
+
+Normalisation
+:::::::::::::
+
+Deux systèmes co-existent en France.
+
+* https://fr.wikipedia.org/wiki/International_Financial_Reporting_Standards (normes internationales, l'actionnaire d'abord)
+* https://fr.wikipedia.org/wiki/Autorit%C3%A9_des_normes_comptables (normes françaises, la survie de l'entreprise d'abord)
+
