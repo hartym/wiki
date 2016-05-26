@@ -1,4 +1,4 @@
-Resources en Français
-=====================
+FR
+==
 
 * :wiki:`FR/Comptabilité`
