@@ -32,8 +32,37 @@ Deux systèmes co-existent en France.
 États financiers
 ::::::::::::::::
 
-* Bilan : rends compte de la situation financière de l'entreprise; comment est ce que je me finance, et pourquoi faire (emploi/resources, actif/passif)
+* Bilan : rends compte de la situation financière de l'entreprise; comment est ce que je me finance, et pourquoi faire (emploi/ressources, actif/passif)
 * Compte de Résultat : rends compte de la performance de l'entreprise; ce qu'elle a obtenu en fontction des moyens engagés (charges/produits)
 * Tableau des flus de trésorerie : comment a varié ma trésorerie; comment et pourquoi ma trésorerie a-t-elle varié.
 * Tableau de variation des capitaux propres : comment ont varié mes capitaux propres; comment varie la richesse des actionnaires.
 * Notes : précisions sur les soldes ou la constitution des états financiers.
+
+Bilan
+-----
+
+Le bilan donne une image (photo), à une date d'arrêté, des ressources et des emplois. Jamais remis à zéro, évolue dans le temps. 
+
+* Ressources, par ordre d'exigibilité croissante
+ * Actionnaires
+  * Capital
+  * Résultat
+ * Dettes à long terme (plus d'une année)
+  * Banquiers
+ * Dettes à court terme (inférieur à un an)
+  * Crédits accordés par les fournisseurs (60 jours ...)
+  * État, TVA
+ * Trésorerie passive
+  * Découvert, facilité de caisse ...
+ 
+* Emplois, par ordre de liquidité croissante
+ * Emplois à long terme (plus d'une année)
+  * Terrains
+  * Construction
+  * Machine
+ * Emplois à court terme (moins d'un an)
+  * Stocks
+  * Crédits aux clients (60 jours ...)
+ * Trésorerie / disponibilités (ressources immédiatement liquides)
+
+ 
