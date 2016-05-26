@@ -58,9 +58,10 @@ Le bilan donne une image (photo), à une date d'arrêté, des ressources et des 
   
     * Crédits accordés par les fournisseurs (60 jours ...)
     * État, TVA
-    * Trésorerie passive
     
-      * Découvert, facilité de caisse ...
+  * Trésorerie passive
+    
+    * Découvert, facilité de caisse ...
  
 * Emplois, par ordre de liquidité croissante
 
@@ -74,6 +75,7 @@ Le bilan donne une image (photo), à une date d'arrêté, des ressources et des 
   
     * Stocks
     * Crédits aux clients (60 jours ...)
-    * Trésorerie / disponibilités (ressources immédiatement liquides)
+    
+  * Trésorerie / disponibilités (ressources immédiatement liquides)
 
  
