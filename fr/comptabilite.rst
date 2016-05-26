@@ -45,7 +45,7 @@ Le bilan donne une image (photo), à une date d'arrêté, des ressources et des 
 
 * Ressources, par ordre d'exigibilité croissante
 
-  * Actionnaires (capitaux propres)
+  * Capitaux propres (actif net, situation nette)
   
     * Capital
     * Résultat
