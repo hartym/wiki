@@ -29,3 +29,11 @@ Deux systèmes co-existent en France.
 * https://fr.wikipedia.org/wiki/International_Financial_Reporting_Standards (normes internationales, l'actionnaire d'abord, utilisé dans les groupes, obligatoire si groupe côté, option pour groupe non côté)
 * https://fr.wikipedia.org/wiki/Autorit%C3%A9_des_normes_comptables (normes françaises, la survie de l'entreprise d'abord, utilisé dans les sociétés, côtées ou non côtées)
 
+États financiers
+::::::::::::::::
+
+* Bilan : rends compte de la situation financière de l'entreprise; comment est ce que je me finance, et pourquoi faire (emploi/resources, actif/passif)
+* Compte de Résultat : rends compte de la performance de l'entreprise; ce qu'elle a obtenu en fontction des moyens engagés (charges/produits)
+* Tableau des flus de trésorerie : comment a varié ma trésorerie; comment et pourquoi ma trésorerie a-t-elle varié.
+* Tableau de variation des capitaux propres : comment ont varié mes capitaux propres; comment varie la richesse des actionnaires.
+* Notes : précisions sur les soldes ou la constitution des états financiers.
