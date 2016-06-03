@@ -11,8 +11,10 @@ InfluxDB
 Graphite
 ::::::::
 
-* https://graphite.readthedocs.io/en/latest/
 * http://graphite.wikidot.com/
+* https://github.com/graphite-project/whisper
+* https://github.com/graphite-project/ceres
+* https://graphite.readthedocs.io/en/latest/
 
 OpenTSDB
 ::::::::
@@ -44,3 +46,5 @@ Other tools, need to have a look
 * https://prometheus.io/
 * http://kairosdb.github.io/
 * http://druid.io/
+
+
