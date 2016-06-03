@@ -166,6 +166,17 @@ Crédit Impôt Recherche
 * Rescrit CIR : à éviter, car pas de recours, alors que sur un controle il y a des recours.
 * Rétroactif 3 ans (période de prescription).
 * Reporting temps précis nécessaire, pas de chiffres ronds.
+* cerfa 2069
+
+Crédit Impôt Innovation
+.......................
+
+* Cloture au 31.12 plus confortable
+* Depuis 2013
+* critères innovation plutot que r&d.
+* 20% des dépenses d'innovation annuelles (tech, mais aussi gestion de projet, ...)
+* capé à 80k
+* cerfa 2069
 
 Innovation
 ----------
