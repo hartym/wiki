@@ -185,6 +185,22 @@ Définition simplifiée : Je ne crée pas de techno, mais j'utilise de la techno
 
 * CII seulement
 
+Projets collaboratifs
+:::::::::::::::::::::
+
+(todo, pas complet mais dispositifs)
+
+ANR
+FUI
+CMI 2
+RAPID
+Investissements d'avenir
+
+Europe H2020
+SME Instruments (attention, méfiance !)
+Eurostars - Eurêka
+PM'UP (ile de france) (attention, en dessous de 5cdi, dossier à la poubelle, et il faut être proche du break even)
+
 Tricks & Know-How
 :::::::::::::::::
 
