@@ -31,6 +31,11 @@ ELK Stack
 * https://www.elastic.co/fr/products/logstash
 * https://www.elastic.co/fr/products/kibana
 
+Alternatives:
+
+* http://lucene.apache.org/solr/
+* https://lucidworks.com/products/silk/
+
 Other tools, need to have a look
 ::::::::::::::::::::::::::::::::
 
