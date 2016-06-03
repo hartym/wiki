@@ -87,7 +87,8 @@ Dispositifs
 Entreprises rentables
 :::::::::::::::::::::
 
-  * prêts plus interessants (2.5%)
+* prêts plus interessants (2.5%)
+* (todo...)
 
 Tricks
 ::::::
