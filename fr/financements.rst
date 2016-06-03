@@ -165,13 +165,14 @@ Crédit Impôt Recherche
 * Remboursement de 30% de la dépense r&d annuelle.
 * Rescrit CIR : à éviter, car pas de recours, alors que sur un controle il y a des recours.
 * Rétroactif 3 ans (période de prescription).
+* Reporting temps précis nécessaire, pas de chiffres ronds.
 
 Innovation
 ----------
 
 Définition simplifiée : Je ne crée pas de techno, mais j'utilise de la techno existante pour créer une offre différenciée de la concurrence directe.
 
- * CII seulement
+* CII seulement
 
 Tricks & Know-How
 :::::::::::::::::
