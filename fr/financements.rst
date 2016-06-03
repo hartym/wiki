@@ -134,6 +134,24 @@ Concours d'Innovation Numérique
 * 200K à 1M5
 * Soumis aux fonds propres (compter ~2/3)
 
+Dispositifs Fiscaux et Sociaux
+::::::::::::::::::::::::::::::
+
+Recherche et Développement
+--------------------------
+
+Définition simplifiée : Je crée de la techno (pas forcément numérique), et je démontre que dans l'état de l'art (académique) je n'ai pas de réponse. Notion de difficulté : je ne suis pas sur d'y arriver.
+
+ * CIR
+ * JEI
+ * CII
+
+Innovation
+----------
+
+Définition simplifiée : Je ne crée pas de techno, mais j'utilise de la techno existante pour créer une offre différenciée de la concurrence directe.
+
+ * CII seulement
 
 Tricks & Know-How
 :::::::::::::::::
