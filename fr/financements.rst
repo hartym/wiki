@@ -142,9 +142,29 @@ Recherche et Développement
 
 Définition simplifiée : Je crée de la techno (pas forcément numérique), et je démontre que dans l'état de l'art (académique) je n'ai pas de réponse. Notion de difficulté : je ne suis pas sur d'y arriver.
 
- * CIR
- * JEI
- * CII
+* CIR
+* JEI
+* CII
+ 
+Jeune Entreprise Innovante
+..........................
+
+* 7 ans plein
+* Entreprises de moins de 8 ans
+* R&D doit représenter 15% des charges (si sous traitance : agréé ministère de la recherche)
+* Bizarre de déposer un JEU si on pose pas de CIR, car les critères, les assiettes sont les mêmes
+* Si "flip" (transformation avec filialisation à l'étranger, us par exemple), ça n'enlève pas le JEI, tant qu'on est pas "groupe".
+* exonération charges patronales 45% -> 10% à 15% sur les profils tech
+* exonération fiscale sur les premiers exercices bénéficiares
+* Rescrit
+
+Crédit Impôt Recherche
+......................
+
+* Besoin d'un premier bilan.
+* Remboursement de 30% de la dépense r&d annuelle.
+* Rescrit CIR : à éviter, car pas de recours, alors que sur un controle il y a des recours.
+* Rétroactif 3 ans (période de prescription).
 
 Innovation
 ----------
