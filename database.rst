@@ -26,11 +26,7 @@ Relational database search tree: http://howfuckedismydatabase.com/
 * MySQL
 * PostgreSQL
 
-Round Robin Databases
-:::::::::::::::::::::
+Round Robin / Time Series Oriented Databases
+::::::::::::::::::::::::::::::::::::::::::::
 
-* http://oss.oetiker.ch/rrdtool/
-* https://github.com/graphite-project/whisper
-* https://github.com/graphite-project/ceres
-* https://graphite.readthedocs.org/en/latest/
 * :wiki:`Database/Family/TimeSeries`
