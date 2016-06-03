@@ -90,8 +90,9 @@ Entreprises rentables
 * prêts plus interessants (2.5%)
 * (todo...)
 
-Tricks
-::::::
+Tricks & Know-How
+:::::::::::::::::
 
 * Penser à immobiliser la R&D, c'est un artifice comptable mais ça permets d'optimiser les ratios comptables qui peuvent tout changer, l'UE impose des calculs de ratios qui peuvent imposer un NOGO aux banques.
-
+* Le but des aides publiques est en général de favoriser l'emploi, y penser pour monter les dossiers.
+* Penser à tenir au courant les organismes lorsqu'il y a un delta entre le plan initial et ce qui se passe réellement.
