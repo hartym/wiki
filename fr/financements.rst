@@ -128,7 +128,7 @@ Concours d'Innovation Numérique
 -------------------------------
 
 * Concours ouvert aux PME
-* 3 appels par ans
+* 3 appels par ans (15% go ?)
 * Mix subvention / avance remboursable
 * Ouvert à l'innovation (donc moins r&d, mais qu'est ce que le produit apporte)
 * 200K à 1M5
