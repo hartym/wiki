@@ -85,10 +85,55 @@ Dispositifs
     * assez rare, peu de fonds
   
 Entreprises rentables
-:::::::::::::::::::::
+---------------------
 
 * prêts plus interessants (2.5%)
 * (todo...)
+
+Concours
+:::::::::
+
+Concours ILAB
+-------------
+
+* Ministère de la recherche
+* Tous les mois de fevrier/mars
+* Géré par BPI
+* Subvention
+* Maximum de 450k (5 sociétés / an), ~200k en moyenne
+* Entre 50 et 100 sociétés par an
+* Pas de conditionnement aux fonds propres
+* Il faut être sur le point de lever des fonds
+* Très focus R&D, et filiation académique nécessaire (trust 80% CEA/CNRS/... et reste de la recherche)
+* Dossier complexe à monter, ~20 pages, jugé sur tout
+
+Concours mondial de l'innovation
+--------------------------------
+
+* 1 ou 2 appels par an
+* CMI1 : phase exploratoire, 7 thématiques (numérique: axé big data)
+
+  * 200k en sub pour faire de l'étude exploratoire
+  * très politique (jury)
+
+* CMI2
+
+  * non plafonné (plusieurs millions d'euros)
+  * facilité par la phase 1, mais pas nécessaire
+
+
+* Dossier moyennement complexe, ~10 pages, très politique
+
+Concours d'Innovation Numérique
+-------------------------------
+
+* Concours ouvert aux PME
+* 3 appels par ans
+* Mix subvention / avance remboursable
+* Ouvert à l'innovation (donc moins r&d, mais qu'est ce que le produit apporte)
+* 200K à 1M5
+* Soumis aux fonds propres (compter ~2/3)
+
 
 Tricks & Know-How
 :::::::::::::::::
@@ -96,3 +141,4 @@ Tricks & Know-How
 * Penser à immobiliser la R&D, c'est un artifice comptable mais ça permets d'optimiser les ratios comptables qui peuvent tout changer, l'UE impose des calculs de ratios qui peuvent imposer un NOGO aux banques.
 * Le but des aides publiques est en général de favoriser l'emploi, y penser pour monter les dossiers.
 * Penser à tenir au courant les organismes lorsqu'il y a un delta entre le plan initial et ce qui se passe réellement.
+* Attention au cumul chez BPI, en général, NON.
