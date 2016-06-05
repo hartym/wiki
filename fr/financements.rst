@@ -1,18 +1,14 @@
 Financements
 ============
 
-* JEI
-* CIR
-* CII
+Mécanismes via BPI / Incubateurs
+::::::::::::::::::::::::::::::::
 
-BPI / Incubateurs
-:::::::::::::::::
-
-Jeunes enteprises
------------------
+À destination des jeunes enteprises
+-----------------------------------
 
 * fonds propres 15-30k
-* pas d'exigences de CA / rentabilité
+* pas (trop) d'exigences de CA / rentabilité
 
 Dispositifs
 ...........
@@ -41,8 +37,8 @@ Dispositifs
   * Réseau Entreprendre
   * C'est un prêt à la personne, mais qui est réintégré aux fonds propres.
   
-Entreprises plus avancées
--------------------------
+À destination des entreprises plus avancées
+-------------------------------------------
 
 * Fonds propres au moins 1.5x l'aide
 * Premières métriques de CA
@@ -140,14 +136,10 @@ Dispositifs Fiscaux et Sociaux
 Recherche et Développement
 --------------------------
 
-Définition simplifiée : Je crée de la techno (pas forcément numérique), et je démontre que dans l'état de l'art (académique) je n'ai pas de réponse. Notion de difficulté : je ne suis pas sur d'y arriver.
+Définition simplifiée : Je crée de la techno (pas forcément numérique), et je démontre que dans l'état de l'art (académique) je n'ai pas de réponse. Notion de difficulté, d'incertitude : je ne suis pas sur d'y arriver.
 
-* CIR
-* JEI
-* CII
- 
-Jeune Entreprise Innovante
-..........................
+Jeune Entreprise Innovante (JEI)
+................................
 
 * 7 ans plein
 * Entreprises de moins de 8 ans
@@ -158,8 +150,8 @@ Jeune Entreprise Innovante
 * exonération fiscale sur les premiers exercices bénéficiares
 * Rescrit
 
-Crédit Impôt Recherche
-......................
+Crédit Impôt Recherche (CIR)
+............................
 
 * Besoin d'un premier bilan.
 * Remboursement de 30% de la dépense r&d annuelle.
@@ -168,8 +160,8 @@ Crédit Impôt Recherche
 * Reporting temps précis nécessaire, pas de chiffres ronds.
 * cerfa 2069
 
-Crédit Impôt Innovation
-.......................
+Crédit Impôt Innovation (CII)
+.............................
 
 * Cloture au 31.12 plus confortable
 * Depuis 2013
