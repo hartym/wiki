@@ -37,6 +37,7 @@ Development Tools
 
 * :wiki:`Utilities/Git`
 * :wiki:`Utilities/ImageMagick`
+* :wiki:`Utilities/RemoteWorking`
 
 System Administration
 :::::::::::::::::::::
