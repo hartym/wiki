@@ -9,6 +9,8 @@ Standards
 * https://en.wikipedia.org/wiki/Resource_Description_Framework
 * https://www.w3.org/TR/rdf11-concepts/
 
+RDF uses subject–predicate–object triples.
+
 Exemple RDF data as JSON, about Wayne Shorter : http://fr.dbpedia.org/data/Wayne_Shorter.json
 
 SPARQL
