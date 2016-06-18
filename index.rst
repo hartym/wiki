@@ -65,16 +65,9 @@ Applications and Services
 :::::::::::::::::::::::::
 
 * :wiki:`App/Virtualization`
-* :wiki:`App/Database`
+* :wiki:`Database` (see also :wiki:`Database/Family`)
 * :wiki:`App/Monitoring`
 * :wiki:`App/WebServer`
-
-:wiki:`Database` (see also :wiki:`Database/Family`)
-:::::::::::::::::::::::::::::::::::::::::::::::::::
-
-* :wiki:`Database/PostgreSQL`
-* :wiki:`Database/PostGIS`
-* :wiki:`Database/Presto`
 
 Automation
 ::::::::::
