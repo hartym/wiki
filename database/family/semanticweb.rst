@@ -31,6 +31,7 @@ Databases
 :::::::::
 
 * http://virtuoso.openlinksw.com/
+* https://jena.apache.org/index.html
 * (see also :wiki:`Database/Family/Graphs`)
 
 
