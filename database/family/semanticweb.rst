@@ -27,6 +27,7 @@ Python tools & guides
 
 * rdflib (python): http://rdflib.readthedocs.io/
 * https://github.com/RDFLib/sparqlwrapper/blob/master/scripts/example-dbpedia.py
+* http://www.michelepasin.org/blog/2011/02/24/survey-of-pythonic-tools-for-rdf-and-linked-data-programming/ (very good resource, let's consider grabbing some info from there before the awful cool-uri-dont-change-and-someday-they-die-which-is-not-cool paradigm apply there).
 
 Along with RDBMS as stores:
 
@@ -46,3 +47,4 @@ To investigate
 * http://docs.dydra.com/dydra
 * https://jcastellssala.com/2012/06/19/europe-countries-dbpediasparqlpython/
 * http://www.linkeddatatools.com/introducing-rdf
+
