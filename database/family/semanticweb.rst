@@ -8,6 +8,7 @@ Standards
 
 * https://en.wikipedia.org/wiki/Resource_Description_Framework
 * https://www.w3.org/TR/rdf11-concepts/
+* https://www.w3.org/TR/ldp/
 
 RDF uses subject–predicate–object triples.
 
