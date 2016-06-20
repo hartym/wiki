@@ -1,7 +1,7 @@
 Semantic Web
 ============
 
-See also :wiki:`Database/Family/Graphs` (should we group both entries ?)
+Not a database family for real, but did not find a good place for it (yet). See also :wiki:`Database/Family/Graphs` (should we group both entries at some point?)
 
 Standards
 :::::::::
@@ -27,13 +27,17 @@ Python tools & guides
 * rdflib (python): http://rdflib.readthedocs.io/
 * https://github.com/RDFLib/sparqlwrapper/blob/master/scripts/example-dbpedia.py
 
+Along with RDBMS as stores:
+
+* https://github.com/RDFLib/rdflib-sqlalchemy
+* http://rdfextras.readthedocs.io/en/latest/store/mysqlpg.html
+
 Databases
 :::::::::
 
 * http://virtuoso.openlinksw.com/
 * https://jena.apache.org/index.html
 * (see also :wiki:`Database/Family/Graphs`)
-
 
 To investigate
 ::::::::::::::
