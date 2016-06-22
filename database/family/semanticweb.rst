@@ -26,6 +26,7 @@ Python tools & guides
 :::::::::::::::::::::
 
 * rdflib (python): http://rdflib.readthedocs.io/
+* rdflib extras: http://rdfextras.readthedocs.io/en/latest/ (include discussion about storing triple stores in a rdbms)
 * https://github.com/RDFLib/sparqlwrapper/blob/master/scripts/example-dbpedia.py
 * http://www.michelepasin.org/blog/2011/02/24/survey-of-pythonic-tools-for-rdf-and-linked-data-programming/ (very good resource, let's consider grabbing some info from there before the awful cool-uri-dont-change-and-someday-they-die-which-is-not-cool paradigm apply there).
 
