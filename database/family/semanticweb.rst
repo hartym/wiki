@@ -44,7 +44,14 @@ Databases
 To investigate
 ::::::::::::::
 
+Scientific papers
+-----------------
+
+* http://content.iospress.com/articles/semantic-web/sw177
+
+Misc
+----
+
 * http://docs.dydra.com/dydra
 * https://jcastellssala.com/2012/06/19/europe-countries-dbpediasparqlpython/
 * http://www.linkeddatatools.com/introducing-rdf
-
