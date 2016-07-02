@@ -77,10 +77,7 @@ Automation
 Web frameworks
 ::::::::::::::
 
-* :wiki:`JavaScript/Meteor`
-* :wiki:`PHP/Symfony`
 * :wiki:`Python/Django`
-* :wiki:`Python/Flask`
 
 Design, User experience, User interfaces and resources
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
