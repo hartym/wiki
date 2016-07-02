@@ -11,8 +11,8 @@ Coroutines
 
 * http://www.dabeaz.com/coroutines/Coroutines.pdf
 
-Libraries
-:::::::::
+Web development related stuff
+:::::::::::::::::::::::::::::
 
 OAuth
 -----
@@ -31,6 +31,11 @@ Web frameworks
 * :wiki:`Python/Django`
 * :wiki:`Python/Flask`
 * :wiki:`Python/Pyramid`
+
+Graphs, digraphs, hypergraphs
+:::::::::::::::::::::::::::::
+
+* https://www.python.org/doc/essays/graphs/
 
 Cookbook
 ::::::::
