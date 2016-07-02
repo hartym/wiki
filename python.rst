@@ -36,6 +36,8 @@ Graphs, digraphs, hypergraphs
 :::::::::::::::::::::::::::::
 
 * https://www.python.org/doc/essays/graphs/
+* https://networkx.readthedocs.io/
+* https://github.com/pmatiello/python-graph (old but looks simple and powerfull)
 
 Cookbook
 ::::::::
