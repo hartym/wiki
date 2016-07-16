@@ -1,7 +1,6 @@
 Time Series Oriented Databases (TSDB)
 =====================================
 
-
 InfluxDB
 ::::::::
 
