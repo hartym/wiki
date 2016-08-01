@@ -45,6 +45,7 @@ System Administration
 
 * :wiki:`System/CoreOS`
 * :wiki:`System/Debian`
+* :wiki:`System/Kubernetes`
 * :wiki:`System/OSX`
 * :wiki:`System/SSL`
 * :wiki:`System/systemd`
