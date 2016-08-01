@@ -10,8 +10,9 @@ Run a web related thing: Ingress -> Service -> Deployment -> ReplicaSet -> Pod
 Rollout using a Deployment
 ::::::::::::::::::::::::::
 
+.. code-block:: shell
 
-  kubectl patch deployment <deployment-name> -p'{"spec":{"template":{"spec":{"containers":[{"name":"<in-pod-container-name>","image":"<docker-image>"}]}}}}'
+    kubectl patch deployment <deployment-name> -p'{"spec":{"template":{"spec":{"containers":[{"name":"<in-pod-container-name>","image":"<docker-image>"}]}}}}'
 
 Google Container Engine (GKE)
 :::::::::::::::::::::::::::::
