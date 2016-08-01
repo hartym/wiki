@@ -3,6 +3,8 @@ Kubernetes
 
 Kubernetes is an open-source system for automating deployment, scaling, and management of containerized applications.
 
+http://kubernetes.io/
+
 Basically, it's a project that overlaps a bit in value proposition with :wiki:`System/CoreOS`, even if both can be complementary (you can run a Kubernetes cluster on CoreOS).
 
 Run a web related thing: Ingress -> Service -> Deployment -> ReplicaSet -> Pod
