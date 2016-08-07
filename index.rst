@@ -39,6 +39,7 @@ Development Tools
 * :wiki:`Utilities/Git`
 * :wiki:`Utilities/ImageMagick`
 * :wiki:`Utilities/RemoteWorking`
+* :wiki:`Utilities/Webpack`
 
 System Administration
 :::::::::::::::::::::
