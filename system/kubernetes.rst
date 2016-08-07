@@ -9,12 +9,22 @@ Basically, it's a project that overlaps a bit in value proposition with :wiki:`S
 
 Run a web related thing: Ingress -> Service -> Deployment -> ReplicaSet -> Pod
 
-Rollout using a Deployment
-::::::::::::::::::::::::::
+Rollout / rollback using deployments
+::::::::::::::::::::::::::::::::::::
+
+Rollout
+-------
 
 .. code-block:: shell
 
-    kubectl patch deployment <deployment-name> -p'{"spec":{"template":{"spec":{"containers":[{"name":"<in-pod-container-name>","image":"<docker-image>"}]}}}}'
+    kubectl patch deployment $DEPLOYMENT -p'{"spec":{"template":{"spec":{"containers":[{"name":"$CONTAINER","image":"$IMAGE"}]}}}}'
+
+Rollback
+--------
+
+.. code-block:: shell
+
+    kubectl rollout undo deployment/$DEPLOYMENT
 
 Google Container Engine (GKE)
 :::::::::::::::::::::::::::::
