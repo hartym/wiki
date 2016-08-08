@@ -4,7 +4,8 @@ Webpack
 Configuration
 :::::::::::::
 
-Configuration reference: http://webpack.github.io/docs/configuration.html
+* Reference: http://webpack.github.io/docs/configuration.html
+* Example: https://github.com/hartym/LeanJS/tree/master/config/webpack
 
 Related tools
 :::::::::::::
