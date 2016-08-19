@@ -42,6 +42,7 @@ Development Tools
 System Administration
 :::::::::::::::::::::
 
+* :wiki:`System/Alpine`
 * :wiki:`System/CoreOS`
 * :wiki:`System/Debian`
 * :wiki:`System/Kubernetes`
