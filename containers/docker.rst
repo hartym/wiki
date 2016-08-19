@@ -1,23 +1,16 @@
 Docker
 ======
 
-Docker Machine
-::::::::::::::
+How to — Alpine images
+::::::::::::::::::::::
 
-No space left
--------------
+.. code-block:: docker
 
-Kill the box, recreate a machine with more disk. Way faster than trying to resize the virtual machine disk.
+    RUN apk --update add --no-cache --virtual .builddeps \
+                         build-base ... all build deps ... \
+        && ... all run steps requiring build deps ...
+        && apk del .builddeps
 
-.. code-block:: shell
-
-    docker-machine create --virtualbox-disk-size 50000 -d virtualbox dev
-
-
-Security and custom certificate authorities
-:::::::::::::::::::::::::::::::::::::::::::
-
-* https://gist.github.com/irgeek/afb2e05775fff532f960
 
 
 Related Tools
