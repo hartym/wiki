@@ -9,7 +9,7 @@ Avishai Cohen
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1KG80lbbuBCXolc9iWO7Fw" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1KG80lbbuBCXolc9iWO7Fw" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Esperanza Spalding
@@ -17,7 +17,7 @@ Esperanza Spalding
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4JY0pT22MDOxKnIlTCr75G" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4JY0pT22MDOxKnIlTCr75G" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Hiromi's Sonicbloom
@@ -28,7 +28,7 @@ Hiromi's Sonicbloom
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1vWPuQZaBbe6TBqlKWStnX" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A1vWPuQZaBbe6TBqlKWStnX" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
     
 RH Factor
@@ -36,7 +36,7 @@ RH Factor
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VpT3uWEAT9ozXckDD9Xgq" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VpT3uWEAT9ozXckDD9Xgq" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Afro-cuban
@@ -47,7 +47,7 @@ Kenny Dorham
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7hPFS8GU0hBHZGR01y74mI" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7hPFS8GU0hBHZGR01y74mI" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Mongo Santamaria
@@ -55,7 +55,7 @@ Mongo Santamaria
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A2iFioZh6zo3ZoWTTcvI50i" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A2iFioZh6zo3ZoWTTcvI50i" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Pappo Lucca
@@ -71,7 +71,7 @@ Frank Zappa
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A0WYYrC9My9rYWigac003hw" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
     
 
 Weather Report
@@ -79,7 +79,7 @@ Weather Report
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7jJy9H10KQmIINyrOgomq2" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A7jJy9H10KQmIINyrOgomq2" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Reggae & Dub
@@ -90,7 +90,7 @@ Linton Kwesi Johnson
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VI4nQxyiNBqr58wcCZeyJ" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A4VI4nQxyiNBqr58wcCZeyJ" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Electronic
@@ -102,7 +102,7 @@ Badmarsh Shri
 
 .. raw:: html
 
-    <iframe src="https://embed.spotify.com/?uri=spotify%3Auser%3Ahartym%3Aplaylist%3A78CgdU4XiajHmJUpssgwqZ" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+    <iframe src="https://embed.spotify.com/?uri=spotify%3Auser%3Ahartym%3Aplaylist%3A78CgdU4XiajHmJUpssgwqZ" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
 Talvin Singh — Sounds of the Asian Underground
@@ -110,6 +110,6 @@ Talvin Singh — Sounds of the Asian Underground
 
 .. raw:: html
 
-     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A6juVfzllRuiQSLqzfbYGph" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A6juVfzllRuiQSLqzfbYGph" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
