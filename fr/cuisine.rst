@@ -14,3 +14,11 @@ Cari
 * Curcuma
 * 5-6 tomates en dés (si les tomates ne sont pas au top, rajouter une conserve de tomates en dés)
 * Un chouilla de sel
+
+Base rougail
+::::::::::::
+
+* ~100g (?) de gingembre en mini dés
+* sel, poivre, piment (si possible petits verts frais, les grands verts tunisiens marchent bien aussi)
+* aïl
+* une cuillère à soupe d'huile d'olive (à mettre après la tomate ou la mangue)
