@@ -6,7 +6,7 @@ This is where I keep code snippets, opinions and ideas about computer related to
 Manifesto
 :::::::::
 
-* `Agile Manifesto <http://agilemanifesto.org/>`__ and `Zen of Python <https://www.python.org/dev/peps/pep-0020/#the-zen-of-python>`__'s offspring.*
+*`Agile Manifesto <http://agilemanifesto.org/>`__ and `Zen of Python <https://www.python.org/dev/peps/pep-0020/#the-zen-of-python>`__'s offspring.*
 
 * *Simple* is better than complex. Although simple is harder to achieve than complex.
 * *Technical choices* depends on the human, legacy, time and market contexts. 
