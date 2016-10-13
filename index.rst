@@ -1,10 +1,12 @@
 Noah's Ark of Computing
 =======================
 
-Welcome to the my little knowledge base, where I keep code snippets, opinions and ideas about computer related tools.
+This is where I keep code snippets, opinions and ideas about computer related tools, amongst other things that concerns topics of interest.
 
 Manifesto
 :::::::::
+
+*`Agile Manifesto <http://agilemanifesto.org/>`_ and `Zen of Python <https://www.python.org/dev/peps/pep-0020/#the-zen-of-python>`_'s offspring.*
 
 * *Simple* is better than complex. Although simple is harder to achieve than complex.
 * *Technical choices* depends on the human, legacy, time and market contexts. 
