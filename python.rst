@@ -3,28 +3,32 @@ Python
 
 Python is a widely used high-level, general-purpose, interpreted, dynamic programming language. Its design philosophy emphasizes code readability, and its syntax allows programmers to express concepts in fewer lines of code than possible in languages such as C++ or Java.
 
-
 Web development related stuff
 :::::::::::::::::::::::::::::
 
-OAuth
+Forms
 -----
+
+There are two easy ways of creating, displaying, validating and normalizing web forms and web forms data in python (afaik).
+If you're using django, you probably want to use :wiki:`Python/DjangoForms`. If you're not using django, the only serious form framework
+I found until then is :wiki:`Python/WTForms`.
+
+* :wiki:`Python/DjangoForms`
+* :wiki:`Python/WTForms`
+
+Frameworks and toolkits
+-----------------------
+
+* :wiki:`Python/Django`
+* :wiki:`Python/Aiohttp`
+* :wiki:`Python/Tornado`
+
+Authentication (JWT, OAuth, ...)
+--------------------------------
 
 * Python-Social-Auth: http://psa.matiasaguirre.net/ (with web framework adapters)
 * RAuth: https://rauth.readthedocs.org/en/latest/
-
-Web forms
----------
-
-* :wiki:`Python/WTForms`
-
-Web frameworks
---------------
-
-* :wiki:`Python/Django`
-* :wiki:`Python/Flask`
-* :wiki:`Python/Pyramid`
-
+* JSON Web Tokens: https://pyjwt.readthedocs.io/en/latest/
 
 Cookbook
 ::::::::
