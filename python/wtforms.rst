@@ -5,6 +5,35 @@ WTForms is a framework agnostic library handling web forms in python.
 
 Official documentation: https://wtforms.readthedocs.org/en/latest/
 
+Basics
+::::::
+
+Create a form...
+
+.. code-block:: python
+
+    class UrlFilterForm(wtforms.Form):
+        scheme = wtforms.StringField()
+        netloc = wtforms.StringField()
+        path = wtforms.StringField()
+        query = wtforms.StringField()
+        fragment = wtforms.StringField()
+        
+Render it in a jinja2 template...
+
+.. code-block:: python
+
+    <form class="form-inline">
+        {% for field in form %}
+            <div class="form-group">
+                {{ field.label }}{% if field.flags.required %}*{% endif %}
+                {{ field(class='form-control') }}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-outline-primary">Submit</button>
+    </form>
+
+
 Cookbook
 ::::::::
 
