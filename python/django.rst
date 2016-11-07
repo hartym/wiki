@@ -44,3 +44,7 @@ Settings
     EMAIL_USE_TLS = True
     EMAIL_PORT = 587
     
+Related
+:::::::
+
+* :wiki:`Python/DjangoForms`
