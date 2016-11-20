@@ -30,9 +30,9 @@ Programming
 :::::::::::
 
 * :wiki:`Go`
-* :wiki:`JavaScript`
+* :wiki:`JavaScript` (see also :wiki:`Utilities/Webpack`)
 * :wiki:`PHP`
-* :wiki:`Python` (:wiki:`Python/Django`)
+* :wiki:`Python` (see also :wiki:`Python/Django`)
 * :wiki:`Ruby`
 * :wiki:`Shell`
 
@@ -46,7 +46,6 @@ Tools
 
 * :wiki:`Utilities/Git`
 * :wiki:`Utilities/ImageMagick`
-* :wiki:`Utilities/Webpack`
 * :wiki:`Automation/Scraping`
 
 Organization
