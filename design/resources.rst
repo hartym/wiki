@@ -1,5 +1,7 @@
-Resources
-=========
+Design Resources
+================
+
+Design, User experience, User interfaces ...
 
 Icons
 :::::
