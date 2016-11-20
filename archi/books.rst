@@ -30,3 +30,8 @@ Patterns of Enterprise Application Architecture — Martin Fowler
     :alt: Patterns of Enterprise Application Architecture — Martin Fowler
     :class: pull-left p-x-1
 
+.. class:: clearfix
+
+    When you're done with Design Patterns, this is clearly the second level on the design patterns topic. Read
+    the patterns catalog online: http://www.martinfowler.com/eaaCatalog/
+
