@@ -21,10 +21,16 @@ Business
 * :wiki:`Business/LeanStartup`
 * :wiki:`Business/Marketing`
 
-Design, User experience, User interfaces and resources
-::::::::::::::::::::::::::::::::::::::::::::::::::::::
+Design
+::::::
 
 * :wiki:`Design/Resources`
+
+Architecture
+::::::::::::
+
+* :wiki:`Archi/Books`
+* :wiki:`Archi/DesignPatterns`
 
 Programming
 :::::::::::
