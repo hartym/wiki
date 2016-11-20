@@ -21,13 +21,13 @@ Business
 * :wiki:`Business/LeanStartup`
 * :wiki:`Business/Marketing`
 
-Design
-::::::
+Product Design
+::::::::::::::
 
 * :wiki:`Design/Resources`
 
-Architecture
-::::::::::::
+Software Architecture
+:::::::::::::::::::::
 
 * :wiki:`Archi/Books`
 * :wiki:`Archi/DesignPatterns`
