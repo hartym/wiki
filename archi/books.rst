@@ -24,7 +24,7 @@ allow designers to create more flexible, elegant, and ultimately reusable softwa
 Patterns of Enterprise Application Architecture — Martin Fowler
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-.. image:: http://images.gr-assets.com/books/1348027904l/85009.jpg
+.. image:: http://www.martinfowler.com/books/eaa.jpg
     :height: 196px
     :target: http://www.martinfowler.com/books/eaa.html
     :alt: Patterns of Enterprise Application Architecture — Martin Fowler
