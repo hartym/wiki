@@ -21,26 +21,41 @@ Business
 * :wiki:`Business/LeanStartup`
 * :wiki:`Business/Marketing`
 
-Programming Languages
-:::::::::::::::::::::
+Design, User experience, User interfaces and resources
+::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+* :wiki:`Design/Resources`
+
+Programming
+:::::::::::
 
 * :wiki:`Go`
 * :wiki:`JavaScript`
 * :wiki:`PHP`
-* :wiki:`Python`
+* :wiki:`Python` (:wiki:`Python/Django`)
 * :wiki:`Ruby`
 * :wiki:`Shell`
 
-Development Tools
-:::::::::::::::::
+Storage
+-------
+
+* :wiki:`Database` (see also :wiki:`Database/Family`)
+
+Tools
+-----
 
 * :wiki:`Utilities/Git`
 * :wiki:`Utilities/ImageMagick`
-* :wiki:`Utilities/RemoteWorking`
 * :wiki:`Utilities/Webpack`
+* :wiki:`Automation/Scraping`
 
-System Administration
-:::::::::::::::::::::
+Organization
+------------
+
+* :wiki:`Utilities/RemoteWorking`
+
+Infrastructure
+::::::::::::::
 
 * :wiki:`System/Alpine`
 * :wiki:`System/CoreOS`
@@ -50,41 +65,25 @@ System Administration
 * :wiki:`System/SSL`
 * :wiki:`System/systemd`
 
-Lightweight Virtualization and Containers
-:::::::::::::::::::::::::::::::::::::::::
+Virtualization and Containers
+-----------------------------
 
+* :wiki:`App/Virtualization`
 * :wiki:`Containers/Docker`
 * :wiki:`Containers/Rocket`
 
-Cloud Computing
-:::::::::::::::
+Cloud Providers
+---------------
 
 * :wiki:`Cloud/AmazonWebServices`
 * :wiki:`Cloud/DigitalOcean`
 * :wiki:`Cloud/GoogleCloudPlatform`
 
 Applications and Services
-:::::::::::::::::::::::::
+-------------------------
 
-* :wiki:`App/Virtualization`
-* :wiki:`Database` (see also :wiki:`Database/Family`)
 * :wiki:`App/Monitoring`
 * :wiki:`App/WebServer`
-
-Automation
-::::::::::
-
-* :wiki:`Automation/Scraping`
-
-Web frameworks
-::::::::::::::
-
-* :wiki:`Python/Django`
-
-Design, User experience, User interfaces and resources
-::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-* :wiki:`Design/Resources`
 
 Business Intelligence and Analytics
 :::::::::::::::::::::::::::::::::::
