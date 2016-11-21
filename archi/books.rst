@@ -8,7 +8,7 @@ Design Patterns: Elements of Reusable Object-Oriented Software — Gang of Four
     :height: 196px
     :target: https://en.wikipedia.org/wiki/Design_Patterns
     :alt: Elements of Reusable Object-Oriented Software — Gang of Four
-    :class: pull-left p-x-1
+    :class: pull-left px-1
     
 Authors: Erich Gamma, Richard Helm, Ralph Johnson, and John Vlissides.
 
@@ -28,7 +28,7 @@ Patterns of Enterprise Application Architecture — Martin Fowler
     :height: 196px
     :target: http://www.martinfowler.com/books/eaa.html
     :alt: Patterns of Enterprise Application Architecture — Martin Fowler
-    :class: pull-left p-x-1
+    :class: pull-left px-1
 
 When you're done with Design Patterns, this is clearly the second level on the design patterns topic.
 
