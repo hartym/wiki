@@ -8,7 +8,7 @@ Zero to One — Peter Thiel
     :height: 196px
     :target: http://zerotoonebook.com/
     :alt: Zero to One — Peter Thiel
-    :class: pull-left p-x-1
+    :class: pull-left px-1
 
 .. class:: clearfix
     
@@ -24,7 +24,7 @@ The four step to the Epiphany — Steve Blank
     :height: 196px
     :target: http://www.amazon.com/Four-Steps-Epiphany-Steve-Blank/dp/0989200507
     :alt: The four step to the Epiphany — Steve Blank
-    :class: pull-left p-x-1
+    :class: pull-left px-1
 
 .. class:: clearfix
     
@@ -44,7 +44,7 @@ Lean Startup — Eric Ries
     :height: 196px
     :target: http://theleanstartup.com/book
     :alt: Lean Startup — Eric Ries
-    :class: pull-left p-x-1
+    :class: pull-left px-1
 
 .. class:: clearfix
 
@@ -59,7 +59,7 @@ Running Lean — Ash Maurya
     :height: 196px
     :target: http://www.amazon.fr/Running-Lean-2e-Ash-Maurya/dp/1449305172/ref=sr_1_1
     :alt: Running Lean — Ash Maurya
-    :class: pull-left p-x-1
+    :class: pull-left px-1
 
 .. class:: clearfix
 
