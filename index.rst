@@ -104,8 +104,10 @@ Miscellaneous stuff, links, papers
 
 This section contains various related and unrelated things I want to keep around.
 
+* :wiki:`Misc/Academic`
 * :wiki:`Misc/Books`
 * :wiki:`Misc/Comics`
+* :wiki:`Misc/ComputerScience`
 * :wiki:`Misc/Documentation`
 * :wiki:`Misc/DomainNames`
 * :wiki:`Misc/GameOfGo`
