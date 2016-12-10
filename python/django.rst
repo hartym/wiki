@@ -4,7 +4,15 @@ Django
 Recipes
 :::::::
 
-* todo
+How to add created/updated fields to django models
+--------------------------------------------------
+
+.. code-block:: python
+
+    class MyTimestampedModel(models.Model):
+        # ... other fields ...
+        created_at = models.DateTimeField(auto_now_add=True)
+        updated_at = models.DateTimeField(auto_now=True)
 
 Requirements
 ::::::::::::
