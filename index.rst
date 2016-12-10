@@ -113,6 +113,7 @@ This section contains various related and unrelated things I want to keep around
 * :wiki:`Misc/GameOfGo`
 * :wiki:`Misc/GIS`
 * :wiki:`Misc/Hardware`
+* :wiki:`Misc/HumanResources`
 * :wiki:`Misc/Music`
 * :wiki:`Misc/Web`
 
