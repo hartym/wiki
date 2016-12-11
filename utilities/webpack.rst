@@ -5,7 +5,12 @@ Configuration
 :::::::::::::
 
 * Reference: http://webpack.github.io/docs/configuration.html
-* Example: https://github.com/hartym/LeanJS/tree/master/config/webpack
+
+Examples
+--------
+
+* https://github.com/hartym/LeanJS/tree/master/config/webpack
+* https://github.com/mozilla/neo/tree/master/config
 
 Related tools
 :::::::::::::
