@@ -1,5 +1,5 @@
-Bonobo
-======
+Bonobo (pre-alpha, work in progress)
+====================================
 
 Bonobo is an extract-transform-load toolkit for python 3.5+, aiming for simplicity.
 
@@ -10,10 +10,11 @@ Quick start
 
 todo
 
-Reference
-:::::::::
+Links & References
+::::::::::::::::::
 
-todo
+* Source code: https://github.com/python-bonobo/bonobo
+* Python package: https://pypi.python.org/pypi/bonobo
 
 rdc.etl (for python 2.7+)
 :::::::::::::::::::::::::
