@@ -24,3 +24,8 @@ Derivatives
 
 * http://hacklang.org/
 
+Links
+:::::
+
+* `Blog articles about PHP <https://romain.dorgueil.net/blog/categories/php.html>`_
+
