@@ -98,6 +98,7 @@ Business Intelligence and Analytics
 * :wiki:`BI/Graphite`
 * :wiki:`BI/ELK`
 * :wiki:`BI/SILK`
+* :wiki:`BI/Python`
 
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
