@@ -17,3 +17,12 @@ Autoreload
     
 Reference: http://ipython.readthedocs.io/en/stable/config/extensions/autoreload.html
 
+Install a package without stopping the kernel
+.............................................
+
+(or run any shell command from within a notebook)
+
+.. code-block:: python
+
+    !pip install bokeh
+    
