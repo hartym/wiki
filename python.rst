@@ -41,6 +41,16 @@ Cookbook
 
 * OrderedDict subclass implementing insertion methods to adjust the order: https://gist.github.com/jaredks/6276032
 
+PyEnv
+:::::
+
+Install python3 on recent OSX with working Sqlite3 and OpenSSL
+--------------------------------------------------------------
+
+.. code-block:: shell
+
+    CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix sqlite)/include" LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix sqlite)/lib" pyenv install -v 3.6.0b4
+
 Misc
 ::::
 
