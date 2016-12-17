@@ -38,7 +38,7 @@ Programming
 * :wiki:`Go`
 * :wiki:`JavaScript` (see also :wiki:`JavaScript/React`, :wiki:`Utilities/Webpack`)
 * :wiki:`PHP` (see also :wiki:`PHP/Symfony`, :wiki:`PHP/Twig`)
-* :wiki:`Python` (see also :wiki:`Python/AIOHttp`, :wiki:`Python/Django`, :wiki:`Python/Jinja2`, :wiki:`Python/Pandas`)
+* :wiki:`Python` (see also :wiki:`Python/AIOHttp`, :wiki:`Python/Django`, :wiki:`Python/Jinja2`, :wiki:`Python/Jupyter`, :wiki:`Python/Pandas`)
 * :wiki:`Ruby`
 * :wiki:`Shell`
 
