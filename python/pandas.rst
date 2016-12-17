@@ -9,3 +9,8 @@ Links and references
 
 * http://pandas.pydata.org/
 * http://pandas.pydata.org/pandas-docs/stable/
+
+See also
+::::::::
+
+* :wiki:`Python/Bokeh`
