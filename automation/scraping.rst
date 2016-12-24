@@ -11,7 +11,7 @@ Less Basic Tools
 ::::::::::::::::
 
 * http://webscraper.io/ (https://chrome.google.com/webstore/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn)
-
+* `WebScraper <http://webscraper.io/>`_
 * http://phantomjs.org/ & http://casperjs.org/
 
 Ninja Tools
