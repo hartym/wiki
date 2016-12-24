@@ -4,9 +4,10 @@ Web Scraping
 Basic Tools
 :::::::::::
 
-* scrappy and requests
+* Scrapy (https://scrapy.org/)
+* Requests (http://docs.python-requests.org/)
 
-Advanced Tools
+Less Basic Tools
 ::::::::::::::
 
 * http://webscraper.io/ (https://chrome.google.com/webstore/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn)
@@ -15,8 +16,10 @@ Advanced Tools
 Ninja Tools
 :::::::::::
 
-* Jupyter Notebooks / Selenium / CouchDB
-
+* :wiki:`Python/Jupyter`
+* :wiki:`Scraping/Selenium`
+* CouchDB
+* :wiki:`Scraping/Bonobo` (wip)
 
 Recipes
 :::::::
