@@ -52,8 +52,7 @@ Tools
 
 * :wiki:`Utilities/Git`
 * :wiki:`Utilities/ImageMagick`
-* :wiki:`Automation/Scraping`
-
+* :wiki:`Automation/Scraping` (see also :wiki:`Automation/Scraping/BeautifulSoup`, :wiki:`Automation/Scraping/Selenium`)
 Organization
 ------------
 
