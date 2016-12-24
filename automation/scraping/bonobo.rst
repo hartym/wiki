@@ -1,6 +1,9 @@
 Web Scraping with Bonobo (WIP)
 ==============================
 
+* See also :wiki:`Python/Bonobo`
+* https://github.com/python-bonobo/bonobo
+
 Example
 :::::::
 
