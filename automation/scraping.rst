@@ -10,8 +10,7 @@ Basic Tools
 Less Basic Tools
 ::::::::::::::::
 
-* http://webscraper.io/ (https://chrome.google.com/webstore/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn)
-* `WebScraper <http://webscraper.io/>`_
+* `WebScraper <http://webscraper.io/>`_ and its `chrome extension <https://chrome.google.com/webstore/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn>`_
 * http://phantomjs.org/ & http://casperjs.org/
 
 Ninja Tools
