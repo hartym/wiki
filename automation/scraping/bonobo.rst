@@ -13,6 +13,7 @@ Example
     from bs4 import BeautifulSoup, Comment
     
     @inject(browser)
-    def login(browser):
+    def open(browser):
         browser.get('http://perdu.com/')
     
+    jupyter_run(open, ..., log)
