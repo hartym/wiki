@@ -25,9 +25,11 @@ How to fill in a login / password form (or any other form)?
 
 .. code-block:: python
 
-        username = browser.find_element_by_id('username')
-        username.send_keys('thatsme')
-        password = browser.find_element_by_id('password')
-        password.send_keys('s3cr3t')
-        form = browser.find_element_by_id('signin-form')
-        form.submit()
+    username = browser.find_element_by_id('username')
+    username.send_keys('thatsme')
+    password = browser.find_element_by_id('password')
+    password.send_keys('s3cr3t')
+    form = browser.find_element_by_id('signin-form')
+    form.submit()
+
+
