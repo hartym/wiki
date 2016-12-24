@@ -10,7 +10,7 @@ Basic Tools
 Less Basic Tools
 ::::::::::::::::
 
-* http://webscraper.io/ (https://chrome.google.com/webstore/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn)
+* `Web Scraper <http://webscraper.io/>`_ (`Web Scraper Chrome Extension <https://chrome.google.com/webstore/detail/web-scraper/jnhgnonknehpejjnehehllkliplmbmhn>`_)
 * http://phantomjs.org/ & http://casperjs.org/
 
 Ninja Tools
