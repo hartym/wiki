@@ -17,9 +17,9 @@ Ninja Tools
 :::::::::::
 
 * :wiki:`Python/Jupyter`
-* :wiki:`Scraping/Selenium`
+* :wiki:`Automation/Scraping/Selenium`
 * CouchDB
-* :wiki:`Scraping/Bonobo` (wip)
+* :wiki:`Automation/Scraping/Bonobo` (wip)
 
 Recipes
 :::::::
