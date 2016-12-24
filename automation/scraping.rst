@@ -9,6 +9,7 @@ scrap sites that abuse scripting (angular or react client only sites, other sing
 
 * Scrapy (https://scrapy.org/)
 * Requests (http://docs.python-requests.org/)
+* :wiki:`Automation/Scraping/BeautifulSoup`
 
 Less Basic Tools
 ::::::::::::::::
