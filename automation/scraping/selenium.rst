@@ -1,8 +1,13 @@
-Selenium
-========
+Selenium with Python
+====================
 
-Python recipes
-::::::::::::::
+References and links
+::::::::::::::::::::
+
+* http://selenium-python.readthedocs.io/
+
+Recipes, Tips and Tricks
+::::::::::::::::::::::::
 
 How to get the HTML of one element?
 -----------------------------------
