@@ -49,7 +49,7 @@ Install python3 on recent OSX with working Sqlite3 and OpenSSL
 
 .. code-block:: shell
 
-    CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix sqlite)/include" LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix sqlite)/lib" pyenv install -v 3.6.0b4
+    CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix sqlite)/include" LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix sqlite)/lib" pyenv install -v 3.6.0
 
 Misc
 ::::
