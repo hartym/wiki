@@ -61,4 +61,16 @@ Misc
   * https://www.python.org/doc/essays/graphs/
   * https://networkx.readthedocs.io/
   * https://github.com/pmatiello/python-graph (old but looks simple and powerfull)
+  
+Dependency Injection and Inversion of Control
+---------------------------------------------
+
+Python, by its nature, does not justify using and IoC/DI container most of the time, but it can still be useful
+in some cases.
+
+Some searches about the state of the art ... (no opinion on the various libraries yet)
+
+* https://github.com/google/pinject
+* https://github.com/ets-labs/python-dependency-injector
+* Zope Component Architecture: http://muthukadan.net/docs/zca.html & http://zopecomponent.readthedocs.io/en/latest/
 
