@@ -23,5 +23,5 @@ Links & References
 rdc.etl (for python 2.7+)
 :::::::::::::::::::::::::
 
-* http://rdcetl.readthedocs.io/
+Usage will be deprecated as soon as Bonobo is considered stable, but you can still `read the docs of rdc.etl <http://rdcetl.readthedocs.io/>`_.
 
