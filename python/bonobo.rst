@@ -8,7 +8,7 @@ Bonobo is a rewrite / cleanup of rdc.etl for Python 3.5+. It's a work in progres
 Quick start
 :::::::::::
 
-See the `Bonobo tutorial <http://docs.bonobo-project.org/en/latest/tutorial/index.html>`_.
+See the Bonobo tutorial at http://docs.bonobo-project.org/en/latest/tutorial/index.html.
 
 Links & References
 ::::::::::::::::::
