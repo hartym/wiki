@@ -10,6 +10,8 @@ Quick start
 
 See the Bonobo tutorial at http://docs.bonobo-project.org/en/latest/tutorial/index.html.
 
+`tut <http://docs.bonobo-project.org/en/latest/tutorial/index.html>`_
+
 Links & References
 ::::::::::::::::::
 
