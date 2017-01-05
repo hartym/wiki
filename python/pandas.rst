@@ -31,6 +31,13 @@ Setup notebook for pandas + bokeh
     print('base:', BASE_DIR)
     print('data:', DATA_DIR)
     
+Reorder columns in a pandas dataframe
+-------------------------------------
+
+.. code-block:: python
+
+    df = df[['this', 'is', 'the', 'new', 'order']]
+    
 
 Links and references
 ::::::::::::::::::::
