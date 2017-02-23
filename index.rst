@@ -26,12 +26,6 @@ Product Design
 
 * :wiki:`Design/Resources`
 
-Software Architecture
-:::::::::::::::::::::
-
-* :wiki:`Archi/Books`
-* :wiki:`Archi/DesignPatterns`
-
 Programming
 :::::::::::
 
@@ -41,6 +35,17 @@ Programming
 * :wiki:`Python` (see also :wiki:`Python/AIOHttp`, :wiki:`Python/Django`, :wiki:`Python/Jinja2`, :wiki:`Python/Jupyter`, :wiki:`Python/Pandas`, :wiki:`Python/SQLAlchemy`, :wiki:`Python/Testing`)
 * :wiki:`Ruby`
 * :wiki:`Shell`
+
+Software Architecture
+:::::::::::::::::::::
+
+* :wiki:`Archi/Books`
+* :wiki:`Archi/DesignPatterns`
+
+Web Development
+:::::::::::::::
+
+* :wiki:`Web/Authentication`
 
 Storage
 -------
