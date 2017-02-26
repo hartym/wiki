@@ -20,6 +20,7 @@ Business
 * :wiki:`Business/CustomerDevelopment`
 * :wiki:`Business/LeanStartup`
 * :wiki:`Business/Marketing`
+* :wiki:`Business/Recruitment`
 
 Product Design
 ::::::::::::::
