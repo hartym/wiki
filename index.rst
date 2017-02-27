@@ -47,6 +47,7 @@ Web Development
 :::::::::::::::
 
 * :wiki:`Web/Authentication`
+* :wiki:`Web/GoogleAPIs`
 
 Storage
 -------
