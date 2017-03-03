@@ -56,6 +56,7 @@ Misc
 
 * Magic methods: http://www.rafekettler.com/magicmethods.html
 * Coroutines: http://www.dabeaz.com/coroutines/Coroutines.pdf
+* Asyncio cheat sheet: https://www.pythonsheets.com/notes/python-asyncio.html
 * Graphs, digraphs, hypergraphs
 
   * https://www.python.org/doc/essays/graphs/
