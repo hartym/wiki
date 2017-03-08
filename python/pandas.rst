@@ -38,12 +38,37 @@ Reorder columns in a pandas dataframe
 
     df = df[['this', 'is', 'the', 'new', 'order']]
     
+Construct a DataFrame from a list of dicts
+------------------------------------------
+
+.. code-block:: python
+
+    import pandas as pd
+
+    ds = []
+    for user in users:
+        ds.append({
+            'screen_name': user.screen_name,
+            'name': user.name
+        })
+
+    df = pd.DataFrame(ds)
+
+Create an index afterward
+-------------------------
+
+.. code-block:: python
+
+    df = df.set_index('screen_name')
+
 
 Links and references
 ::::::::::::::::::::
 
 * http://pandas.pydata.org/
 * http://pandas.pydata.org/pandas-docs/stable/
+
+
 
 See also
 ::::::::
