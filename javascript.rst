@@ -6,8 +6,8 @@ JavaScript
 
 Source: http://turnoff.us/image/en/love-ecmascript6.png
 
-Project Structuration
-:::::::::::::::::::::
+Project structure
+:::::::::::::::::
 
 * http://jaysoo.ca/2016/02/28/organizing-redux-application/
 
@@ -42,6 +42,14 @@ React / Flux
 - http://redux.js.org/
 - https://egghead.io/series/getting-started-with-redux
 
+Install node in a docker image
+::::::::::::::::::::::::::::::
+
+.. code-block:: text
+
+    RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - \
+     && apt-get install -y nodejs \
+     && curl -o- -L https://yarnpkg.com/install.sh | bash
 
 Webpack with Django
 :::::::::::::::::::
