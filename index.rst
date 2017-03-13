@@ -123,6 +123,7 @@ This section contains various related and unrelated things I want to keep around
 * :wiki:`Misc/HumanResources`
 * :wiki:`Misc/Music`
 * :wiki:`Misc/MusicSoftwares`
+* :wiki:`Misc/Synthetizers`
 * :wiki:`Misc/Web`
 
 * :wiki:`Misc`
