@@ -129,10 +129,12 @@ This section contains various related and unrelated things I want to keep around
 * :wiki:`Misc`
 * :wiki:`FR`
 
+* :wiki:`Misc/Draft`
+
+
 Pages about my projects
 :::::::::::::::::::::::
 
 * :wiki:`Python/Bonobo`
 * :wiki:`JavaScript/LeanJS`
-* :wiki:`Python/Windflow`
 
