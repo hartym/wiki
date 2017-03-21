@@ -16,6 +16,7 @@ Job boards / recruitment sites
 * https://cremedelacreme.io/
 * http://www.jobsinparis.fr/
 * https://www.linuxjobs.fr/
+* https://www.fossjobs.net/
 
 Too big still there
 -------------------
