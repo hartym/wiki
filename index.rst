@@ -8,9 +8,9 @@ Manifesto
 
 * *Simple* is better than complex. Simplicity is hard to reach, but worth it.
 * *Choices* depends on the human, legacy, time and market contexts. 
-* *Value* is what the customer gets.
+* *Honesty* beats vanity on the long term.
 * *Tools* are means, not goals.
-* *Honesty* beats vanity on the long term. 
+* *Value* is what the customer gets.
 
 Business
 ::::::::
