@@ -12,6 +12,8 @@ Manifesto
 * *Tools* are means, not goals.
 * *Value* is what the customer gets.
 
+(see also the `agile manifesto <http://agilemanifesto.org/>`_ and the `zen of python <https://www.python.org/dev/peps/pep-0020/#the-zen-of-python>`_)
+
 Business
 ::::::::
 
