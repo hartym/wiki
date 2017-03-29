@@ -13,3 +13,8 @@ OAuth
 
 * http://oauthbible.com/
 
+Specific implementations
+::::::::::::::::::::::::
+
+* :wiki:`Python/Django/Authentication`
+
