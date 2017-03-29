@@ -59,4 +59,6 @@ Settings
 Related
 :::::::
 
+* :wiki:`Python/Django/Authentication`
 * :wiki:`Python/DjangoForms`
+
