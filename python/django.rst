@@ -18,28 +18,6 @@ How to add created/updated fields to django models
         created_at = models.DateTimeField(auto_now_add=True)
         updated_at = models.DateTimeField(auto_now=True)
 
-Requirements
-::::::::::::
-
-Basics
-------
-
-* Django>=1.8,<1.9
-* django-jinja
-* django-pipeline>=1.5,<1.6
-
-PostgreSQL
-----------
-
-* psycopg2
-* django-pgjson
-
-Requests
---------
-
-* requests[security]
-* requests-cache
-
 E-mails
 :::::::
 
