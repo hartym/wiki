@@ -6,10 +6,11 @@ This is where I keep code snippets, opinions and ideas about computer related to
 Manifesto
 :::::::::
 
-* *Simple* is better than complex. Although simple is harder to achieve than complex.
-* *Technical choices* depends on the human, legacy, time and market contexts. 
+* *Simple* is better than complex. Simplicity is hard to reach, but worth it.
+* *Choices* depends on the human, legacy, time and market contexts. 
 * *Value* is what the customer gets.
 * *Tools* are means, not goals.
+* *Honesty* beats vanity on the long term. 
 
 Business
 ::::::::
