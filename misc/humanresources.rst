@@ -7,6 +7,7 @@ Top 15 linux-related jobs searched for by companies: DevOps Engineer, Software E
 Job boards / recruitment sites
 ::::::::::::::::::::::::::::::
 
+* https://hellojobinparis.com/
 * https://remixjobs.com/
 * https://remoteok.io/
 * https://unicornhunt.io/
