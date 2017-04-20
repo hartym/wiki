@@ -1,9 +1,9 @@
-Bonobo (pre-alpha, work in progress)
-====================================
+Bonobo
+======
 
-Bonobo is an extract-transform-load toolkit for python 3.5+, aiming for simplicity.
+Bonobo is an `extract-transform-load toolkit for python 3.5+ <https://bonobo-project.org/>`_, aiming for simplicity.
 
-Bonobo is a rewrite / cleanup of rdc.etl for Python 3.5+. It's a work in progress.
+Bonobo is a rewrite / cleanup of rdc.etl for Python 3.5+. It's a work in progress, but already useable. Maybe.
 
 Quick start
 :::::::::::
