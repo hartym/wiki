@@ -15,10 +15,10 @@ See the `Bonobo tutorial <http://docs.bonobo-project.org/en/latest/tutorial/inde
 Links & References
 ::::::::::::::::::
 
-* `Homepage <https://bonobo-project.org/>`_
-* `Documentation <http://docs.bonobo-project.org/>`_
-* `Source code <https://github.com/python-bonobo/bonobo>`_
-* `Python package <https://pypi.python.org/pypi/bonobo>`_
+* `Bonobo - Extract Transform Load / Data Processing toolkit for Python 3.5+ <https://bonobo-project.org/>`_
+* `Bonobo Documentation <http://docs.bonobo-project.org/>`_
+* `Bonobo source code on GitHub <https://github.com/python-bonobo/bonobo>`_
+* `Bonobo package on PyPI <https://pypi.python.org/pypi/bonobo>`_
 
 rdc.etl (for python 2.7+)
 :::::::::::::::::::::::::
