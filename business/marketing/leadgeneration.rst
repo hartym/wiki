@@ -152,6 +152,13 @@ Use cases
 
   * webscraper.io, import.io, phantomjs, casperjs, selenium (and bonobo-selenium), ... 
   
+* Marketing automation
+
+  * automate repetitive
+  * drip campaigns for low cost inbound email nurturing (mailchimp) or outbound email prospection (mixmax)
+  * trigger specific email when user visits specific page (mailchimp)
+  * complex engagement campaigns across multiple channels (marketo)
+  * other tools: ifttt, zapier, intercom ... infinite list of tools.
 
 Sources
 :::::::
