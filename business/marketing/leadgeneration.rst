@@ -1,7 +1,7 @@
 Traffic Acquisition and Lead Generation
 =======================================
 
-Theroy: conversion funnel is a simple funnel. Reality: there's a variety of channels interacting and sales/lead are never or rarely a single channel linear funnel.
+Theory: conversion funnel is a simple funnel. Reality: there's a variety of channels interacting and sales/lead are never or rarely a single channel linear funnel.
 
 Before
 ::::::
