@@ -17,6 +17,7 @@ Job boards / recruitment sites
 * http://www.jobsinparis.fr/
 * https://www.linuxjobs.fr/
 * https://www.fossjobs.net/
+* http://hellojobinparis.com/
 
 Too big still there
 -------------------
