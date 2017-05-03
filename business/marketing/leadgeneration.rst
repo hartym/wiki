@@ -1,5 +1,5 @@
-Traffic Acquisition & Lead Generation
-=====================================
+Traffic Acquisition and Lead Generation
+=======================================
 
 ... in progress ...
 
