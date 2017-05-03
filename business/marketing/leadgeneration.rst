@@ -85,14 +85,43 @@ Who do you actually pay?
   * Retargeting (google, facebook, criteo)
   
 
-  
-
-
 
 
 
 Organization
 ::::::::::::
+
+* ICE impact, comfidence, easiness 
+
+* assets (banners, content ...)
+
+* tools
+
+  * google tag manager
+  * analytics
+  * conversion pixels
+  * mailchimp trigger pixels
+  * retargetting pixels
+
+* optimisation
+
+  * data driven
+  * cut the dead branches in segments
+  * reset campaigns
+  * refresh assets to reduce boreness
+
+* hire a traffic manager
+  * freelance to start
+  * internal
+  * yourself if core
+  
+* give measurable targets and review them.
+
+* process leads
+
+  * loyalty manager (cold leads nurturing)
+  * call centers (requalification, easy to outsource if script is good)
+  * sales (convert hot leads)
 
 Use cases
 :::::::::
