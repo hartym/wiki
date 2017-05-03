@@ -126,6 +126,33 @@ Organization
 Use cases
 :::::::::
 
+* Occupy your prospect mind
+
+  * retarget them after visit of our site
+  * retarget after specific action
+  * target your prospect base
+  
+* Leading insurance broker selling exclusively by phone on very cold leads
+  
+  * ltv of few hundreds euros
+  * massive volume of cosponsoring (20k/day @ 20 cents)
+  * close the sale in one shot (process)
+  * nearchore call centers
+  * 2 lead providers with volume engagement
+  * always try new channels / providers
+  
+* B2B lead gen on facebook : recruiting practitioners for a medical ios app on facebook (casual social net)
+
+  * B2B leads on FB can work
+  * custom audience targeting (blacklist your users) and lookalike (similar users)
+  * test a lot (multiple campaignes,direct trafic, intermediate landings)
+  * be careful on auto-competition if small target
+  
+* Scraping interesting leads (find prospects on locked down platforms)
+
+  * webscraper.io, import.io, phantomjs, casperjs, selenium (and bonobo-selenium), ... 
+  
+
 Sources
 :::::::
 
