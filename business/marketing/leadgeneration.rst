@@ -70,7 +70,7 @@ Who do you actually pay?
 
 * Affiliation (mostly valid for B2C)
 
-  * tradedoubler, zaonx, effiliation, growsumo, affilinet, ...
+  * tradedoubler, zanox, effiliation, growsumo, affilinet, ...
   * E-mailing (publishers look for 1-2€ eCPM)
   * Co-sponsoring (CPL ~10cents, dubious optin techniques, low qualification level)
   * Co-registration/survey (CPL ~30 cents, better option than cosponsoring, medium qualification level)
@@ -79,6 +79,10 @@ Who do you actually pay?
 * Programmatic
 
   * SEA (adwords)
+  * Display (banner, video)
+  * Social Advertising (facebook, pinterest, snapchat instagram; tools: adespresso, makemereach)
+  * Social for business (linkedin, twitter ...)
+  * Retargeting (google, facebook, criteo)
   
 
   
