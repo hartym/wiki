@@ -7,3 +7,5 @@ Cryptocurrencies
 * Ripple (XRP)
 * Lumens (STR/XLM)
 
+Market capitalizations: https://coinmarketcap.com/
+
