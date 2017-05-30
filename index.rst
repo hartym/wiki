@@ -109,6 +109,11 @@ Business Intelligence and Analytics
 * :wiki:`BI/ELK`
 * :wiki:`BI/SILK`
 
+Finance
+:::::::
+
+* :wiki:`Finance/Cryptocurrencies`
+
 Miscellaneous stuff, links, papers 
 ::::::::::::::::::::::::::::::::::
 
