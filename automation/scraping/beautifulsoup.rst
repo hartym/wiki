@@ -40,6 +40,6 @@ How to remove all the AngularJS bullshit attributes so you can actually read the
                 if not key.startswith('ng-')
             }
  
- Note: this will only remove the ng-* attributes, and not the ng-* classes.
+Note: this will only remove the ng-* attributes, and not the ng-* classes.
  
             
