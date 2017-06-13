@@ -35,8 +35,11 @@ How to remove all the AngularJS bullshit attributes so you can actually read the
     for tag in soup.recursiveChildGenerator():
         if hasattr(tag, 'attrs'):
             tag.attrs = {
-                key:value
-                for key,value in tag.attrs.items()
+                key: value
+                for key, value in tag.attrs.items()
                 if not key.startswith('ng-')
             }
+ 
+ Note: this will only remove the ng-* attributes, and not the ng-* classes.
+ 
             
