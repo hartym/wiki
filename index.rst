@@ -112,9 +112,9 @@ Business Intelligence and Analytics
 Data Engineering
 ::::::::::::::::
 
-* :wiki:`Data/SmallAutomation`
 * :wiki:`Data/BigData`
 * :wiki:`Data/ExtractTransformLoad`
+* :wiki:`Data/SmallAutomation`
 * :wiki:`Data/StreamProcessing`
 
 Finance
