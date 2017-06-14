@@ -109,6 +109,14 @@ Business Intelligence and Analytics
 * :wiki:`BI/ELK`
 * :wiki:`BI/SILK`
 
+Data Engineering
+::::::::::::::::
+
+* :wiki:`Data/SmallAutomation`
+* :wiki:`Data/BigData`
+* :wiki:`Data/ExtractTransformLoad`
+* :wiki:`Data/StreamProcessing`
+
 Finance
 :::::::
 
