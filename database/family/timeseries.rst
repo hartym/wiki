@@ -14,7 +14,7 @@ TimescaleDB
 
 Timescale DB claims to be a horizontally scalable TSDB bundled as a PostgreSQL extension, allowing to _not_ run another database for timestamped data.
 
-http://www.timescale.com/
+* http://www.timescale.com/
 
 OpenTSDB
 ::::::::
