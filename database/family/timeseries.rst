@@ -1,11 +1,25 @@
 Time Series Oriented Databases (TSDB)
 =====================================
 
+
+
 InfluxDB
 ::::::::
 
 * https://influxdata.com/
 * https://influxdata.com/time-series-platform/influxdb/
+
+TimescaleDB
+:::::::::::
+
+Timescale DB claims to be a horizontally scalable TSDB bundled as a PostgreSQL extension, allowing to _not_ run another database for timestamped data.
+
+http://www.timescale.com/
+
+OpenTSDB
+::::::::
+
+* http://opentsdb.net/
 
 Graphite
 ::::::::
@@ -14,11 +28,6 @@ Graphite
 * https://github.com/graphite-project/whisper
 * https://github.com/graphite-project/ceres
 * https://graphite.readthedocs.io/en/latest/
-
-OpenTSDB
-::::::::
-
-* http://opentsdb.net/
 
 RDDTool
 :::::::
