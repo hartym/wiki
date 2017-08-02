@@ -6,7 +6,7 @@ This is where I keep code snippets, opinions and ideas about computer related to
 Manifesto
 :::::::::
 
-* *Simple* is better than complex. Simplicity is hard to reach, but worth it.
+* *Simple* is better than complex.
 * *Choices* depends on the human, legacy, time and market contexts. 
 * *Honesty* beats vanity on the long term.
 * *Tools* are means, not goals.
