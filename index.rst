@@ -24,6 +24,7 @@ Business
 * :wiki:`Business/LeanStartup`
 * :wiki:`Business/Marketing`
 * :wiki:`Business/Recruitment`
+* :wiki:`Business/OpenData`
 
 Product Design
 ::::::::::::::
