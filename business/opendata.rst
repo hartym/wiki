@@ -1,5 +1,5 @@
-Businesses & Corporations listing as Open-Data
-==============================================
+Listings / Open-Data
+====================
 
 * https://opencorporates.com/
 * http://registries.opencorporates.com/
