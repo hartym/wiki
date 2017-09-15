@@ -11,7 +11,7 @@ least one form of identification.
 OAuth
 :::::
 
-* http://oauthbible.com/
+* `The OAuth Bible <http://oauthbible.com/>`_
 
 Specific implementations
 ::::::::::::::::::::::::
@@ -23,9 +23,9 @@ Identity management and authentication
 
 Keywords : Enterprise Identity Management, OpenID Connect, Oauth2
 
-* https://github.com/coreos/dex : OpenID Connect Identity (OIDC) and OAuth 2.0 Provider with Pluggable Connectors. Written in Go, backend + frontend.
-* https://github.com/ory/hydra : OAuth2 server with OpenID Connect - cloud native, security-first, open source API security for your infrastructure. Written in Go, backend only.
-* https://github.com/ory/ladon : A SDK for access control policies: authorization for the microservice and IoT age. Inspired by AWS IAM policies. Written for Go.
+* `DEX (project by CoreOS) <https://github.com/coreos/dex>`_: OpenID Connect Identity (OIDC) and OAuth 2.0 Provider with Pluggable Connectors. Written in Go, backend + frontend.
+* `Hydra <https://github.com/ory/hydra>`_: OAuth2 server with OpenID Connect - cloud native, security-first, open source API security for your infrastructure. Written in Go, backend only.
+* `Ladon <https://github.com/ory/ladon>`_: A SDK for access control policies: authorization for the microservice and IoT age. Inspired by AWS IAM policies. Written for Go.
 * Maybe https://github.com/cloudfoundry/uaa ?
 
 HTTP Middlewares that can be considered in front of APIs: `Kong <https://getkong.org/>`_ (written in Lua), `Istio <https://istio.io/>`_ (a bit out of topic, but maybe not). 
