@@ -27,5 +27,6 @@ Keywords : Enterprise Identity Management, OpenID Connect, Oauth2
 * `Hydra <https://github.com/ory/hydra>`_: OAuth2 server with OpenID Connect - cloud native, security-first, open source API security for your infrastructure. Written in Go, backend only.
 * `Ladon <https://github.com/ory/ladon>`_: A SDK for access control policies: authorization for the microservice and IoT age. Inspired by AWS IAM policies. Written for Go.
 * Maybe https://github.com/cloudfoundry/uaa ?
+* https://www.openstack.org/software/releases/ocata/components/keystone
 
 HTTP Middlewares that can be considered in front of APIs: `Kong <https://getkong.org/>`_ (written in Lua), `Istio <https://istio.io/>`_ (a bit out of topic, but maybe not). 
