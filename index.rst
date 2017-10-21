@@ -14,6 +14,8 @@ Manifesto
 
 (see also the `agile manifesto <http://agilemanifesto.org/>`_ and the `zen of python <https://www.python.org/dev/peps/pep-0020/#the-zen-of-python>`_)
 
+“I always listen to what I can leave out.” — Miles Davis
+
 Business
 ::::::::
 
