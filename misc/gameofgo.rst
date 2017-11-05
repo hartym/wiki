@@ -22,6 +22,7 @@ Traditionaly, people tried to make computers play go with algorithms that mimics
 
 * AlphaGo vs Fan Hui: http://www.britgo.org/deepmind2016/summary
 * AlphaGo vs Lee Sedol: https://en.wikipedia.org/wiki/AlphaGo_versus_Lee_Sedol
+* AlphaGo Zero for dummies: http://tim.hibal.org/blog/alpha-zero-how-and-why-it-works/
 
 Convolutional Neural Networks
 -----------------------------
