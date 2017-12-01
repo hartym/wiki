@@ -1,8 +1,8 @@
-Listings / Open-Data
-====================
+Open-Data
+=========
 
-Open-data portal listings
-:::::::::::::::::::::::::
+Portal listings
+:::::::::::::::
 
 * https://opendatainception.io/
 * https://opencorporates.com/
