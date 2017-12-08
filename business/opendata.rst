@@ -12,13 +12,9 @@ Portal listings
 * https://github.com/caesar0301/awesome-public-datasets
 * https://www.kaggle.com/datasets
 
-Softwares
-:::::::::
-
-* https://www.opendatasoft.com/
-
 Organizations
 :::::::::::::
 
 * https://datactivi.st/
-
+* https://www.opendatasoft.com/
+* https://www.etalab.gouv.fr/
