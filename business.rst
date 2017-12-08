@@ -19,7 +19,7 @@ Sectors
 :::::::
 
 * :wiki:`Business/E-Commerce`
-* :wiki:`Business/Institutional`
+* https://linc.cnil.fr/
 
 Data, new oil, new soil?
 ::::::::::::::::::::::::
