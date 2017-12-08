@@ -12,6 +12,11 @@ Portal listings
 * https://github.com/caesar0301/awesome-public-datasets
 * https://www.kaggle.com/datasets
 
+Communities
+:::::::::::
+
+* https://teamopendata.org/
+
 Organizations
 :::::::::::::
 
