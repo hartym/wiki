@@ -1,11 +1,28 @@
 Business
 ========
 
+Learn
+:::::
+
 * :wiki:`Business/Books`
 * :wiki:`Business/Decks`
-* :wiki:`Business/Metrics`
+* :wiki:`Business/Marketing`
+
+
+Methodology and practices
+:::::::::::::::::::::::::
+
 * :wiki:`Business/CustomerDevelopment`
 * :wiki:`Business/LeanStartup`
-* :wiki:`Business/Marketing`
+
+Sectors
+:::::::
+
 * :wiki:`Business/E-Commerce`
+* :wiki:`Business/Institutional`
+
+Data, new oil, new soil?
+::::::::::::::::::::::::
+
+* :wiki:`Business/Metrics`
 * :wiki:`Business/OpenData`
