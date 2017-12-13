@@ -3,6 +3,7 @@ Noah's Ark of Computing
 
 This is where I keep code snippets, opinions and ideas about computer related tools, amongst other things that concerns topics of interest.
 
+
 Manifesto
 :::::::::
 
