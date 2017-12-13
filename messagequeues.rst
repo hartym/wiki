@@ -51,7 +51,7 @@ Definitions file (`/etc/rabbitmq/definitions.json`):
         ]
     }
 
-.. todo:: WIP BELOW
+TODO: WIP BELOW
 
 To generate this file from current configuration, you need `rabbitmqadmin` script, which uses RMQ management plugin.
 
