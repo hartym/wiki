@@ -1,7 +1,10 @@
 Human resources
 ===============
 
-Top 15 linux-related jobs searched for by companies: DevOps Engineer, Software Engineer, Java Developer, Systems Engineer, Systems Administrator, Senior Software Engineer, Network Engineer, Python Developer, Linux Systems Administrator, Software Developer, System Administrator, Linux Administrator, Linux Engineer, Senior Java Developer, C++ Developer (http://linuxsurvival.com/the-linux-job-market/).
+Practices, ideas, research, tools
+:::::::::::::::::::::::::::::::::
+
+* https://rework.withgoogle.com/
 
 
 Job boards / recruitment sites
@@ -18,12 +21,20 @@ Job boards / recruitment sites
 * https://www.linuxjobs.fr/
 * https://www.fossjobs.net/
 * http://hellojobinparis.com/
-
-Too big still there
--------------------
-
 * https://fr.hired.com/
 * http://www.dice.com/
 * http://www.indeed.fr/
 * http://www.lesjeudis.com/
 
+
+Hiring
+::::::
+
+* https://www.linkedin.com/pulse/20130620142512-35894743-on-gpas-and-brain-teasers-new-insights-from-google-on-recruiting-and-hiring/
+* https://erikbern.com/2014/06/08/how-to-build-up-a-data-team-everything-i-ever-learned-about-recruiting.html
+
+
+Misc
+::::
+
+Top 15 linux-related jobs searched for by companies: DevOps Engineer, Software Engineer, Java Developer, Systems Engineer, Systems Administrator, Senior Software Engineer, Network Engineer, Python Developer, Linux Systems Administrator, Software Developer, System Administrator, Linux Administrator, Linux Engineer, Senior Java Developer, C++ Developer (http://linuxsurvival.com/the-linux-job-market/).
