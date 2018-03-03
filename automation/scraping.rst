@@ -30,6 +30,7 @@ serious web-stealing/fuck-your-content work, then you should go here.
 * CouchDB
 * :wiki:`Automation/Scraping/Bonobo` (wip)
 * http://phantomjs.org/ & http://casperjs.org/
+* Diggernaut (https://www.diggernaut.com/) + free web scrapers repository (https://github.com/Diggernaut/configs)
 
 Recipes
 :::::::
