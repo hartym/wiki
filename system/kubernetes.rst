@@ -70,4 +70,7 @@ Scaleway
 
 * https://github.com/NetzreichGmbH/scaleway-kubernetes
 * https://chmod666.org/2017/11/Hosting-a-self-made-Kubernetes-infrastructure-on-Scaleway
+* https://www.tauceti.blog/post/kubernetes-the-not-so-hard-way-with-ansible-at-scaleway-part-1/
+
+
 
