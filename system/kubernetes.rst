@@ -69,3 +69,5 @@ Scaleway
 ........
 
 * https://github.com/NetzreichGmbH/scaleway-kubernetes
+* https://chmod666.org/2017/11/Hosting-a-self-made-Kubernetes-infrastructure-on-Scaleway
+
