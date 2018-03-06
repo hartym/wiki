@@ -3,7 +3,20 @@ React
 
 React (sometimes styled React.js or ReactJS) is an open-source JavaScript library for data rendered as HTML.
 
-It is maintained by Facebook, Instagram and a community of individual developers and corporations.
+URLs and Routing
+::::::::::::::::
+
+* https://reacttraining.com/react-router/
+
+State management
+::::::::::::::::
+
+* https://redux.js.org/ (and https://github.com/reactjs/react-router-redux)
+
+Forms
+:::::
+
+* https://mozilla-services.github.io/react-jsonschema-form/
 
 References
 ::::::::::
