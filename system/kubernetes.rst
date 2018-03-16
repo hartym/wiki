@@ -12,6 +12,11 @@ Books and readings
 * https://github.com/kelseyhightower/kubernetes-the-hard-way/tree/master/docs
 * https://github.com/hobby-kube/guide
 
+Resources
+:::::::::
+
+* https://ramitsurana.github.io/awesome-kubernetes/
+
 Cookbook
 ::::::::
 
