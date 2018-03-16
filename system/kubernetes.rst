@@ -8,6 +8,7 @@ http://kubernetes.io/
 Books and readings
 ::::::::::::::::::
 
+* Start with https://kubernetes.io/docs/tutorials/kubernetes-basics/
 * https://github.com/kelseyhightower/kubernetes-the-hard-way/tree/master/docs
 * https://github.com/hobby-kube/guide
 
