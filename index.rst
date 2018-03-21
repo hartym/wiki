@@ -13,7 +13,7 @@ Manifesto
 * *Tools* are means, not goals.
 * *Value* is what the customer gets.
 
-(see also the `agile manifesto <http://agilemanifesto.org/>`_, the `zen of python <https://www.python.org/dev/peps/pep-0020/#the-zen-of-python>`_ and the `manifesto for software craftsmanship <http://manifesto.softwarecraftsmanship.org/>`_)
+(see also the `manifesto for agile software development <http://agilemanifesto.org/>`_, the `manifesto for software craftsmanship <http://manifesto.softwarecraftsmanship.org/>`_ and the `zen of python <https://www.python.org/dev/peps/pep-0020/#the-zen-of-python>`_ and )
 
 “I always listen to what I can leave out.” — Miles Davis
 
