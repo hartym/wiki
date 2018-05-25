@@ -58,10 +58,13 @@ Mongo Santamaria
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A2iFioZh6zo3ZoWTTcvI50i" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
-Pappo Lucca
------------
+More...
+-------
 
 * http://www.thekevinsun.com/2012/10/papo-lucca-montunos.html
+* https://en.wikipedia.org/wiki/Papo_Lucca
+* https://en.wikipedia.org/wiki/La_Sonora_Ponce%C3%B1a
+* https://en.wikipedia.org/wiki/Celia_Cruz
 
 Classics
 ::::::::
