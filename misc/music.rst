@@ -116,3 +116,9 @@ Talvin Singh — Sounds of the Asian Underground
      <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A6juVfzllRuiQSLqzfbYGph" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
+Hungary
+:::::::
+
+.. raw:: html
+
+    <iframe src="https://open.spotify.com/embed/artist/5atG6wP8rOEGkgTZPjTAz8" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
