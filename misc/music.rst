@@ -58,6 +58,13 @@ Mongo Santamaria
     <iframe src="https://embed.spotify.com/?uri=spotify%3Aalbum%3A2iFioZh6zo3ZoWTTcvI50i" width="300" height="80" frameborder="0" allowtransparency="true" style="display: block;"></iframe>
 
 
+La Sonora Ponceña & Celia Cruz
+------------------------------
+
+.. raw:: html
+
+    <iframe src="https://open.spotify.com/embed/album/5F3pGSaAlhOaqLore1IOIr" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
 More...
 -------
 
