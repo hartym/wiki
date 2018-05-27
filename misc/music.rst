@@ -63,7 +63,7 @@ La Sonora Ponceña & Celia Cruz
 
 .. raw:: html
 
-    <iframe src="https://open.spotify.com/embed/album/5F3pGSaAlhOaqLore1IOIr" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+    <iframe src="https://open.spotify.com/embed/album/5F3pGSaAlhOaqLore1IOIr" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media" style="display: block;"></iframe>
 
 More...
 -------
@@ -128,4 +128,4 @@ Hungary
 
 .. raw:: html
 
-    <iframe src="https://open.spotify.com/embed/artist/5atG6wP8rOEGkgTZPjTAz8" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+    <iframe src="https://open.spotify.com/embed/artist/5atG6wP8rOEGkgTZPjTAz8" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media" style="display: block;"></iframe>
