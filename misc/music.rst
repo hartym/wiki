@@ -129,3 +129,5 @@ Hungary
 .. raw:: html
 
     <iframe src="https://open.spotify.com/embed/artist/5atG6wP8rOEGkgTZPjTAz8" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media" style="display: block;"></iframe>
+    
+Artists: `Mitsou <https://en.wikipedia.org/wiki/M%C3%B3nika_Juh%C3%A1sz_Miczura>`_
