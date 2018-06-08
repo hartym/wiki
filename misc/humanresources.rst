@@ -5,7 +5,7 @@ Practices, ideas, research, tools
 :::::::::::::::::::::::::::::::::
 
 * https://rework.withgoogle.com/
-
+* https://getweeklyupdate.com/manager-guide
 
 Job boards / recruitment sites
 ::::::::::::::::::::::::::::::
