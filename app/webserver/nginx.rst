@@ -1,6 +1,18 @@
 Nginx
 =====
 
+Optimise for production
+:::::::::::::::::::::::
+
+Some tips.
+
+* https://gist.github.com/denji/8359866
+
+K8S ingresses based on nginx. Even out of K8S, the configuration templates can be used as a source of information.
+
+* https://github.com/kubernetes/ingress-nginx
+* https://github.com/nginxinc/kubernetes-ingress
+
 Access-Control-Allow-Origin
 :::::::::::::::::::::::::::
 
