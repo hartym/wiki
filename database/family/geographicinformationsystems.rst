@@ -22,8 +22,8 @@ Coordinates
 Miscellaneous
 :::::::::::::
 
-* WGS 84 (World Geodetic System 1984 : système géodésique mondial, révision de 1984): format standard.
-* Lambert II : autre système de coordonées.
+* WGS 84 (World Geodetic System 1984 : système géodésique mondial, révision de 1984): format standard (http://epsg.io/4326).
+* Lambert II : autre système de coordonées, français (https://epsg.io/27572).
 
 Lots of resources: http://govhack-toolkit.readthedocs.io/technical/geographic-data/
 
