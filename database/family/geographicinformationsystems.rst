@@ -13,6 +13,12 @@ Tiles & Web
 * Tessela (tiles server): https://github.com/urbica/tessella
 * Tippecanoe (tiles parser): https://github.com/mapbox/tippecanoe
 
+Coordinates
+:::::::::::
+
+* http://epsg.io/ -> coordinate systems (eu)
+* https://github.com/jswhit/pyproj -> project from one coordinate system to another
+
 Miscellaneous
 :::::::::::::
 
