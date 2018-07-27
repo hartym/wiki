@@ -19,6 +19,11 @@ Coordinates
 * http://epsg.io/ -> coordinate systems (eu)
 * https://github.com/jswhit/pyproj -> project from one coordinate system to another
 
+Maps
+::::
+
+* http://folium.readthedocs.io/en/latest/ (uses leaflet, works in jupyter)
+
 Miscellaneous
 :::::::::::::
 
