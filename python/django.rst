@@ -10,6 +10,8 @@ Django with included batteries: https://django-zero.github.io/
 Applications
 ::::::::::::
 
+A few useful django applications...
+
 Views
 -----
 
@@ -27,6 +29,11 @@ Assets
 ------
 
 * Whitenoise
+
+Object lists
+------------
+
+* https://django-filter.readthedocs.io/
 
 
 Recipes
