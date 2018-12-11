@@ -5,6 +5,8 @@ Kubernetes is an open-source system for automating deployment, scaling, and mana
 
 http://kubernetes.io/
 
+Introduction: https://docs.google.com/presentation/d/1zrfVlE5r61ZNQrmXKx5gJmBcXnoa_WerHEnTxu5SMco
+
 Books and readings
 ::::::::::::::::::
 
