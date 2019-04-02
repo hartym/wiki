@@ -101,6 +101,14 @@ Applications and Services
 * :wiki:`App/Monitoring`
 * :wiki:`App/WebServer`
 
+Cloud Native
+::::::::::::
+
+* :wiki:`CloudNative/Serverless`
+* :wiki:`CloudNative/NoCode`
+* :wiki:`CloudNative/LowCode`
+* :wiki:`CloudNative/Kubernetes`
+
 Business Intelligence and Analytics
 :::::::::::::::::::::::::::::::::::
 
