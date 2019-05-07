@@ -18,6 +18,8 @@ It's way better to be able to actually read the result:
 .. code-block:: sql
 
     select pg_size_pretty(pg_relation_size('some_table_or_idx'));
+    
+More info and scripts: https://wiki.postgresql.org/wiki/Disk_Usage
 
 Tuning
 ::::::
