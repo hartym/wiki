@@ -68,4 +68,5 @@ Misc.
 A few links ...
 
 * https://www.cybertec-postgresql.com/en/postgresql-speeding-up-group-by-and-joins/
+* Creating indexes without locking the table: https://www.postgresql.org/docs/9.6/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY 
 
