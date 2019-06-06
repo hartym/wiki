@@ -22,6 +22,15 @@ Resources
 Cookbook
 ::::::::
 
+Environment from ConfigMap
+--------------------------
+
+.. code-block:: yaml
+
+    envFrom:
+    - configMapRef:
+      name: eat-at-joe
+
 Rollout / rollback using deployments
 ------------------------------------
 
