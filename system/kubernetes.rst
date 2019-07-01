@@ -57,6 +57,16 @@ Status
 .. code-block:: shell
 
     kubectl rollout status deployment/$DEPLOYMENT
+    
+Restart
+.......
+
+.. code-block:: shell
+
+    kubectl rollout restart deployment $DEPLOYMENT
+    
+Available since kubectl 1.15 (client side feature), will respect the deployment strategy.
+    
 
 Google Cloud Platform (GCP)
 ---------------------------
