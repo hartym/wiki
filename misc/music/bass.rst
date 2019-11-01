@@ -6,7 +6,7 @@ Bassists
 
 * `Anthony Jackson <https://en.wikipedia.org/wiki/Anthony_Jackson_(musician)>`_
 
-  * `Hiromi Uehara - The Trio Project (full concert) <https://www.youtube.com/watch?v=o63mXv9Z3h8>`
+  * `Hiromi Uehara - The Trio Project (full concert) <https://www.youtube.com/watch?v=o63mXv9Z3h8>`_
   * `Michel Petrucciani - Take the A Train <https://www.youtube.com/watch?v=elq5ra9IOBw>`_
   
 * Avishai Cohen
