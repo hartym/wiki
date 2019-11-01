@@ -1,6 +1,8 @@
 Music
 =====
 
+See also: :wiki:`Misc/Music/Bass`
+
 Jazz, funk & Fusion
 :::::::::::::::::::
 
