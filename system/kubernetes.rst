@@ -68,6 +68,21 @@ Restart
 Available since kubectl 1.15 (client side feature), will respect the deployment strategy.
     
 
+Capacity Planning
+-----------------
+
+Poor-man's swiss-knife
+
+.. code-block:: shell
+
+    for rt in deploy daemonset; do
+      echo $rt
+      kubectl get $rt --all-namespaces -o json | \
+        jq -r '.items[] | [.metadata.namespace, .metadata.name, .spec.replicas] + (.spec.template.spec.containers[] | [.name, .resources.requests.cpu, .resources.requests.memory ]) + [(.spec.template.spec.affinity.podAntiAffinity | @text) ] | @tsv'
+      echo
+    done
+
+
 Google Cloud Platform (GCP)
 ---------------------------
 
