@@ -19,6 +19,11 @@ Resources
 
 * https://ramitsurana.github.io/awesome-kubernetes/
 
+Benchmarks
+::::::::::
+
+* https://itnext.io/benchmark-results-of-kubernetes-network-plugins-cni-over-10gbit-s-network-updated-april-2019-4a9886efe9c4
+
 Cookbook
 ::::::::
 
