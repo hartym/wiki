@@ -18,6 +18,8 @@ Bassists
   
 * Esperanza Spalding
 
+* Mohini Dey
+
 * `Richard Bona <https://en.wikipedia.org/wiki/Richard_Bona>`_
 
   * `Joe Zawinul - Patriots <https://www.youtube.com/watch?v=c4zNb01nA_A>`
@@ -27,4 +29,4 @@ Bassists
 
 * `Stuart Zender <https://en.wikipedia.org/wiki/Stuart_Zender>`_ (`Jamiroquai <https://www.youtube.com/watch?v=4JkIs37a2JE&list=PL6x9BNiJPyMsiKTvjrS0eA5P08Ik6lLKd&index=1>`_)
 
-
+* `Tal Wilkenfeld <https://en.wikipedia.org/wiki/Tal_Wilkenfeld>`_
