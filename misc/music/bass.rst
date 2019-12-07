@@ -22,8 +22,8 @@ Bassists
 
 * `Richard Bona <https://en.wikipedia.org/wiki/Richard_Bona>`_
 
-  * `Joe Zawinul - Patriots <https://www.youtube.com/watch?v=c4zNb01nA_A>`
-  * `Steps Ahead - Pools <https://www.youtube.com/watch?v=3pBJGbZOAEM>`
+  * `Joe Zawinul - Patriots <https://www.youtube.com/watch?v=c4zNb01nA_A>`_
+  * `Steps Ahead - Pools <https://www.youtube.com/watch?v=3pBJGbZOAEM>`_
   * `Zawinul Syndicate (full concert, 1997) <https://www.youtube.com/watch?v=DsTOy-WuABQ>`_
   * `Mandekan Cubano - VeszprémFest (full concert, 2017) <https://www.youtube.com/watch?v=WgcFms1rhnI>`_
 
