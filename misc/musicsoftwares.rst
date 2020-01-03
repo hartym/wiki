@@ -18,3 +18,10 @@ Music Notation
 
 * Lilypond: http://lilypond.org/
 * MuseScore: https://musescore.org/en
+* OSMD: https://opensheetmusicdisplay.org/
+* Vexflow: http://www.vexflow.com/
+
+Misc
+::::
+
+* https://opensheetmusicdisplay.org/2018/09/11/sheet-music-display-libraries-browsers/
