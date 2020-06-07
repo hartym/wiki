@@ -48,6 +48,11 @@ How to add created/updated fields to django models
         # ... other fields ...
         created_at = models.DateTimeField(auto_now_add=True)
         updated_at = models.DateTimeField(auto_now=True)
+        
+Django ORM
+----------
+
+* https://markusholtermann.eu/2019/03/less-obvious-things-to-do-with-djangos-orm/
 
 E-mails
 :::::::
