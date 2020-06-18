@@ -36,3 +36,35 @@ You can configure ngx_pagespeed to work with cloudfront:
     pagespeed FileCachePath /var/ngx_pagespeed_cache;
     pagespeed Domain http://romain.dorgueil.net/;
     pagespeed MapRewriteDomain d3nxtp0ub5fopc.cloudfront.net romain.dorgueil.net;
+    
+Identity and Access Management (IAM)
+::::::::::::::::::::::::::::::::::::
+
+Policy to access an S3 bucket (or many buckets).
+
+.. code-block:: json
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:ListBucket"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::some-buckets-*-dev"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject",
+                    "s3:GetObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::some-buckets-*-dev/*"
+                ]
+            }
+        ]
+    }
