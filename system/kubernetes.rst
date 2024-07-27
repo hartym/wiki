@@ -76,7 +76,56 @@ Restart
     kubectl rollout restart deployment $DEPLOYMENT
     
 Available since kubectl 1.15 (client side feature), will respect the deployment strategy.
-    
+
+Probes
+::::::
+
+**Liveness Probe**:
+
+Checks if the application inside the container is still running. If the liveness probe fails, Kubernetes will restart the container.
+Detects and recovers from situations where the application is stuck or deadlocked.
+
+**Readiness Probe**
+
+Checks if the application inside the container is ready to serve traffic.
+If the readiness probe fails, the container is removed from the service's endpoints, meaning it will not receive any traffic.
+Ensures that the application is fully initialized and ready to handle requests before sending traffic to it.
+
+**Startup Probe**
+
+Checks if the application inside the container has started successfully. If the startup probe fails, Kubernetes will restart the container. This probe is useful for applications that have a long initialization phase. Ensures that the application has successfully started before performing liveness and readiness checks.
+
+**Example Configuration**
+
+.. code-block:: yaml
+
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: example-pod
+    spec:
+      containers:
+      - name: example-container
+        image: example-image
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /healthz/startup
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
 
 Capacity Planning
 -----------------
