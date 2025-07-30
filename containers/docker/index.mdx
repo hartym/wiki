@@ -1,0 +1,17 @@
+---
+title: Docker
+description: How to — Alpine images
+---
+
+## How to — Alpine images
+
+```docker
+RUN apk --update add --no-cache --virtual .builddeps \
+                     build-base ... all build deps ... \
+    && ... all run steps requiring build deps ...
+    && apk del .builddeps
+```
+
+## Misc
+
+Container related stuff : https://www.mindmeister.com/fr/389671722/open-container-ecosystem-formerly-docker-ecosystem

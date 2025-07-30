@@ -1,0 +1,63 @@
+---
+title: PostgreSQL
+description: Measuring
+---
+
+[PostgreSQL](https://github.com/postgres/postgres) - The world's most advanced open source relational database
+
+## Measuring
+
+### How much disk space is some relation (table, index, ...) taking ?
+
+You can use `pg_relation_size()`:
+
+```sql
+select pg_relation_size('some_table_or_idx');
+```
+It's way better to be able to actually read the result:
+
+```sql
+select pg_size_pretty(pg_relation_size('some_table_or_idx'));
+```
+More info and scripts: [PostgreSQL Wiki - Disk Usage](https://wiki.postgresql.org/wiki/Disk_Usage)
+
+## Tuning
+
+### Tuning the filesystem
+
+* [PostgreSQL Performance on EXT4 and XFS](https://blog.pgaddict.com/posts/postgresql-performance-on-ext4-and-xfs)
+* [PostgreSQL on EXT4, XFS, Btrfs and ZFS](https://fr.slideshare.net/fuzzycz/postgresql-on-ext4-xfs-btrfs-and-zfs)
+
+### Wasted space & vacuuming
+
+* [Monitoring Your Bloat in Postgres](https://www.citusdata.com/blog/2017/10/20/monitoring-your-bloat-in-postgres/)
+* [Achieving Correct Bloat Estimates of JSON Data in PostgreSQL](https://jobs.zalando.com/tech/blog/achieving-correct-bloat-estimates-of-json-data-in-postgresql/)
+
+## About JSONB
+
+* [When to Avoid JSONB in a PostgreSQL Schema](https://heap.io/blog/engineering/when-to-avoid-jsonb-in-a-postgresql-schema)
+* [Choosing NoSQL: HStore vs JSON vs JSONB](https://www.citusdata.com/blog/2016/07/14/choosing-nosql-hstore-json-jsonb/)
+
+## Backup & Restore
+
+Simple backup command:
+
+```shell
+pg_dump --format=c --role=<role> <dbname>
+```
+Simple restore command:
+
+```shell
+pg_restore --role=<role> -d <dbname> <filename>
+```
+
+## Tools
+
+Visualize explain analyze results: [Explain Depesz](https://explain.depesz.com/)
+
+## Misc.
+
+A few links ...
+
+* [PostgreSQL: Speeding up GROUP BY and Joins](https://www.cybertec-postgresql.com/en/postgresql-speeding-up-group-by-and-joins/)
+* Creating indexes without locking the table: [PostgreSQL CREATE INDEX CONCURRENTLY](https://www.postgresql.org/docs/9.6/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY)

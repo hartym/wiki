@@ -1,0 +1,43 @@
+---
+title: CoreOS
+description: Issues
+---
+
+## Issues
+
+Admin console (locally, or out of the cluster):
+
+```
+$ fleetctl start instances/*
+2015/06/10 22:05:44 WARN fleetctl.go:772: Error retrieving Unit(nginx-discovery@3.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx-discovery%403.service?alt=json: forwarding request denied
+2015/06/10 22:05:44 WARN fleetctl.go:772: Error retrieving Unit(nginx@1.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%401.service?alt=json: forwarding request denied
+2015/06/10 22:05:44 WARN fleetctl.go:772: Error retrieving Unit(nginx@2.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%402.service?alt=json: forwarding request denied
+2015/06/10 22:05:44 WARN fleetctl.go:772: Error retrieving Unit(nginx@3.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%403.service?alt=json: forwarding request denied
+2015/06/10 22:05:45 WARN fleetctl.go:772: Error retrieving Unit(nginx-discovery@2.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx-discovery%402.service?alt=json: ssh: rejected: administratively prohibited (open failed)
+2015/06/10 22:05:45 WARN fleetctl.go:772: Error retrieving Unit(nginx@1.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%401.service?alt=json: forwarding request denied
+2015/06/10 22:05:45 WARN fleetctl.go:772: Error retrieving Unit(nginx@2.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%402.service?alt=json: forwarding request denied
+2015/06/10 22:05:45 WARN fleetctl.go:772: Error retrieving Unit(nginx@3.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%403.service?alt=json: forwarding request denied
+2015/06/10 22:05:45 WARN fleetctl.go:772: Error retrieving Unit(nginx-discovery@2.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx-discovery%402.service?alt=json: ssh: rejected: administratively prohibited (open failed)
+2015/06/10 22:05:45 WARN fleetctl.go:772: Error retrieving Unit(nginx@2.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%402.service?alt=json: ssh: rejected: administratively prohibited (open failed)
+2015/06/10 22:05:45 WARN fleetctl.go:772: Error retrieving Unit(nginx@3.service) from Registry: Get http://domain-sock/fleet/v1/units/nginx%403.service?alt=json: ssh: rejected: administratively prohibited (open failed)
+```
+In journal:
+
+```
+Jun 10 19:58:21 core3.c.rdorgueil.internal sshd[1341]: no more sessions
+Jun 10 19:58:25 core3.c.rdorgueil.internal fleetd[1386]: ERROR reconcile.go:79: Unable to determine agent's current state: failed fetching unit states from UnitManager: Unit name nginx-discovery@.service is not valid.
+Jun 10 19:58:35 core3.c.rdorgueil.internal fleetd[1386]: ERROR reconcile.go:79: Unable to determine agent's current state: failed fetching unit states from UnitManager: Unit name nginx@.service is not valid.
+```
+Only solution found (https://github.com/coreos/fleet/issues/969) is to reboot faulty instances after destroying the faulty units.
+
+```shell
+docker run -it --link postgres.1:postgres --rm postgres sh -c 'exec psql -h "$POSTGRES_PORT_5432_TCP_ADDR" -p "$POSTGRES_PORT_5432_TCP_PORT" -U postgres'
+```
+## Local cluster tools
+
+* https://github.com/coreos/coreos-vagrant
+* https://github.com/rimusz/coreos-osx-gui-kubernetes-solo
+* https://github.com/rimusz/coreos-osx-gui-kubernetes-cluster
+* https://github.com/TheNewNormal/kube-cluster-osx
+
+The above tools have a lot of problems on my laptop, but the idea sound promising.

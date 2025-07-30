@@ -1,0 +1,64 @@
+---
+title: Django
+description: "Django is an open-source web framework, written in Python, which follows the model-view-template (MVT) architectural pattern, which is just a name variant of MV"
+---
+
+Django is an open-source web framework, written in Python, which follows the model-view-template (MVT) architectural pattern, which is just a name variant of MVC.
+
+Django's primary goal is to ease the creation of complex, database-driven websites. Django emphasizes reusability and "pluggability" of components, rapid development, and the principle of don't repeat yourself. Python is used throughout, even for settings files and data models. Django also provides an optional administrative create, read, update and delete interface that is generated dynamically through introspection and configured via admin models.
+
+[Django with included batteries](https://django-zero.github.io/)
+
+## Applications
+
+A few useful django applications...
+
+## Views
+
+* [Django Vanilla Views](http://django-vanilla-views.org/)
+* [Django Braces](https://django-braces.readthedocs.io/)
+* [Django Extra Views Compatibility](http://django-vanilla-views.org/topics/django-extra-views-compatibility)
+* [Django Includes](https://github.com/hartym/django-includes) (experiment)
+
+## Forms
+
+* [Django Crispy Forms](https://django-crispy-forms.readthedocs.io/)
+
+## Assets
+
+* Whitenoise
+
+## Object lists
+
+* [Django Filter](https://django-filter.readthedocs.io/)
+
+## Recipes
+
+## How to add created/updated fields to django models
+
+```python
+class MyTimestampedModel(models.Model):
+    # ... other fields ...
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+```## Django ORM
+
+* [Less Obvious Things To Do With Django's ORM](https://markusholtermann.eu/2019/03/less-obvious-things-to-do-with-djangos-orm/)
+
+## E-mails
+
+## Settings
+
+```python
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_DEFAULT_FROM = '...'
+EMAIL_HOST = 'smtp.example.com'
+EMAIL_HOST_USER = '...'
+EMAIL_HOST_PASSWORD = '...'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+```
+## Related
+
+* <Link to="./authentication">Django Authentication</Link>
+* <Link to="../djangoforms">Django Forms</Link>

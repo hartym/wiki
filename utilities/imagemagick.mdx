@@ -1,0 +1,15 @@
+---
+title: "ImageMagick (and GraphicsMagick)"
+description: "```shell"
+---
+
+* https://en.wikipedia.org/wiki/ImageMagick
+* http://www.imagemagick.org/script/index.php
+* https://en.wikipedia.org/wiki/GraphicsMagick
+* http://www.graphicsmagick.org/
+
+```shell
+for i in *.jpg; do
+    convert -strip -interlace Plane -gaussian-blur 0.05 -quality 75% -resize 1800x $i output/$i
+done
+```

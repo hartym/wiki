@@ -1,0 +1,14 @@
+---
+title: "Secure Sockets Layer (SSL)"
+description: Certificates
+---
+
+## Certificates
+
+* [Création de certificat + CA + auto-signature ](http://www.linux-france.org/prj/edu/archinet/systeme/ch24s03.html) (FR)
+
+Read certificate chain with openssl
+
+```bash
+openssl s_client -showcerts -servername www.google.com -connect www.google.com:443 </dev/null
+```

@@ -1,8 +1,0 @@
-Wiki
-====
-
-This is the source repository of my knowledge base at http://romain.dorgueil.net/wiki/. Changes are notified to the wiki application via a git hook, and each commit merged in master is live on the site a few moments after it exists.
-
-This is a work in progress, started early 2015.
-
-Feel free to suggest changes, although the why, what and how is left to my only consideration.

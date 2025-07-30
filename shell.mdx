@@ -1,0 +1,21 @@
+---
+title: Shell script
+description: "Bash and shell scripting tips and tricks"
+---
+
+![Bash on Windows](http://turnoff.us/image/en/bash-on-windows.png)
+
+Source: [turnoff.us](http://turnoff.us/image/en/bash-on-windows.png)
+
+## Cookbook
+
+## Detect path of current script
+
+```shell
+__PATH__=$(cd $(dirname "$0"); pwd)
+```
+## Date aliases
+
+```shell
+alias isodate='date +%Y-%m-%dT%H:%M:%S%z'
+```
