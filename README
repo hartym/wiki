@@ -4,5 +4,3 @@ wiki application via a git hook, and each commit merged in main is live on the s
 This is a work in progress, started early 2014.
 
 Feel free to suggest changes, although the why, what and how is left to my only consideration.
-
-Test update (for webhook behaviour)
