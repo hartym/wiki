@@ -1,3 +1,8 @@
+---
+title: "Claude Code Guidance"
+description: "Instructions for Claude Code when working with this repository"
+---
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
