@@ -145,7 +145,7 @@ tspan { white-space: pre; }
        text-anchor="start"
        fill="currentColor"
        id="text9"><tspan
-         id="tspan9">5,R,11</tspan></text>
+         id="tspan9">5,R,4</tspan></text>
   </g>
   <g
      transform="translate(0.8,6.3587585)"
@@ -192,7 +192,7 @@ tspan { white-space: pre; }
        text-anchor="start"
        fill="currentColor"
        id="text14"><tspan
-         id="tspan14">R,11,b7</tspan></text>
+         id="tspan14">R,4,b7</tspan></text>
   </g>
   <g
      transform="translate(12.612,1.8587585)"
