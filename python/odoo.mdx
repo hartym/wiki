@@ -6,6 +6,10 @@ title: Odoo
 
 ### Purge Studio Fields (for Odoo 18)
 
+!!! warning
+
+    This is a rather destructive script that should be used with care.
+
 ```python
 def purge_studio_field(field_name, model_name):
     table_name = model_name.replace('.', '_')
