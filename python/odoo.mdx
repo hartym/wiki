@@ -1,0 +1,46 @@
+title: Odoo
+---
+
+## Snippets
+
+### Purge Studio Fields (for Odoo 18)
+
+```python
+def purge_studio_field(field_name, model_name):
+    table_name = model_name.replace('.', '_')
+    
+    # 1. Nettoyer les vues (JSONB)
+    env.cr.execute("""
+        SELECT id, arch_db::text 
+        FROM ir_ui_view 
+        WHERE arch_db::text LIKE %s
+    """, ('%'+field_name+'%',))
+    
+    for view_id, arch_text in env.cr.fetchall():
+        import re
+        # Retirer toutes les références au champ
+        cleaned = re.sub(f'<field[^>]*name="{field_name}"[^/]*/?>', '', arch_text)
+        cleaned = re.sub(f'"{field_name}"', '""', cleaned)
+        
+        env.cr.execute("""
+            UPDATE ir_ui_view 
+            SET arch_db = %s::jsonb 
+            WHERE id = %s
+        """, (cleaned, view_id))
+    
+    # 2. Nettoyer les métadonnées
+    env.cr.execute("""
+        DELETE FROM ir_model_fields WHERE name = %s AND model = %s;
+        DELETE FROM ir_model_data WHERE name LIKE %s;
+    """, (field_name, model_name, '%'+field_name+'%'))
+    
+    # 3. Supprimer la colonne si elle existe
+    try:
+        env.cr.execute(f"ALTER TABLE {table_name} DROP COLUMN IF EXISTS {field_name} CASCADE")
+    except:
+        pass
+    
+    env.cr.commit()
+    print(f"✓ {field_name} purgé!")
+```
+
