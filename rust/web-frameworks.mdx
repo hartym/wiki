@@ -54,7 +54,7 @@ async fn main() -> std::io::Result<()> {
 // GET /hello?name=Alice -> {"message": "Hello, Alice!"}
 ```
 
-## Community & Development
+### Community & Development
 
 - **GitHub Stars**: ~20,000+
 - **Contributors**: 350+ contributors
@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
 - **Discord/Forums**: Very active community (5000+ Discord members)
 - **Corporate Backing**: Used by Microsoft, Cloudflare, and others
 
-## Feature Support Table
+### Feature Support Table
 
 | Feature | Support Level | Recommended Libraries | Notes |
 |---------|--------------|----------------------|-------|
@@ -83,9 +83,9 @@ async fn main() -> std::io::Result<()> {
 | **Tracing** | ⭐⭐⭐⭐⭐ Excellent | `tracing-actix-web` | OpenTelemetry support |
 
 
-## Additional Examples
+### Additional Examples
 
-### JWT Authentication Middleware
+#### JWT Authentication Middleware
 
 ```rust
 use actix_web::{web, App, HttpServer, HttpResponse};
@@ -111,7 +111,7 @@ let app = App::new()
     );
 ```
 
-### Rate Limiting with Governor
+#### Rate Limiting with Governor
 
 ```rust
 use actix_governor::{Governor, GovernorConfigBuilder};
@@ -129,13 +129,13 @@ let app = App::new()
 
 ---
 
-# 2. Axum
+## Axum
 
-## Overview
+### Overview
 
 Axum is a web framework built by the Tokio team, designed to work seamlessly with the Tower ecosystem. It focuses on ergonomics, modularity, and type safety while maintaining excellent performance. Its macro-free approach and strong integration with async Rust patterns make it a favorite among developers who prefer explicit, composable code.
 
-## Hello World Example
+### Hello World Example
 
 ```rust
 use axum::{
@@ -182,7 +182,7 @@ async fn main() {
 // GET /hello?name=Bob -> {"message": "Hello, Bob!"}
 ```
 
-## Main Characteristics
+### Main Characteristics
 
 - **Architecture**: Built on Tower service abstraction
 - **Performance**: On par with Actix Web
@@ -193,7 +193,7 @@ async fn main() {
 - **Composability**: Highly composable with Tower services
 - **Error Handling**: Explicit error handling with Result types
 
-## Community & Development
+### Community & Development
 
 - **GitHub Stars**: ~17,000+
 - **Contributors**: 200+ contributors
@@ -204,7 +204,7 @@ async fn main() {
 - **Discord**: Part of Tokio Discord (10,000+ members)
 - **Corporate Backing**: Maintained by Tokio project contributors
 
-## Feature Support Table
+### Feature Support Table
 
 | Feature | Support Level | Recommended Libraries | Notes |
 |---------|--------------|----------------------|-------|
@@ -222,26 +222,9 @@ async fn main() {
 | **Tracing** | ⭐⭐⭐⭐⭐ Native | `tracing`, `tower-http` | Built-in support |
 | **gRPC** | ⭐⭐⭐⭐⭐ Excellent | `tonic` | Same ecosystem |
 
-## Advantages
+### Additional Examples
 
-- **Tower ecosystem**: Access to all Tower middleware
-- **Type safety**: Exceptional compile-time guarantees
-- **Ergonomic API**: Clean, intuitive patterns
-- **No macros**: Easier to understand and debug
-- **Tokio integration**: Perfect async runtime integration
-- **Composability**: Services and layers compose beautifully
-- **Modern design**: Built with lessons learned from other frameworks
-
-## Disadvantages
-
-- **Newer framework**: Smaller ecosystem than Actix
-- **Tower complexity**: Tower concepts can be challenging
-- **Documentation gaps**: Some advanced patterns underdocumented
-- **Compile errors**: Type system errors can be cryptic
-
-## Additional Examples
-
-### JWT Authentication Layer
+#### JWT Authentication Layer
 
 ```rust
 use axum::{
@@ -281,7 +264,7 @@ let app = Router::new()
     .layer(middleware::from_fn(auth_middleware));
 ```
 
-### Rate Limiting with Tower Governor
+#### Rate Limiting with Tower Governor
 
 ```rust
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
@@ -301,13 +284,13 @@ let app = Router::new()
 
 ---
 
-# 3. Rocket
+## Rocket
 
-## Overview
+### Overview
 
 Rocket is a web framework that prioritizes developer experience, ease of use, and rapid development. It uses Rust's type system and custom procedural macros to eliminate boilerplate while maintaining type safety. Rocket is known for its declarative approach and "batteries included" philosophy.
 
-## Hello World Example
+### Hello World Example
 
 ```rust
 #[macro_use] extern crate rocket;
@@ -339,7 +322,7 @@ fn rocket() -> _ {
 // GET /hello?name=Charlie -> {"message": "Hello, Charlie!"}
 ```
 
-## Main Characteristics
+### Main Characteristics
 
 - **Architecture**: Macro-based declarative routing
 - **Performance**: Good (slightly behind Actix/Axum)
@@ -350,7 +333,7 @@ fn rocket() -> _ {
 - **Form Handling**: Superior form and multipart support
 - **Templates**: Built-in templating support
 
-## Community & Development
+### Community & Development
 
 - **GitHub Stars**: ~23,000+
 - **Contributors**: 300+ contributors
@@ -361,7 +344,7 @@ fn rocket() -> _ {
 - **Community**: Active Matrix/Discord channels
 - **History**: One of the oldest Rust web frameworks
 
-## Feature Support Table
+### Feature Support Table
 
 | Feature | Support Level | Recommended Libraries | Notes |
 |---------|--------------|----------------------|-------|
@@ -380,27 +363,9 @@ fn rocket() -> _ {
 | **Templates** | ⭐⭐⭐⭐⭐ Native | Handlebars, Tera | Built-in support |
 | **Forms** | ⭐⭐⭐⭐⭐ Excellent | Native | Best-in-class |
 
-## Advantages
+### Additional Examples
 
-- **Developer experience**: Best DX in Rust web frameworks
-- **Minimal boilerplate**: Macros eliminate repetitive code
-- **Request guards**: Powerful, composable validation system
-- **Configuration**: Built-in config management
-- **Error handling**: Automatic error responses
-- **Testing**: Exceptional testing support
-- **Documentation**: Outstanding guide for beginners
-
-## Disadvantages
-
-- **Performance**: Slightly slower than Actix/Axum
-- **Compile times**: Heavy macro usage increases build time
-- **Macro magic**: Can be harder to debug
-- **Version stability**: Still at 0.5 (though stable)
-- **Flexibility**: Less flexible for complex custom patterns
-
-## Additional Examples
-
-### JWT Authentication Guard
+#### JWT Authentication Guard
 
 ```rust
 use rocket::request::{self, Request, FromRequest};
@@ -439,7 +404,7 @@ fn protected_route(user: User) -> Json<Value> {
 }
 ```
 
-### Custom Rate Limiting Fairing
+#### Custom Rate Limiting Fairing
 
 ```rust
 use rocket::fairing::{Fairing, Info, Kind};
@@ -472,13 +437,13 @@ impl Fairing for RateLimiter {
 
 ---
 
-# 4. Poem
+## Poem
 
-## Overview
+### Overview
 
 Poem is a full-featured, modern web framework that emphasizes simplicity and powerful features. It provides automatic OpenAPI documentation generation, making it ideal for API-first development. Despite being newer than other frameworks, it offers a comprehensive feature set with excellent ergonomics.
 
-## Hello World Example
+### Hello World Example
 
 ```rust
 use poem::{
@@ -524,7 +489,7 @@ async fn main() -> Result<(), std::io::Error> {
 // GET /hello?name=Diana -> {"message": "Hello, Diana!"}
 ```
 
-## Main Characteristics
+### Main Characteristics
 
 - **Architecture**: Middleware-based with Tower compatibility
 - **Performance**: Very good, comparable to major frameworks
@@ -535,7 +500,7 @@ async fn main() -> Result<(), std::io::Error> {
 - **WebSocket**: Native WebSocket support
 - **Testing**: Good testing utilities
 
-## Community & Development
+### Community & Development
 
 - **GitHub Stars**: ~3,000+
 - **Contributors**: 100+ contributors
@@ -546,7 +511,7 @@ async fn main() -> Result<(), std::io::Error> {
 - **Community**: Growing Discord community
 - **Language**: Strong Chinese developer community
 
-## Feature Support Table
+### Feature Support Table
 
 | Feature | Support Level | Recommended Libraries | Notes |
 |---------|--------------|----------------------|-------|
@@ -565,7 +530,7 @@ async fn main() -> Result<(), std::io::Error> {
 | **I18n** | ⭐⭐⭐⭐⭐ Native | Built-in | Unique feature |
 | **Static Files** | ⭐⭐⭐⭐⭐ Native | Built-in | Embedded support |
 
-## Advantages
+### Advantages
 
 - **OpenAPI generation**: Automatic API documentation
 - **Feature-rich**: Most features built-in
@@ -575,7 +540,7 @@ async fn main() -> Result<(), std::io::Error> {
 - **Clean API**: Intuitive and ergonomic
 - **Active development**: Rapid feature additions
 
-## Disadvantages
+### Disadvantages
 
 - **Smaller community**: Less third-party extensions
 - **Documentation**: Less comprehensive than established frameworks
@@ -583,9 +548,9 @@ async fn main() -> Result<(), std::io::Error> {
 - **Examples**: Fewer real-world examples available
 - **Enterprise adoption**: Limited production use cases
 
-## Additional Examples
+### Additional Examples
 
-### OpenAPI with Automatic Documentation
+#### OpenAPI with Automatic Documentation
 
 ```rust
 use poem_openapi::{OpenApi, Object, ApiResponse, payload::Json};
@@ -619,7 +584,7 @@ impl Api {
 // Automatically generates OpenAPI spec at /api-doc/openapi.json
 ```
 
-### JWT Authentication Middleware
+#### JWT Authentication Middleware
 
 ```rust
 use poem::{
@@ -635,7 +600,7 @@ let app = Route::new()
     .with(jwt_middleware);
 ```
 
-### Rate Limiting
+#### Rate Limiting
 
 ```rust
 use poem::middleware::RateLimiting;
@@ -653,7 +618,7 @@ let app = Route::new()
 
 ---
 
-## Authentication Implementation Complexity
+### Authentication Implementation Complexity
 
 | Task | Actix | Axum | Rocket | Poem |
 |------|-------|------|--------|------|
@@ -663,14 +628,14 @@ let app = Route::new()
 | Session Management | Easy | Medium | Easy | Easy |
 | API Key Auth | Easy | Easy | Very Easy | Easy |
 
-## Learning Curve Comparison
+### Learning Curve Comparison
 
 1. **Easiest**: Rocket - Intuitive macros, excellent docs
 2. **Easy**: Poem - Modern, clean API
 3. **Medium**: Axum - Requires Tower understanding
 4. **Hardest**: Actix - Actor model complexity
 
-## Production Readiness Score
+### Production Readiness Score
 
 | Framework | Score | Notes |
 |-----------|-------|-------|
