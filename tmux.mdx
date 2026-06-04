@@ -1,0 +1,23 @@
+---
+title: tmux
+description: "Terminal multiplexer: a verified cookbook for sessions, windows and panes."
+checkedOn: 2026-06-04
+---
+
+[tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
+windows and split panes inside a single terminal. The snippets below are verified on **tmux
+3.2a**. The prefix key is assumed to be the default `C-b` unless stated otherwise.
+
+## Cookbook
+
+## Create or attach a session (idempotent)
+
+```shell
+tmux new -A -s name
+```
+
+`-A` makes `new-session` behave like `attach-session` when the session already exists, so there
+is no "duplicate session" error. That makes it the right command for scripts and shell startup
+files. Add `-d` to create it detached (or no-op if it is already running).
+
+Tip article: [How to create or attach to a tmux session in one command?](/blog/en/tips/2026/06/04/create-or-attach-tmux-session.html)
