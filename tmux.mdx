@@ -21,3 +21,14 @@ is no "duplicate session" error. That makes it the right command for scripts and
 files. Add `-d` to create it detached (or no-op if it is already running).
 
 Tip article: [How to create or attach to a tmux session in one command?](/blog/en/tips/2026/06/04/create-or-attach-tmux-session.html)
+
+## Start a named session with a window name and directory
+
+```shell
+tmux new -d -s projet -n edit -c ~/code/projet
+```
+
+Creates the session `projet`, names its first window `edit`, and starts it in `~/code/projet`.
+`-d` keeps it detached so the command is scriptable; attach later with `tmux attach -t projet`.
+
+Tip article: [How to start a named tmux session with a window name and a directory?](/blog/en/tips/2026/06/05/start-named-tmux-session-window-directory.html)
