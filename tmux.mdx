@@ -32,3 +32,16 @@ Creates the session `projet`, names its first window `edit`, and starts it in `~
 `-d` keeps it detached so the command is scriptable; attach later with `tmux attach -t projet`.
 
 Tip article: [How to start a named tmux session with a window name and a directory?](/blog/en/tips/2026/06/05/start-named-tmux-session-window-directory.html)
+
+## Detach, list, and re-attach a session
+
+```shell
+tmux ls                 # list running sessions
+tmux attach -t projet   # re-attach (short: tmux a -t projet)
+```
+
+Press `prefix d` to detach: the session keeps running in the background. `tmux ls` shows what is
+alive, and `tmux attach -t name` jumps back in. `prefix s` runs `choose-tree -Zs`, an interactive
+session picker zoomed to full screen.
+
+Tip article: [How to detach, list, and re-attach a tmux session?](/blog/en/tips/2026/06/08/detach-list-attach-tmux-session.html)
