@@ -45,3 +45,16 @@ alive, and `tmux attach -t name` jumps back in. `prefix s` runs `choose-tree -Zs
 session picker zoomed to full screen.
 
 Tip article: [How to detach, list, and re-attach a tmux session?](/blog/en/tips/2026/06/08/detach-list-attach-tmux-session.html)
+
+## Rename a session or a window
+
+```shell
+tmux rename-session -t old new   # rename a session
+tmux rename-window new           # rename the current window
+```
+
+From the keyboard, `prefix $` renames the current session and `prefix ,` renames the current
+window, both through a prompt. Renaming a window by hand also turns off its automatic rename, so
+the name you typed sticks.
+
+Tip article: [How to rename a tmux session or window?](/blog/en/tips/2026/06/09/rename-tmux-session-window.html)
