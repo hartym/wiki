@@ -58,3 +58,19 @@ window, both through a prompt. Renaming a window by hand also turns off its auto
 the name you typed sticks.
 
 Tip article: [How to rename a tmux session or window?](/blog/en/tips/2026/06/09/rename-tmux-session-window.html)
+
+## Manage clients: list, kick out, disconnect
+
+```shell
+tmux list-clients -t projet     # who is attached (short: lsc)
+tmux attach -d -t projet        # attach here and detach every other client
+tmux detach-client -a           # detach all clients except the current one
+tmux detach-client -t <client>  # detach one specific client
+```
+
+When several terminals are attached to the same session, `attach -d` grabs it back to where you
+are and kicks the others off. `prefix D` runs `choose-client -Z`, an interactive client picker.
+`attach -x` also sends SIGHUP to the client's parent process, which closes, for example, the SSH
+session that started it.
+
+Tip article: [How to manage tmux clients (list, kick out, disconnect)?](/blog/en/tips/2026/06/10/manage-tmux-clients.html)
