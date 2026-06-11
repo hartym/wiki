@@ -64,19 +64,19 @@ Definitions file (`/etc/rabbitmq/definitions.json`):
     ]
 }
 ```
-TODO: WIP BELOW
+### Generate a definitions file from a running broker
 
-To generate this file from current configuration, you need `rabbitmqadmin` script, which uses RMQ management plugin.
+To dump the current configuration into a `definitions.json`, use the `rabbitmqadmin` script, which
+talks to the RabbitMQ management plugin. The official Docker image ships the plugin when the
+`management` tag is used.
 
-Official docker image provides the plugin it if the "management" tag is used.
+Reach the management UI through a port-forward:
 
+```bash
 kubectl port-forward rabbitmq-54644f7685-gf8hw 15672:15672
+```
 
-open [http://localhost:15672/](http://localhost:15672/)
-
-guest:guest (default)
-
-Dump
+Then open [http://localhost:15672/](http://localhost:15672/) (default login `guest:guest`).
 
 ## Clients
 

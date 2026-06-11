@@ -74,3 +74,16 @@ are and kicks the others off. `prefix D` runs `choose-client -Z`, an interactive
 session that started it.
 
 Tip article: [How to manage tmux clients (list, kick out, disconnect)?](/blog/en/tips/2026/06/10/manage-tmux-clients.html)
+
+## Switch between sessions without detaching
+
+```shell
+tmux switch-client -t other   # move the attached client to session 'other'
+```
+
+No need to detach and re-attach: `switch-client` moves the current client straight to another
+session, staying inside tmux. From the keyboard, `prefix (` and `prefix )` walk to the previous and
+next session, and `prefix L` toggles back to the last used session. `prefix s` opens
+`choose-tree -Zs` for an interactive picker.
+
+Tip article: [How to switch between tmux sessions without detaching?](/blog/en/tips/2026/06/11/switch-tmux-session-without-detaching.html)
