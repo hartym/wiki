@@ -87,3 +87,17 @@ next session, and `prefix L` toggles back to the last used session. `prefix s` o
 `choose-tree -Zs` for an interactive picker.
 
 Tip article: [How to switch between tmux sessions without detaching?](/blog/en/tips/2026/06/11/switch-tmux-session-without-detaching.html)
+
+## Kill a session, or the whole server
+
+```shell
+tmux kill-session -t name      # kill one session
+tmux kill-session -a -t keep   # kill ALL sessions except 'keep'
+tmux kill-server               # kill everything: all sessions, the server itself
+```
+
+Killing a session terminates every process in it, unlike detaching which keeps it running. The
+`-a` flag inverts the target: everything except the named session dies. `kill-server` takes the
+whole server down; the next `tmux new` starts a fresh one.
+
+Tip article: [How to kill a tmux session, or the whole server?](/blog/en/tips/2026/06/12/kill-tmux-session-or-server.html)
