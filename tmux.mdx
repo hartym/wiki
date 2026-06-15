@@ -101,3 +101,18 @@ Killing a session terminates every process in it, unlike detaching which keeps i
 whole server down; the next `tmux new` starts a fresh one.
 
 Tip article: [How to kill a tmux session, or the whole server?](/blog/en/tips/2026/06/12/kill-tmux-session-or-server.html)
+
+## Control a nested tmux: send the prefix inward
+
+```shell
+# ~/.tmux.conf, when your prefix is C-a
+bind C-a send-prefix   # double C-a then targets the inner tmux
+```
+
+With two tmux stacked (a local one and another over SSH, for example), the outer tmux catches the
+prefix. To reach the inner one, you forward the prefix to it. By default `prefix C-b` runs
+`send-prefix`, so with the stock `C-b` prefix you press it twice. Once your prefix is `C-a`, add
+`bind C-a send-prefix` and a double `C-a C-a` is sent through to the inner session. The simplest
+alternative is to give the inner tmux a different prefix so the two never collide.
+
+Tip article: [How to control a nested tmux session (send the prefix to the inner one)?](/blog/en/tips/2026/06/15/control-nested-tmux-send-prefix.html)
