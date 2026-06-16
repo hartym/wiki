@@ -28,12 +28,12 @@ rabbitmqctl add_user $RMQ_USERNAME $RMQ_PASSWORD
 rabbitmqctl add_vhost $RMQ_VHOST
 rabbitmqctl set_permissions -p $RMQ_VHOST $RMQ_USERNAME ".*" ".*" ".*"
 ```
-    
+
 This is not persistent, will only live for the lifetime of the container. (todo: find documentation about this?)
 
 Using the official docker image ([RabbitMQ on Docker Hub](https://hub.docker.com/_/rabbitmq/)), we can use an undocumented feature:
 the entrypoint will read `/etc/rabbitmq/definitions.json` if it exists and use it to define entities in rabbitmq,
-so if we derive our image from that adding this file, it will auto add them. 
+so if we derive our image from that adding this file, it will auto add them.
 
 Definitions file (`/etc/rabbitmq/definitions.json`):
 

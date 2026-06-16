@@ -10,7 +10,7 @@ windows and split panes inside a single terminal. The snippets below are verifie
 
 ## Cookbook
 
-## Create or attach a session (idempotent)
+### Create or attach a session (idempotent)
 
 ```shell
 tmux new -A -s name
@@ -22,7 +22,7 @@ files. Add `-d` to create it detached (or no-op if it is already running).
 
 Tip article: [How to create or attach to a tmux session in one command?](/blog/en/tips/2026/06/04/create-or-attach-tmux-session.html)
 
-## Start a named session with a window name and directory
+### Start a named session with a window name and directory
 
 ```shell
 tmux new -d -s projet -n edit -c ~/code/projet
@@ -33,7 +33,7 @@ Creates the session `projet`, names its first window `edit`, and starts it in `~
 
 Tip article: [How to start a named tmux session with a window name and a directory?](/blog/en/tips/2026/06/05/start-named-tmux-session-window-directory.html)
 
-## Detach, list, and re-attach a session
+### Detach, list, and re-attach a session
 
 ```shell
 tmux ls                 # list running sessions
@@ -46,7 +46,7 @@ session picker zoomed to full screen.
 
 Tip article: [How to detach, list, and re-attach a tmux session?](/blog/en/tips/2026/06/08/detach-list-attach-tmux-session.html)
 
-## Rename a session or a window
+### Rename a session or a window
 
 ```shell
 tmux rename-session -t old new   # rename a session
@@ -59,7 +59,7 @@ the name you typed sticks.
 
 Tip article: [How to rename a tmux session or window?](/blog/en/tips/2026/06/09/rename-tmux-session-window.html)
 
-## Manage clients: list, kick out, disconnect
+### Manage clients: list, kick out, disconnect
 
 ```shell
 tmux list-clients -t projet     # who is attached (short: lsc)
@@ -75,7 +75,7 @@ session that started it.
 
 Tip article: [How to manage tmux clients (list, kick out, disconnect)?](/blog/en/tips/2026/06/10/manage-tmux-clients.html)
 
-## Switch between sessions without detaching
+### Switch between sessions without detaching
 
 ```shell
 tmux switch-client -t other   # move the attached client to session 'other'
@@ -88,7 +88,7 @@ next session, and `prefix L` toggles back to the last used session. `prefix s` o
 
 Tip article: [How to switch between tmux sessions without detaching?](/blog/en/tips/2026/06/11/switch-tmux-session-without-detaching.html)
 
-## Kill a session, or the whole server
+### Kill a session, or the whole server
 
 ```shell
 tmux kill-session -t name      # kill one session
@@ -102,7 +102,7 @@ whole server down; the next `tmux new` starts a fresh one.
 
 Tip article: [How to kill a tmux session, or the whole server?](/blog/en/tips/2026/06/12/kill-tmux-session-or-server.html)
 
-## Control a nested tmux: send the prefix inward
+### Control a nested tmux: send the prefix inward
 
 ```shell
 # ~/.tmux.conf, when your prefix is C-a
@@ -116,3 +116,51 @@ prefix. To reach the inner one, you forward the prefix to it. By default `prefix
 alternative is to give the inner tmux a different prefix so the two never collide.
 
 Tip article: [How to control a nested tmux session (send the prefix to the inner one)?](/blog/en/tips/2026/06/15/control-nested-tmux-send-prefix.html)
+
+### Split a window into panes
+
+```shell
+tmux split-window -h   # panes side by side (left / right)
+tmux split-window -v   # panes stacked (top / bottom)
+```
+
+`split-window` cuts the active pane in two and starts a new shell in the freed half. The flag
+names are the usual tmux trap: `-h` ("horizontal") gives a vertical divider, so the panes sit
+side by side, while `-v` stacks them top and bottom. The flag describes the axis of the cut, not
+the visual layout. From the keyboard, `prefix %` does `split-window -h` and `prefix "` does the
+vertical split. Add `-c "#{pane_current_path}"` to open in the current directory, `-b` to insert
+before instead of after, and `-l 30%` to set the new pane's size.
+
+The `-h`/`-v` names are easy to forget, so it is worth rebinding the splits to keys that match the
+result, `|` for side by side and `-` for stacked (see the sample config below).
+
+Tip article: [How to split a tmux window into panes?](/blog/en/tips/2026/06/16/split-tmux-window-into-panes.html)
+
+## A starter ~/.tmux.conf
+
+Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
+restarting tmux with `tmux source-file ~/.tmux.conf`, or from inside a session with `prefix :`
+then `source-file ~/.tmux.conf`.
+
+### Use C-a as the prefix
+
+```shell
+unbind C-b
+set -g prefix C-a
+bind C-a send-prefix   # press C-a twice to drive a nested tmux
+```
+
+`C-a` matches GNU screen's prefix and `a` is easier to reach than `b`, which is why many setups
+switch to it. The `bind C-a send-prefix` line keeps nested sessions usable: a double `C-a C-a`
+forwards the prefix to a tmux running inside this one.
+
+### Splits on memorable keys
+
+```shell
+bind | split-window -h   # | is the vertical divider: panes side by side
+bind - split-window -v   # - is the horizontal divider: panes stacked
+```
+
+The default `prefix %` and `prefix "` still work; these just add keys that match the resulting
+layout. Append `-c "#{pane_current_path}"` to either bind to open the new pane in the current
+pane's directory.
