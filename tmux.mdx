@@ -136,6 +136,21 @@ result, `|` for side by side and `-` for stacked (see the sample config below).
 
 Tip article: [How to split a tmux window into panes?](/blog/en/tips/2026/06/16/split-tmux-window-into-panes.html)
 
+### Navigate between windows
+
+```shell
+tmux next-window       # go to the next window
+tmux previous-window   # go to the previous window
+tmux last-window       # toggle with the previously active window
+```
+
+From the keyboard, `prefix n` and `prefix p` step to the next and previous window, and they wrap
+around the ends. `prefix l` (lowercase L) is the useful one: it toggles back and forth between the
+current window and the one you were on before, so jumping to a window and back is two keystrokes.
+It is the window-level twin of `prefix ;`, which toggles the last active pane.
+
+Tip article: [How to navigate between tmux windows?](/blog/en/tips/2026/06/17/navigate-tmux-windows.html)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without

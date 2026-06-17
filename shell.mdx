@@ -1,7 +1,7 @@
 ---
 title: Shell script
 description: "Bash and shell scripting snippets: find the running script's directory, ISO 8601 date alias."
-checkedOn: 2026-06-16
+checkedOn: 2026-06-17
 ---
 
 ![Bash on Windows](http://turnoff.us/image/en/bash-on-windows.png)
@@ -10,7 +10,7 @@ Source: [turnoff.us](http://turnoff.us/image/en/bash-on-windows.png)
 
 ## Cookbook
 
-## Find the directory of the running script
+### Find the directory of the running script
 
 ```shell
 __DIR__=$(cd "$(dirname "$0")" && pwd)
@@ -21,7 +21,7 @@ Quote the inner command substitution: without the quotes, a path containing spac
 several arguments and `cd` fails with "too many arguments". The `&&` makes the script stop instead
 of falling back to a wrong directory if the `cd` fails.
 
-## Date aliases
+### Date aliases
 
 ```shell
 alias isodate='date +%Y-%m-%dT%H:%M:%S%z'
