@@ -166,6 +166,21 @@ list and remove the gaps left behind, use `renumber-windows`.
 
 Tip article: [How to reorder tmux windows?](/blog/en/tips/2026/06/18/reorder-tmux-windows.html)
 
+### Renumber windows to close the gaps
+
+```shell
+tmux move-window -r          # repack now: indexes become 0, 1, 2, ...
+set -g renumber-windows on   # ~/.tmux.conf: repack on every window close
+```
+
+Closing a window in the middle of the list leaves its index empty, so the windows drift to
+something like `0 3 7`. `move-window -r` renumbers every window in the current session at once
+to a contiguous range starting at `base-index`. Setting `renumber-windows on` in `~/.tmux.conf`
+does the same thing automatically each time a window closes, so the list never grows gaps and
+`prefix 1`, `prefix 2`, ... keep landing where you expect.
+
+Tip article: [How to renumber tmux windows and close the gaps?](/blog/en/tips/2026/06/19/renumber-tmux-windows.html)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
