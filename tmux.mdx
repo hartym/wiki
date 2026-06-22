@@ -181,6 +181,20 @@ does the same thing automatically each time a window closes, so the list never g
 
 Tip article: [How to renumber tmux windows and close the gaps?](/blog/en/tips/2026/06/19/renumber-tmux-windows.html)
 
+### Stop windows from renaming themselves
+
+```shell
+setw -g automatic-rename off   # ~/.tmux.conf: keep the names you set
+```
+
+By default tmux runs with `automatic-rename on`, so each window is named after the program in its
+active pane and the title keeps shifting from `sh` to `vim` to `node` as you work. Renaming a
+window by hand turns `automatic-rename` off for that window alone, so the name sticks; setting it
+off globally does the same for every window. A separate option, `allow-rename` (off by default on
+3.2a), controls whether a program can push its own title through a terminal escape sequence.
+
+Tip article: [How to stop tmux from renaming your windows?](/blog/en/tips/2026/06/22/control-tmux-automatic-window-rename.html)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
