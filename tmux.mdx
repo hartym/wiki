@@ -195,6 +195,23 @@ off globally does the same for every window. A separate option, `allow-rename` (
 
 Tip article: [How to stop tmux from renaming your windows?](/blog/en/tips/2026/06/22/control-tmux-automatic-window-rename.html)
 
+### Get notified of activity or silence in a window
+
+```shell
+setw -g monitor-activity on    # ~/.tmux.conf: flag the window on any output
+setw -g monitor-silence 30     # flag it after 30 s with no output (0 = off)
+set  -g visual-activity on     # also print a status message
+```
+
+Run a long job in one window, switch away, and tmux highlights that window when something happens.
+`monitor-activity` reacts to new output; `monitor-silence` reacts to output stopping for N seconds,
+which is the better "the job finished" signal. With `visual-activity on` tmux also prints a status
+message instead of only flagging the window. A related option, `monitor-bell`, flags a window when a
+program rings the terminal bell and is `on` by default. Defaults on 3.2a: `monitor-activity off`,
+`monitor-silence 0`, `visual-activity off`, `monitor-bell on`.
+
+Tip article: [How to get notified of activity or silence in a tmux window?](/blog/en/tips/2026/06/23/monitor-tmux-window-activity-silence.html)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without

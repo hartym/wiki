@@ -30,7 +30,9 @@ rabbitmqctl add_vhost $RMQ_VHOST
 rabbitmqctl set_permissions -p $RMQ_VHOST $RMQ_USERNAME ".*" ".*" ".*"
 ```
 
-This is not persistent: it only lives for the lifetime of the container. (todo: find documentation about this?)
+These changes are written to RabbitMQ's internal database under the node data directory
+(`/var/lib/rabbitmq`). In a container they only survive as long as that directory does: mount a
+volume there to keep users and vhosts across restarts and rebuilds.
 
 Using the official docker image ([RabbitMQ on Docker Hub](https://hub.docker.com/_/rabbitmq/)), we can use an undocumented feature:
 the entrypoint will read `/etc/rabbitmq/definitions.json` if it exists and use it to define entities in rabbitmq,

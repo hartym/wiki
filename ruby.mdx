@@ -1,15 +1,22 @@
 ---
 title: Ruby
-description: "Ruby notes: installing nokogiri on macOS, and forcing full HTTPS in Discourse."
+description: "Ruby notes: installing Nokogiri, and forcing full HTTPS in Discourse."
+checkedOn: 2026-06-23
 ---
 
-* Install nokogiri and nokogumbo on macOS
+* Install Nokogiri (with HTML5 parsing)
 
 ```shell
-brew install libxml2 libxslt
-ARCHFLAGS="-arch x86_64" bundle exec gem install nokogiri
-ARCHFLAGS="-arch x86_64" bundle exec gem install nokogumbo
+gem install nokogiri
 ```
+
+Since Nokogiri 1.11 the gem ships precompiled native libraries for Linux and macOS, so there is no
+compiler step and no `brew install libxml2 libxslt` to set up first. The old
+`ARCHFLAGS="-arch x86_64"` workaround is no longer needed on current versions.
+
+HTML5 parsing used to live in a separate `nokogumbo` gem. Since Nokogiri 1.12 it is built in: drop
+`nokogumbo` as a dependency and parse with `Nokogiri.HTML5(...)`.
+
 * Discourse full https (including oauth callbacks ...)
 
 In file `config/initializers/09-omniauth.rb`:
