@@ -212,6 +212,22 @@ program rings the terminal bell and is `on` by default. Defaults on 3.2a: `monit
 
 Tip article: [How to get notified of activity or silence in a tmux window?](/blog/en/tips/2026/06/23/monitor-tmux-window-activity-silence.html)
 
+### Move between panes
+
+```shell
+tmux select-pane -L     # focus the pane to the left (-R right, -U up, -D down)
+tmux select-pane -t :.+ # focus the next pane in order, wrapping around
+```
+
+From the keyboard, `prefix` then an arrow key moves the focus in that direction. The arrow binds
+are repeatable, so within the repeat timeout you can keep tapping arrows without pressing the
+prefix again. `prefix o` cycles to the next pane in order and wraps back to the first. `prefix q`
+runs `display-panes`, which overlays a large number on each pane; type that number to jump
+straight to it. The overlay stays up for `display-panes-time`, 1000 ms by default. To bounce back
+to where you were, `prefix ;` toggles the last active pane.
+
+Tip article: [How to move between tmux panes?](/blog/en/tips/2026/06/24/move-between-tmux-panes.html)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
