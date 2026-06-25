@@ -1,17 +1,26 @@
 ---
 title: Docker
-description: How to — Alpine images
+description: "Docker notes: install and drop Alpine build dependencies in a single layer with a virtual package."
+checkedOn: 2026-06-25
 ---
 
-## How to — Alpine images
+## Alpine images: build deps in one layer
+
+Install the build toolchain under a named virtual package, build, then remove that group, all in
+one `RUN` so the build deps never reach the final image layer.
 
 ```docker
-RUN apk --update add --no-cache --virtual .builddeps \
-                     build-base ... all build deps ... \
-    && ... all run steps requiring build deps ...
+RUN apk add --no-cache --virtual .builddeps build-base ... build deps ... \
+    && ... build steps that need those deps ... \
     && apk del .builddeps
 ```
 
+`--virtual .builddeps` tags everything installed in that call under one name, so `apk del
+.builddeps` drops the whole group afterwards. `--no-cache` fetches a fresh package index on the
+fly and keeps nothing in `/var/cache/apk`, which replaces the old `--update` plus
+`rm -rf /var/cache/apk/*` dance; passing `--update` as well is redundant. Keep it a single `RUN`:
+removing the deps in a later layer would not shrink the image, since each layer only adds.
+
 ## Misc
 
-Container related stuff : https://www.mindmeister.com/fr/389671722/open-container-ecosystem-formerly-docker-ecosystem
+Container ecosystem map: https://www.mindmeister.com/fr/389671722/open-container-ecosystem-formerly-docker-ecosystem

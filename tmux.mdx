@@ -228,6 +228,20 @@ to where you were, `prefix ;` toggles the last active pane.
 
 Tip article: [How to move between tmux panes?](/blog/en/tips/2026/06/24/move-between-tmux-panes.html)
 
+### Jump back to the last active pane
+
+```shell
+tmux last-pane     # toggle focus back to the previously active pane
+tmux select-pane -l   # same toggle from the CLI
+```
+
+`prefix ;` runs `last-pane`: it toggles focus between the current pane and the one you were on
+just before, so bouncing to a pane and back costs one keystroke each way. It is the pane-level
+twin of `prefix l` for windows. `select-pane -l` (lowercase L) does the same thing, and
+`last-pane -Z` keeps a zoomed pane zoomed across the toggle.
+
+Tip article: [How to jump back to the last active tmux pane?](/blog/en/tips/2026/06/25/return-to-last-active-tmux-pane.html)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without

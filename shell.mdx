@@ -1,7 +1,7 @@
 ---
 title: Shell script
 description: "Bash and shell scripting snippets: find the running script's directory, ISO 8601 date alias."
-checkedOn: 2026-06-24
+checkedOn: 2026-06-25
 ---
 
 ![Bash on Windows](http://turnoff.us/image/en/bash-on-windows.png)
@@ -28,4 +28,5 @@ alias isodate='date +%Y-%m-%dT%H:%M:%S%z'
 ```
 
 Prints the current time in ISO 8601 with the timezone offset, for example
-`2026-06-15T08:14:27+0200`.
+`2026-06-15T08:14:27+0200`. For the extended colon form `+02:00`, GNU date (Linux) accepts `%:z`;
+the BSD date that ships with macOS does not, so keep `%z` there for a portable alias.
