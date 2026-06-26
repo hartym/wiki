@@ -242,6 +242,21 @@ twin of `prefix l` for windows. `select-pane -l` (lowercase L) does the same thi
 
 Tip article: [How to jump back to the last active tmux pane?](/blog/en/tips/2026/06/25/return-to-last-active-tmux-pane.html)
 
+### Zoom a pane to fullscreen
+
+```shell
+tmux resize-pane -Z   # toggle the active pane to fullscreen and back
+```
+
+`prefix z` runs `resize-pane -Z`: the active pane expands to fill the whole window, and `prefix z`
+again restores the previous layout. The other panes are only hidden, not closed, and every process
+keeps running, so this is a temporary "give me room to read this" toggle, not a rearrangement.
+While a pane is zoomed, `window_zoomed_flag` is `1` and the status line shows a `Z` next to the
+window name. Splitting, switching windows, or anything that changes the layout unzooms it
+automatically.
+
+Tip article: [How to zoom a tmux pane to fullscreen?](/blog/en/tips/2026/06/26/zoom-tmux-pane.html)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
