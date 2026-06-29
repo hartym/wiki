@@ -20,7 +20,7 @@ tmux new -A -s name
 is no "duplicate session" error. That makes it the right command for scripts and shell startup
 files. Add `-d` to create it detached (or no-op if it is already running).
 
-Tip article: [How to create or attach to a tmux session in one command?](/blog/en/tips/2026/06/04/create-or-attach-tmux-session.html)
+Tip article: [How to create or attach to a tmux session in one command?](/blog/en/tips/2026/06/04/create-or-attach-tmux-session/)
 
 ### Start a named session with a window name and directory
 
@@ -31,7 +31,7 @@ tmux new -d -s projet -n edit -c ~/code/projet
 Creates the session `projet`, names its first window `edit`, and starts it in `~/code/projet`.
 `-d` keeps it detached so the command is scriptable; attach later with `tmux attach -t projet`.
 
-Tip article: [How to start a named tmux session with a window name and a directory?](/blog/en/tips/2026/06/05/start-named-tmux-session-window-directory.html)
+Tip article: [How to start a named tmux session with a window name and a directory?](/blog/en/tips/2026/06/05/start-named-tmux-session-window-directory/)
 
 ### Detach, list, and re-attach a session
 
@@ -44,7 +44,7 @@ Press `prefix d` to detach: the session keeps running in the background. `tmux l
 alive, and `tmux attach -t name` jumps back in. `prefix s` runs `choose-tree -Zs`, an interactive
 session picker zoomed to full screen.
 
-Tip article: [How to detach, list, and re-attach a tmux session?](/blog/en/tips/2026/06/08/detach-list-attach-tmux-session.html)
+Tip article: [How to detach, list, and re-attach a tmux session?](/blog/en/tips/2026/06/08/detach-list-attach-tmux-session/)
 
 ### Rename a session or a window
 
@@ -57,7 +57,7 @@ From the keyboard, `prefix $` renames the current session and `prefix ,` renames
 window, both through a prompt. Renaming a window by hand also turns off its automatic rename, so
 the name you typed sticks.
 
-Tip article: [How to rename a tmux session or window?](/blog/en/tips/2026/06/09/rename-tmux-session-window.html)
+Tip article: [How to rename a tmux session or window?](/blog/en/tips/2026/06/09/rename-tmux-session-window/)
 
 ### Manage clients: list, kick out, disconnect
 
@@ -73,7 +73,7 @@ are and kicks the others off. `prefix D` runs `choose-client -Z`, an interactive
 `attach -x` also sends SIGHUP to the client's parent process, which closes, for example, the SSH
 session that started it.
 
-Tip article: [How to manage tmux clients (list, kick out, disconnect)?](/blog/en/tips/2026/06/10/manage-tmux-clients.html)
+Tip article: [How to manage tmux clients (list, kick out, disconnect)?](/blog/en/tips/2026/06/10/manage-tmux-clients/)
 
 ### Switch between sessions without detaching
 
@@ -86,7 +86,7 @@ session, staying inside tmux. From the keyboard, `prefix (` and `prefix )` walk 
 next session, and `prefix L` toggles back to the last used session. `prefix s` opens
 `choose-tree -Zs` for an interactive picker.
 
-Tip article: [How to switch between tmux sessions without detaching?](/blog/en/tips/2026/06/11/switch-tmux-session-without-detaching.html)
+Tip article: [How to switch between tmux sessions without detaching?](/blog/en/tips/2026/06/11/switch-tmux-session-without-detaching/)
 
 ### Kill a session, or the whole server
 
@@ -100,7 +100,7 @@ Killing a session terminates every process in it, unlike detaching which keeps i
 `-a` flag inverts the target: everything except the named session dies. `kill-server` takes the
 whole server down; the next `tmux new` starts a fresh one.
 
-Tip article: [How to kill a tmux session, or the whole server?](/blog/en/tips/2026/06/12/kill-tmux-session-or-server.html)
+Tip article: [How to kill a tmux session, or the whole server?](/blog/en/tips/2026/06/12/kill-tmux-session-or-server/)
 
 ### Control a nested tmux: send the prefix inward
 
@@ -115,7 +115,7 @@ prefix. To reach the inner one, you forward the prefix to it. By default `prefix
 `bind C-a send-prefix` and a double `C-a C-a` is sent through to the inner session. The simplest
 alternative is to give the inner tmux a different prefix so the two never collide.
 
-Tip article: [How to control a nested tmux session (send the prefix to the inner one)?](/blog/en/tips/2026/06/15/control-nested-tmux-send-prefix.html)
+Tip article: [How to control a nested tmux session (send the prefix to the inner one)?](/blog/en/tips/2026/06/15/control-nested-tmux-send-prefix/)
 
 ### Split a window into panes
 
@@ -134,7 +134,7 @@ before instead of after, and `-l 30%` to set the new pane's size.
 The `-h`/`-v` names are easy to forget, so it is worth rebinding the splits to keys that match the
 result, `|` for side by side and `-` for stacked (see the sample config below).
 
-Tip article: [How to split a tmux window into panes?](/blog/en/tips/2026/06/16/split-tmux-window-into-panes.html)
+Tip article: [How to split a tmux window into panes?](/blog/en/tips/2026/06/16/split-tmux-window-into-panes/)
 
 ### Navigate between windows
 
@@ -149,7 +149,7 @@ around the ends. `prefix l` (lowercase L) is the useful one: it toggles back and
 current window and the one you were on before, so jumping to a window and back is two keystrokes.
 It is the window-level twin of `prefix ;`, which toggles the last active pane.
 
-Tip article: [How to navigate between tmux windows?](/blog/en/tips/2026/06/17/navigate-tmux-windows.html)
+Tip article: [How to navigate between tmux windows?](/blog/en/tips/2026/06/17/navigate-tmux-windows/)
 
 ### Reorder windows
 
@@ -164,7 +164,7 @@ that index must be empty, otherwise tmux refuses with `index in use` and changes
 keyboard, `prefix .` opens a prompt running `move-window -t` on the current window. To repack the
 list and remove the gaps left behind, use `renumber-windows`.
 
-Tip article: [How to reorder tmux windows?](/blog/en/tips/2026/06/18/reorder-tmux-windows.html)
+Tip article: [How to reorder tmux windows?](/blog/en/tips/2026/06/18/reorder-tmux-windows/)
 
 ### Renumber windows to close the gaps
 
@@ -179,7 +179,7 @@ to a contiguous range starting at `base-index`. Setting `renumber-windows on` in
 does the same thing automatically each time a window closes, so the list never grows gaps and
 `prefix 1`, `prefix 2`, ... keep landing where you expect.
 
-Tip article: [How to renumber tmux windows and close the gaps?](/blog/en/tips/2026/06/19/renumber-tmux-windows.html)
+Tip article: [How to renumber tmux windows and close the gaps?](/blog/en/tips/2026/06/19/renumber-tmux-windows/)
 
 ### Stop windows from renaming themselves
 
@@ -193,7 +193,7 @@ window by hand turns `automatic-rename` off for that window alone, so the name s
 off globally does the same for every window. A separate option, `allow-rename` (off by default on
 3.2a), controls whether a program can push its own title through a terminal escape sequence.
 
-Tip article: [How to stop tmux from renaming your windows?](/blog/en/tips/2026/06/22/control-tmux-automatic-window-rename.html)
+Tip article: [How to stop tmux from renaming your windows?](/blog/en/tips/2026/06/22/control-tmux-automatic-window-rename/)
 
 ### Get notified of activity or silence in a window
 
@@ -210,7 +210,7 @@ message instead of only flagging the window. A related option, `monitor-bell`, f
 program rings the terminal bell and is `on` by default. Defaults on 3.2a: `monitor-activity off`,
 `monitor-silence 0`, `visual-activity off`, `monitor-bell on`.
 
-Tip article: [How to get notified of activity or silence in a tmux window?](/blog/en/tips/2026/06/23/monitor-tmux-window-activity-silence.html)
+Tip article: [How to get notified of activity or silence in a tmux window?](/blog/en/tips/2026/06/23/monitor-tmux-window-activity-silence/)
 
 ### Move between panes
 
@@ -226,7 +226,7 @@ runs `display-panes`, which overlays a large number on each pane; type that numb
 straight to it. The overlay stays up for `display-panes-time`, 1000 ms by default. To bounce back
 to where you were, `prefix ;` toggles the last active pane.
 
-Tip article: [How to move between tmux panes?](/blog/en/tips/2026/06/24/move-between-tmux-panes.html)
+Tip article: [How to move between tmux panes?](/blog/en/tips/2026/06/24/move-between-tmux-panes/)
 
 ### Jump back to the last active pane
 
@@ -240,7 +240,7 @@ just before, so bouncing to a pane and back costs one keystroke each way. It is 
 twin of `prefix l` for windows. `select-pane -l` (lowercase L) does the same thing, and
 `last-pane -Z` keeps a zoomed pane zoomed across the toggle.
 
-Tip article: [How to jump back to the last active tmux pane?](/blog/en/tips/2026/06/25/return-to-last-active-tmux-pane.html)
+Tip article: [How to jump back to the last active tmux pane?](/blog/en/tips/2026/06/25/return-to-last-active-tmux-pane/)
 
 ### Zoom a pane to fullscreen
 
@@ -255,7 +255,34 @@ While a pane is zoomed, `window_zoomed_flag` is `1` and the status line shows a 
 window name. Splitting, switching windows, or anything that changes the layout unzooms it
 automatically.
 
-Tip article: [How to zoom a tmux pane to fullscreen?](/blog/en/tips/2026/06/26/zoom-tmux-pane.html)
+Tip article: [How to zoom a tmux pane to fullscreen?](/blog/en/tips/2026/06/26/zoom-tmux-pane/)
+
+### Resize a pane: relative and absolute
+
+```shell
+tmux resize-pane -L 10        # push the active pane's border 10 columns to the left
+tmux resize-pane -R 10        # ... to the right; -U / -D for up / down
+tmux resize-pane -x 80 -y 24  # absolute size: 80 columns, 24 rows
+```
+
+Zoom (`resize-pane -Z`) is the all-or-nothing version; this is the fine-grained one. `-L/-R/-U/-D [N]`
+moves the border in that direction by `N` cells (default `1`), and `-x/-y` set an exact size. A resize
+only does something when there is a neighbour on that axis to give or take space: two panes side by
+side cannot change each other's height, only their width.
+
+From the keyboard, both sets of binds are repeatable (`-r`), so you can hold the modifier and tap the
+arrow keys:
+
+```text
+prefix C-Up / C-Down / C-Left / C-Right   resize-pane -U/-D/-L/-R   (step 1)
+prefix M-Up / M-Down / M-Left / M-Right   resize-pane -U/-D/-L/-R 5 (step 5, Alt)
+```
+
+Verified on tmux 3.2a: with two panes side by side, the active pane goes from width 99 to 109 after
+`resize-pane -L 10`, and to 80 after `-x 80`; `-y 10` sets it to 10 rows. To rearrange every pane at
+once instead of nudging one border, change the layout (see below).
+
+Tip article: [How to resize a tmux pane?](/blog/en/tips/2026/06/29/resize-tmux-pane/)
 
 ## A starter ~/.tmux.conf
 
