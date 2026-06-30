@@ -1,6 +1,7 @@
 ---
 title: "ImageMagick (and GraphicsMagick)"
-description: "```shell"
+description: "ImageMagick batch recipe: strip, blur, compress and resize a folder of JPEGs for the web."
+checkedOn: 2026-06-30
 ---
 
 * https://en.wikipedia.org/wiki/ImageMagick
@@ -8,8 +9,19 @@ description: "```shell"
 * https://en.wikipedia.org/wiki/GraphicsMagick
 * http://www.graphicsmagick.org/
 
+### Batch-optimise a folder of JPEGs for the web
+
 ```shell
 for i in *.jpg; do
     convert -strip -interlace Plane -gaussian-blur 0.05 -quality 75% -resize 1800x $i output/$i
 done
 ```
+
+Walks every `.jpg` in the current directory and writes a lighter copy into `output/` (create it
+first with `mkdir -p output`). `-strip` drops EXIF and other metadata, `-interlace Plane` makes the
+JPEG progressive, `-gaussian-blur 0.05` smooths noise so it compresses better, `-quality 75%` sets
+the JPEG quality, and `-resize 1800x` caps the width at 1800px while keeping the aspect ratio.
+Verified on ImageMagick 6.9.11: a 2400x1600 source comes out at 1800x1200 and about half the size.
+
+On ImageMagick 7 the `convert` command is deprecated in favour of `magick`, so use
+`magick "$i" ... "output/$i"`.

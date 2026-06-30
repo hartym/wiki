@@ -284,6 +284,24 @@ once instead of nudging one border, change the layout (see below).
 
 Tip article: [How to resize a tmux pane?](/blog/en/tips/2026/06/29/resize-tmux-pane/)
 
+### Select and copy with the mouse
+
+```shell
+set -g mouse on   # ~/.tmux.conf: off by default
+```
+
+The mouse is `off` by default. With `mouse on`, a left-drag enters copy mode and copies the
+selection into the tmux paste buffer on release; paste it back with `prefix ]`. That buffer is
+tmux's own, not the system clipboard, so another application sees nothing unless you pipe copy mode
+to a clipboard tool (`pbcopy`, `xclip`, `wl-copy`). To use the terminal's native selection and
+clipboard instead, hold `Shift` while dragging, which bypasses tmux entirely. Turning the mouse on
+also enables click-to-focus a pane, click a window name to switch, scroll into the scrollback, and
+drag a border to resize; a right-click on a pane opens a context menu. Verified on tmux 3.2a:
+`mouse off` by default, and the copy path is `MouseDrag1Pane` then `MouseDragEnd1Pane`
+(`copy-pipe-and-cancel`).
+
+Tip article: [How to select and copy text with the mouse in tmux?](/blog/en/tips/2026/06/30/copy-text-with-the-mouse-in-tmux/)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without

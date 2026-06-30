@@ -4,7 +4,7 @@ description: "Ruby notes: installing Nokogiri, and forcing full HTTPS in Discour
 checkedOn: 2026-06-23
 ---
 
-* Install Nokogiri (with HTML5 parsing)
+### Install Nokogiri (with HTML5 parsing)
 
 ```shell
 gem install nokogiri
@@ -17,7 +17,7 @@ compiler step and no `brew install libxml2 libxslt` to set up first. The old
 HTML5 parsing used to live in a separate `nokogumbo` gem. Since Nokogiri 1.12 it is built in: drop
 `nokogumbo` as a dependency and parse with `Nokogiri.HTML5(...)`.
 
-* Discourse full https (including oauth callbacks ...)
+### Discourse: force full HTTPS (including OAuth callbacks)
 
 In file `config/initializers/09-omniauth.rb`:
 
