@@ -302,6 +302,25 @@ drag a border to resize; a right-click on a pane opens a context menu. Verified 
 
 Tip article: [How to select and copy text with the mouse in tmux?](/blog/en/tips/2026/06/30/copy-text-with-the-mouse-in-tmux/)
 
+### Number windows and panes from 1
+
+```shell
+set  -g base-index 1        # ~/.tmux.conf: windows start at 1
+setw -g pane-base-index 1   # panes start at 1
+set  -g renumber-windows on # keep the list contiguous on close
+```
+
+By default tmux numbers windows and panes from `0`, so the first window is `prefix 0`, at the far
+end of the number row. `base-index` (a session option) and `pane-base-index` (a window option, hence
+`setw`) shift the first index to `1`, so `prefix 1` selects the first window. Both apply only to
+windows and panes created afterwards, which is why they belong in `~/.tmux.conf`. Pair them with
+`renumber-windows on` so closing a window repacks the list instead of leaving a gap. One side effect:
+the first pane becoming `1` changes how a bare number reads as a pane target, so prefer a pane id
+(`%3`) or a `window.pane` form when a target must be unambiguous. Verified on tmux 3.2a: defaults are
+`0`/`0`; with the config above a fresh session reports window index `1` and panes `1` and `2`.
+
+Tip article: [How to make tmux number windows and panes from 1?](/blog/en/tips/2026/07/01/number-tmux-windows-panes-from-one/)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without

@@ -1,14 +1,34 @@
 ---
 title: "Secure Sockets Layer (SSL)"
-description: Certificates
+description: "OpenSSL snippets: read a server's certificate chain, generate a self-signed certificate."
+checkedOn: 2026-07-01
 ---
 
 ## Certificates
 
-* [Création de certificat + CA + auto-signature ](http://www.linux-france.org/prj/edu/archinet/systeme/ch24s03.html) (FR)
-
-Read certificate chain with openssl
+Read the certificate chain a server presents:
 
 ```bash
 openssl s_client -showcerts -servername www.google.com -connect www.google.com:443 </dev/null
 ```
+
+`-servername` sends the SNI name so a host serving several sites returns the right certificate,
+and `-showcerts` prints every certificate in the chain, not just the leaf. Add
+`| openssl x509 -noout -subject -issuer -dates` to a piped `s_client` to read just the subject,
+issuer and validity window.
+
+Generate a self-signed certificate and its key in one command (handy for local testing):
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 365 -subj "/CN=example.local"
+```
+
+`-nodes` leaves the key unencrypted (no passphrase prompt), `-subj` fills the subject
+non-interactively, and `-days` sets the validity. Inspect the result with
+`openssl x509 -in cert.pem -noout -subject -dates`.
+
+For a full certificate authority setup (root CA, intermediate, signing), see the
+[OpenSSL documentation](https://docs.openssl.org/master/man1/).
+
+Verified on OpenSSL 3.x: the `s_client` chain read, the self-signed generation, and the `x509`
+inspection all run as shown.

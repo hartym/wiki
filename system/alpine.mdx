@@ -1,8 +1,13 @@
 ---
 title: Alpine Linux
-description: Tips for building docker images
+description: "Notes on Alpine Linux for building small Docker images."
 ---
 
-## Tips for building docker images
+## Building Docker images
 
-* http://blog.zot24.com/tips-tricks-with-alpine-docker/
+Alpine is a common base for small images: the `alpine` image is a few megabytes, and packages
+install with `apk add --no-cache <pkg>` to avoid keeping the index in the layer.
+
+* [Official Alpine image on Docker Hub](https://hub.docker.com/_/alpine)
+* [Alpine package management (apk)](https://wiki.alpinelinux.org/wiki/Alpine_Linux_package_management)
+* [Docker build best practices](https://docs.docker.com/build/building/best-practices/)
