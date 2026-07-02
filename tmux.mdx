@@ -1,7 +1,7 @@
 ---
 title: tmux
 description: "Terminal multiplexer: a verified cookbook for sessions, windows and panes."
-checkedOn: 2026-06-13
+checkedOn: 2026-07-02
 ---
 
 [tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
@@ -18,7 +18,9 @@ tmux new -A -s name
 
 `-A` makes `new-session` behave like `attach-session` when the session already exists, so there
 is no "duplicate session" error. That makes it the right command for scripts and shell startup
-files. Add `-d` to create it detached (or no-op if it is already running).
+files. Add `-d` to create it detached; note that `-d` only applies to creation, so when the
+session already exists the command attaches anyway (and fails without a terminal). For a strict
+create-if-missing: `tmux has-session -t name 2>/dev/null || tmux new -d -s name`.
 
 Tip article: [How to create or attach to a tmux session in one command?](/blog/en/tips/2026/06/04/create-or-attach-tmux-session/)
 
@@ -70,8 +72,8 @@ tmux detach-client -t <client>  # detach one specific client
 
 When several terminals are attached to the same session, `attach -d` grabs it back to where you
 are and kicks the others off. `prefix D` runs `choose-client -Z`, an interactive client picker.
-`attach -x` also sends SIGHUP to the client's parent process, which closes, for example, the SSH
-session that started it.
+`attach -x` also sends SIGHUP to the parent process of the client it detaches, which closes, for
+example, the SSH session that started it.
 
 Tip article: [How to manage tmux clients (list, kick out, disconnect)?](/blog/en/tips/2026/06/10/manage-tmux-clients/)
 
@@ -110,7 +112,8 @@ bind C-a send-prefix   # double C-a then targets the inner tmux
 ```
 
 With two tmux stacked (a local one and another over SSH, for example), the outer tmux catches the
-prefix. To reach the inner one, you forward the prefix to it. By default `prefix C-b` runs
+prefix. To reach the inner one, you forward the prefix to it (this sends the outer prefix key, so
+it assumes both levels use the same prefix). By default `prefix C-b` runs
 `send-prefix`, so with the stock `C-b` prefix you press it twice. Once your prefix is `C-a`, add
 `bind C-a send-prefix` and a double `C-a C-a` is sent through to the inner session. The simplest
 alternative is to give the inner tmux a different prefix so the two never collide.
@@ -159,7 +162,9 @@ tmux move-window -s 2 -t 4   # move window 2 to index 4 (target must be free)
 ```
 
 `swap-window` exchanges two windows, trading only their index numbers, so neither slot needs to be
-free; add `-d` to keep the focus where it is. `move-window` slides one window to a new index, but
+free. On 3.2a the focus stays on the current index (you end up on the swapped-in window); add `-d`
+to make it follow the moved window instead, and beware that `-d` has flipped meaning between tmux
+versions. `move-window` slides one window to a new index, but
 that index must be empty, otherwise tmux refuses with `index in use` and changes nothing. From the
 keyboard, `prefix .` opens a prompt running `move-window -t` on the current window. To repack the
 list and remove the gaps left behind, use `renumber-windows`.
@@ -201,14 +206,16 @@ Tip article: [How to stop tmux from renaming your windows?](/blog/en/tips/2026/0
 setw -g monitor-activity on    # ~/.tmux.conf: flag the window on any output
 setw -g monitor-silence 30     # flag it after 30 s with no output (0 = off)
 set  -g visual-activity on     # also print a status message
+set  -g visual-silence on      # same, for the silence monitor
 ```
 
 Run a long job in one window, switch away, and tmux highlights that window when something happens.
 `monitor-activity` reacts to new output; `monitor-silence` reacts to output stopping for N seconds,
 which is the better "the job finished" signal. With `visual-activity on` tmux also prints a status
-message instead of only flagging the window. A related option, `monitor-bell`, flags a window when a
-program rings the terminal bell and is `on` by default. Defaults on 3.2a: `monitor-activity off`,
-`monitor-silence 0`, `visual-activity off`, `monitor-bell on`.
+message instead of only flagging the window; `visual-silence` is the silence counterpart. A related
+option, `monitor-bell`, flags a window when a program rings the terminal bell and is `on` by
+default. Defaults on 3.2a: `monitor-activity off`, `monitor-silence 0`, `visual-activity off`,
+`visual-silence off`, `monitor-bell on`.
 
 Tip article: [How to get notified of activity or silence in a tmux window?](/blog/en/tips/2026/06/23/monitor-tmux-window-activity-silence/)
 
@@ -236,7 +243,7 @@ tmux select-pane -l   # same toggle from the CLI
 ```
 
 `prefix ;` runs `last-pane`: it toggles focus between the current pane and the one you were on
-just before, so bouncing to a pane and back costs one keystroke each way. It is the pane-level
+just before, so bouncing to a pane and back costs one `prefix ;` each way. It is the pane-level
 twin of `prefix l` for windows. `select-pane -l` (lowercase L) does the same thing, and
 `last-pane -Z` keeps a zoomed pane zoomed across the toggle.
 
@@ -252,8 +259,8 @@ tmux resize-pane -Z   # toggle the active pane to fullscreen and back
 again restores the previous layout. The other panes are only hidden, not closed, and every process
 keeps running, so this is a temporary "give me room to read this" toggle, not a rearrangement.
 While a pane is zoomed, `window_zoomed_flag` is `1` and the status line shows a `Z` next to the
-window name. Splitting, switching windows, or anything that changes the layout unzooms it
-automatically.
+window name. Splitting, swapping panes, or anything that changes the layout unzooms it
+automatically; switching windows does not, the pane is still zoomed when you come back.
 
 Tip article: [How to zoom a tmux pane to fullscreen?](/blog/en/tips/2026/06/26/zoom-tmux-pane/)
 
@@ -278,9 +285,10 @@ prefix C-Up / C-Down / C-Left / C-Right   resize-pane -U/-D/-L/-R   (step 1)
 prefix M-Up / M-Down / M-Left / M-Right   resize-pane -U/-D/-L/-R 5 (step 5, Alt)
 ```
 
-Verified on tmux 3.2a: with two panes side by side, the active pane goes from width 99 to 109 after
-`resize-pane -L 10`, and to 80 after `-x 80`; `-y 10` sets it to 10 rows. To rearrange every pane at
-once instead of nudging one border, change the layout (see below).
+To rearrange every pane at once instead of nudging one border, change the layout (see below).
+
+{/* Verification notes (3.2a): with two panes side by side, the active pane goes from width 99
+to 109 after resize-pane -L 10, and to 80 after -x 80; -y 10 sets it to 10 rows. */}
 
 Tip article: [How to resize a tmux pane?](/blog/en/tips/2026/06/29/resize-tmux-pane/)
 
@@ -296,9 +304,10 @@ tmux's own, not the system clipboard, so another application sees nothing unless
 to a clipboard tool (`pbcopy`, `xclip`, `wl-copy`). To use the terminal's native selection and
 clipboard instead, hold `Shift` while dragging, which bypasses tmux entirely. Turning the mouse on
 also enables click-to-focus a pane, click a window name to switch, scroll into the scrollback, and
-drag a border to resize; a right-click on a pane opens a context menu. Verified on tmux 3.2a:
-`mouse off` by default, and the copy path is `MouseDrag1Pane` then `MouseDragEnd1Pane`
-(`copy-pipe-and-cancel`).
+drag a border to resize; a right-click on a pane opens a context menu.
+
+{/* Verification notes (3.2a): mouse off by default, and the copy path is MouseDrag1Pane then
+MouseDragEnd1Pane (copy-pipe-and-cancel). */}
 
 Tip article: [How to select and copy text with the mouse in tmux?](/blog/en/tips/2026/06/30/copy-text-with-the-mouse-in-tmux/)
 
@@ -316,8 +325,10 @@ end of the number row. `base-index` (a session option) and `pane-base-index` (a 
 windows and panes created afterwards, which is why they belong in `~/.tmux.conf`. Pair them with
 `renumber-windows on` so closing a window repacks the list instead of leaving a gap. One side effect:
 the first pane becoming `1` changes how a bare number reads as a pane target, so prefer a pane id
-(`%3`) or a `window.pane` form when a target must be unambiguous. Verified on tmux 3.2a: defaults are
-`0`/`0`; with the config above a fresh session reports window index `1` and panes `1` and `2`.
+(`%3`) or a `window.pane` form when a target must be unambiguous.
+
+{/* Verification notes (3.2a): defaults are 0/0; with the config above a fresh session reports
+window index 1 and panes 1 and 2. */}
 
 Tip article: [How to make tmux number windows and panes from 1?](/blog/en/tips/2026/07/01/number-tmux-windows-panes-from-one/)
 
@@ -333,12 +344,13 @@ Commands that take a pane target, like `swap-pane` and `join-pane`, read a bare 
 rule: it is a pane of the current window when a pane with that index exists, and otherwise a window
 (tmux then acts on that window's active pane). So `-s 3` points at pane 3 of the current window
 when it has that many panes, but flips to window 3 the moment it does not, and the switch is silent.
-Qualify the target to stay deterministic: a `window.pane` form (`3.1`), a pane id (`%7`, shown by
-`display-panes` and in `#{pane_id}`), or a window name (`build.1`). A pane id is the strongest
-choice because it is stable for the life of the pane and is never re-read as a window. Verified on
-tmux 3.2a, checking `#{window_index}.#{pane_index}`: with the current window holding panes 0..3,
-`-t 3` resolves to `0.3`; with a single pane and a window 7 present, `-t 7` resolves to window 7's
-active pane; grow the current window past eight panes and `-t 7` flips back to `0.7`.
+Qualify the target to stay deterministic: a `window.pane` form (`3.1`), a pane id (`%7`, shown in
+`#{pane_id}` and by `list-panes`), or a window name (`build.1`). A pane id is the strongest
+choice because it is stable for the life of the pane and is never re-read as a window.
+
+{/* Verification notes (3.2a), checking window_index.pane_index: with the current window holding
+panes 0..3, -t 3 resolves to 0.3; with a single pane and a window 7 present, -t 7 resolves to
+window 7's active pane; grow the current window to eight panes and -t 7 flips back to 0.7. */}
 
 Tip article: [How to target the right tmux pane by number?](/blog/en/tips/2026/07/02/target-tmux-pane-by-number/)
 
