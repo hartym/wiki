@@ -321,6 +321,27 @@ the first pane becoming `1` changes how a bare number reads as a pane target, so
 
 Tip article: [How to make tmux number windows and panes from 1?](/blog/en/tips/2026/07/01/number-tmux-windows-panes-from-one/)
 
+### Target a pane by number: the N vs N.M trap
+
+```shell
+tmux swap-pane -s 3      # ambiguous: pane 3 of THIS window, or window 3?
+tmux swap-pane -s 3.1    # unambiguous: window 3, pane 1
+tmux swap-pane -s %7     # unambiguous: pane id, never reinterpreted
+```
+
+Commands that take a pane target, like `swap-pane` and `join-pane`, read a bare number with one
+rule: it is a pane of the current window when a pane with that index exists, and otherwise a window
+(tmux then acts on that window's active pane). So `-s 3` points at pane 3 of the current window
+when it has that many panes, but flips to window 3 the moment it does not, and the switch is silent.
+Qualify the target to stay deterministic: a `window.pane` form (`3.1`), a pane id (`%7`, shown by
+`display-panes` and in `#{pane_id}`), or a window name (`build.1`). A pane id is the strongest
+choice because it is stable for the life of the pane and is never re-read as a window. Verified on
+tmux 3.2a, checking `#{window_index}.#{pane_index}`: with the current window holding panes 0..3,
+`-t 3` resolves to `0.3`; with a single pane and a window 7 present, `-t 7` resolves to window 7's
+active pane; grow the current window past eight panes and `-t 7` flips back to `0.7`.
+
+Tip article: [How to target the right tmux pane by number?](/blog/en/tips/2026/07/02/target-tmux-pane-by-number/)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
