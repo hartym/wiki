@@ -1,7 +1,7 @@
 ---
 title: tmux
 description: "Terminal multiplexer: a verified cookbook for sessions, windows and panes."
-checkedOn: 2026-07-02
+checkedOn: 2026-07-07
 ---
 
 [tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
@@ -353,6 +353,86 @@ panes 0..3, -t 3 resolves to 0.3; with a single pane and a window 7 present, -t 
 window 7's active pane; grow the current window to eight panes and -t 7 flips back to 0.7. */}
 
 Tip article: [How to target the right tmux pane by number?](/blog/en/tips/2026/07/02/target-tmux-pane-by-number/)
+
+### Target windows with special tokens
+
+```shell
+tmux select-window -t '{end}'              # jump to the highest-numbered window
+tmux select-window -t '!'                  # toggle back to the previously active window
+tmux swap-window -s '{start}' -t '{end}'   # tokens work anywhere a window target does
+```
+
+Besides plain indexes and names, a window target accepts special tokens: `{start}` and `{end}`
+are the lowest and highest numbered windows, `{last}` is the previously active one, and `{next}`
+and `{previous}` are the neighbours by number. Each has a one-character alias: `^`, `$`, `!`,
+`+` and `-`, and the last two accept an offset (`+2`, `-2`). Quote them in a shell: `{`, `$` and
+`!` all mean something to it. Tokens keep scripts independent of actual index numbers, so they
+keep working with `base-index 1` or after a renumbering. They are the window-level counterpart of
+the pane targets above; pane-relative tokens like `{left-of}` come with the pane-moving commands.
+
+{/* Verification notes (3.2a), current window 2 among 0..4, last active 4: {start}/^ -> 0,
+{end}/$ -> 4, {last}/! -> 4, {next}/+ -> 3, {previous}/- -> 1, +2 -> 4, -2 -> 0;
+swap-window -s '{start}' -t '{end}' swaps windows 0 and 4. */}
+
+Tip article: [How to target tmux windows with special tokens?](/blog/en/tips/2026/07/03/target-tmux-windows-special-tokens/)
+
+### Mark a pane and target it from anywhere
+
+```shell
+tmux select-pane -m            # mark the active pane (prefix m)
+tmux swap-pane -s '{marked}'   # swap the active pane with the marked one
+tmux join-pane -s '{marked}'   # bring the marked pane into this window
+```
+
+`prefix m` marks the active pane, and the target `{marked}` then resolves to it from any window
+or session. That removes the index juggling from join and swap: mark the pane where it lives, go
+where you want it, run the command. The marked pane is also the default source for `join-pane`,
+`move-pane`, `swap-pane` and `swap-window`, so once something is marked a bare `tmux swap-pane`
+swaps it with the active pane. `prefix M` clears the mark, marking another pane moves it, and
+moving the marked pane with swap or join clears it too, so mark again before the next move. With
+no mark set, `{marked}` fails with `no marked target` instead of silently picking a pane, which
+is exactly what a bare-number target does not give you (see the N vs N.M trap above).
+
+{/* Verification notes (3.2a): select-pane -m on 0.1, then from window 1 join-pane -h -s
+'{marked}' moves %1 in; pane_marked_set drops back to 0 after the move; swap-pane -s '{marked}'
+with no mark errors out with "no marked target"; with a fresh mark, bare swap-pane and join-pane
+use the marked pane as source. */}
+
+Tip article: [How to mark a tmux pane and target it from anywhere?](/blog/en/tips/2026/07/06/mark-tmux-pane-target-anywhere/)
+
+### Pull a pane from another window into this one
+
+```shell
+tmux join-pane -h -s 3.1       # pane 1 of window 3 -> split to the RIGHT of the active pane
+tmux join-pane -v -s build.0   # stacked below instead; add -b to insert before (left / above)
+```
+
+`join-pane` detaches one pane from wherever it lives and re-attaches it as a new split in the
+current window. `-s` is the source pane, `-t` the destination (default: the active pane); `-h`
+puts them side by side, `-v` stacks them, and `-b` inserts before instead of after. Qualify the
+source (`3.1`, a pane id, or the marked pane above) rather than a bare number, which is ambiguous
+(see the N vs N.M trap). Once a window loses its last pane it closes itself, so emptying a window
+with joins needs no cleanup. To gather every pane of a window at once, loop and then fix the
+layout:
+
+```shell
+src=3
+for p in $(tmux list-panes -t "$src" -F '#{pane_id}'); do
+  tmux join-pane -h -s "$p"    # into the current window
+done
+tmux select-layout tiled       # clean up the layout afterwards
+```
+
+The processes keep running through the move: `join-pane` re-parents the pane, it does not restart
+anything. The exact opposite is `break-pane` (`prefix !`), which sends the active pane off to a
+new window of its own.
+
+{/* Verification notes (3.2a): join-pane -h -s 3.1 puts %2 at left=101 beside %0; -v -b -s 3.0
+inserts %1 above and window 3 closes itself once emptied; a sleep started in window 7 keeps its
+pid across join-pane -v -s 7; the list-panes loop plus select-layout tiled gathers 3 panes from
+window 5 into a 5-pane tiled window 0; break-pane is bound to prefix ! by default. */}
+
+Tip article: [How to move a pane from one tmux window to another?](/blog/en/tips/2026/07/07/move-pane-between-tmux-windows/)
 
 ## A starter ~/.tmux.conf
 

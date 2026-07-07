@@ -1,33 +1,37 @@
 ---
 title: BeautifulSoup
 description: "BeautifulSoup notes: parse HTML with bs4, strip comments and AngularJS attributes."
+checkedOn: 2026-07-03
 ---
 
 ## References and links
 
-* https://pypi.python.org/pypi/beautifulsoup4
+* https://pypi.org/project/beautifulsoup4/
 * https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 ```python
 from bs4 import BeautifulSoup
 soup = BeautifulSoup(html, 'lxml')
 ```
+
 ## Recipes, Tips and Tricks
 
 ### How to remove comments from a bs4 element?
 
 ```python
 from bs4 import Comment
-# remove comments
-for comment in soup.findAll(text=lambda text:isinstance(text, Comment)):
+
+for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
     comment.extract()
 ```
+
+The camelCase `findAll` and the `text=` argument still work but are deprecated (since 4.0);
+`find_all` and `string=` are the current spelling.
 
 ### How to remove all the AngularJS bullshit attributes so you can actually read the HTML?
 
 ```python
-# remove angular attributes
-for tag in soup.recursiveChildGenerator():
+for tag in soup.descendants:
     if hasattr(tag, 'attrs'):
         tag.attrs = {
             key: value
@@ -36,4 +40,7 @@ for tag in soup.recursiveChildGenerator():
         }
 ```
 
-Note: this will only remove the ng-* attributes, and not the ng-* classes.
+`.descendants` replaces the deprecated `recursiveChildGenerator()`. Note: this only removes the
+ng-* attributes, not the ng-* classes.
+
+Verified on beautifulsoup4 4.15.0 with the lxml parser.
