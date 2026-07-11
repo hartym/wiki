@@ -1,6 +1,7 @@
 ---
 title: Testing with Python
-description: Pytest recipes
+description: "Python testing notes: pytest recipes (parametrized tests) and property-based testing libraries."
+checkedOn: 2026-07-08
 ---
 
 ## Pytest recipes
@@ -11,10 +12,11 @@ Reference: [pytest parametrize documentation](https://docs.pytest.org/en/stable/
 
 ```python
 import pytest
+
 @pytest.mark.parametrize("test_input,expected", [
     ("3+5", 8),
     ("2+4", 6),
-    ("6*9", 42),
+    ("6*9", 54),
 ])
 def test_eval(test_input, expected):
     assert eval(test_input) == expected

@@ -1,6 +1,7 @@
 ---
 title: SQLAlchemy
 description: "SQLAlchemy notes: turn on engine SQL logging, and the Core / ORM split."
+checkedOn: 2026-07-08
 ---
 
 This page is a work in progress.
@@ -10,7 +11,10 @@ Reference: [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/)
 ## Database Abstraction Layer
 
 ```python
+import logging
+
 from sqlalchemy import create_engine
+
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 engine = create_engine('sqlite:///basics.sqlite')

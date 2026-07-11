@@ -1,7 +1,7 @@
 ---
 title: tmux
 description: "Terminal multiplexer: a verified cookbook for sessions, windows and panes."
-checkedOn: 2026-07-07
+checkedOn: 2026-07-08
 ---
 
 [tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
@@ -433,6 +433,76 @@ pid across join-pane -v -s 7; the list-panes loop plus select-layout tiled gathe
 window 5 into a 5-pane tiled window 0; break-pane is bound to prefix ! by default. */}
 
 Tip article: [How to move a pane from one tmux window to another?](/blog/en/tips/2026/07/07/move-pane-between-tmux-windows/)
+
+### Move a pane with relative targets
+
+```shell
+tmux join-pane -h -s '{down-of}'   # pane below the active one -> re-attached to its right
+```
+
+One command reshapes a stacked pair into a side-by-side one: `{down-of}` names the pane below
+the active pane, and `join-pane -h` breaks it out of its slot and re-attaches it as a split to
+the right. Add `-b` to insert it on the left instead. Relative targets remove the index lookup
+entirely: `{up-of}`, `{down-of}`, `{left-of}` and `{right-of}` are the neighbours of the active
+pane, `{top}`, `{bottom}`, `{left}` and `{right}` are the panes at the window edges, `{next}`
+and `{previous}` walk the panes in index order, and `{last}` is the previously active pane. They
+work anywhere a pane target does: `select-pane`, `swap-pane`, `resize-pane`, `join-pane`. Quote
+them, braces mean something to the shell. Two behaviours to know: directional targets wrap
+around the window edge, so the bottom pane's `{down-of}` is the top pane again, and when no pane
+lies in that direction at all the command fails with `can't find pane` instead of guessing.
+
+{/* Verification notes (3.2a): stacked %0/%1 with %0 active, join-pane -h -s '{down-of}' ends
+with %0 at left=0 and %1 at left=101, both full height; -bh puts the pane below at left=0
+instead. In a 2x2 grid from the top-left pane, down-of -> %2, right-of -> %1, top -> %0,
+bottom -> %2, left -> %0, right -> %1, next -> %2, previous -> %3, last -> %3; from the
+bottom-right, up-of -> %1 and left-of -> %2. From the bottom pane of a stacked pair, down-of
+wraps to the top pane; with panes side by side, swap-pane -s down-of fails with "can't find
+pane". */}
+
+Tip article: [How to move a tmux pane with relative targets?](/blog/en/tips/2026/07/08/move-tmux-pane-relative-targets/)
+
+### Pull a pane or a window from another session
+
+```shell
+tmux join-pane -s scratch            # active pane of session 'scratch' -> split here
+tmux join-pane -h -s scratch:2.1     # a precise pane of another session
+tmux move-window -s scratch:1 -t :   # or the whole window -> new window in this session
+```
+
+`join-pane` and `move-window` accept a source in another session of the same server, and the
+process running in the pane is re-parented, not restarted: a server launched in a throwaway
+session lands in the main workspace without going down. A source session that loses its last
+pane closes itself. Different servers (other sockets, `tmux -L`/`-S`) cannot exchange panes.
+The targeting rules above apply unchanged: qualify the source, prefer pane ids.
+
+{/* Verification notes (3.2a, isolated socket): sleep started in scratch keeps its pid across
+join-pane -h -s scratch -t main and across move-window -s scratch:1 -t main:; the emptied
+scratch session closes itself. */}
+
+Tip article: [How to move a tmux pane to another session without restarting its process?](/blog/en/tips/2026/07/09/move-tmux-pane-between-sessions/)
+
+### Swap two panes without changing the layout
+
+```shell
+tmux swap-pane -s '{left}' -t '{right}'   # exchange the leftmost and rightmost panes
+tmux swap-pane -U                         # swap the active pane with the previous one (prefix {)
+tmux swap-pane -D                         # ... with the next one (prefix })
+```
+
+`swap-pane` exchanges two panes without touching the layout: the cells keep their position and
+size, the panes trade places. `join-pane` breaks a pane out and recreates a split; `swap-pane`
+leaves the grid alone, which makes it the right tool to flip an uneven split. `prefix {` and
+`prefix }` walk the active pane through the panes in index order, so the visual effect depends
+on the layout. Focus: without `-d` the destination pane ends up focused, which is why `prefix {`
+carries your pane and your focus together, but also why a scripted swap between two other panes
+steals the focus; add `-d` to leave a third-party focus untouched.
+
+{/* Verification notes (3.2a): uneven 130/69 split keeps widths after the swap. Focus with
+-s %0 -t %1: no -d always ends on %1 (dst), even from a bystander %2; -d keeps a bystander's
+focus, and ends on the source pane when the active pane is one of the two. prefix { / } are
+bound to swap-pane -U / -D. */}
+
+Tip article: [How to swap two tmux panes?](/blog/en/tips/2026/07/10/swap-tmux-panes/)
 
 ## A starter ~/.tmux.conf
 

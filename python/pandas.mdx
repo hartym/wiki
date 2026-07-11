@@ -1,14 +1,15 @@
 ---
 title: Pandas
-description: Pandas is an open source, BSD-licensed library providing high-performance, easy-to-use data structures and data analysis tools
+description: "Data analysis library for Python: DataFrames, indexing, and IO tools."
+checkedOn: 2026-07-10
 ---
 
-Pandas is an open source, BSD-licensed library providing high-performance, easy-to-use data structures and data analysis tools
-for the Python programming language.
+Pandas is an open source, BSD-licensed library providing high-performance, easy-to-use data
+structures and data analysis tools for the Python programming language.
 
 ## Cookbook
 
-## Setup notebook for pandas + bokeh
+### Setup notebook for pandas + bokeh
 
 ```python
 import os
@@ -31,37 +32,39 @@ print('base:', BASE_DIR)
 print('data:', DATA_DIR)
 ```
 
-## Reorder columns in a pandas dataframe
+### Reorder columns in a pandas dataframe
 
 ```python
 df = df[['this', 'is', 'the', 'new', 'order']]
 ```
 
-## Construct a DataFrame from a list of dicts
+### Construct a DataFrame from a list of dicts
 
 ```python
 import pandas as pd
 
 ds = []
 for user in users:
-        ds.append({
-            'screen_name': user.screen_name,
-            'name': user.name
-        })
+    ds.append({
+        'screen_name': user.screen_name,
+        'name': user.name,
+    })
 
-    df = pd.DataFrame(ds)
+df = pd.DataFrame(ds)
 ```
 
-## Create an index afterward
+### Create an index afterward
 
 ```python
 df = df.set_index('screen_name')
 ```
 
+`set_index` returns a new DataFrame, so assign it back (or pass `inplace=True`).
+
 ## Links and references
 
-* [Pandas homepage](http://pandas.pydata.org/)
-* [Pandas documentation](http://pandas.pydata.org/pandas-docs/stable/)
+* [Pandas homepage](https://pandas.pydata.org/)
+* [Pandas documentation](https://pandas.pydata.org/docs/)
 
 ## See also
 

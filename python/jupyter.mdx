@@ -1,26 +1,29 @@
 ---
 title: Jupyter
-description: "Jupyter (or IPython) Notebooks"
+description: "Jupyter notebook tips: reload modified modules automatically, install a package without restarting the kernel."
+checkedOn: 2026-07-09
 ---
-
-## Jupyter (or IPython) Notebooks
 
 ## Tips and tricks
 
-Autoreload
-..........
+### Reload modified modules automatically
 
 ```python
 %load_ext autoreload
 %autoreload 2
 ```
-Reference: [IPython autoreload documentation](http://ipython.readthedocs.io/en/stable/config/extensions/autoreload.html)
 
-Install a package without stopping the kernel
-.............................................
+Modules edited on disk are reloaded before each cell execution, so code changes are picked up
+without restarting the kernel.
+Reference: [IPython autoreload documentation](https://ipython.readthedocs.io/en/stable/config/extensions/autoreload.html)
 
-(or run any shell command from within a notebook)
+### Install a package without restarting the kernel
 
 ```python
-!pip install bokeh
+%pip install bokeh
 ```
+
+`%pip` installs into the environment of the running kernel, which is what you want. The older
+`!pip install ...` form runs pip as a plain shell command and can target the wrong Python when
+several are installed. The `!` prefix itself is the general tool here: it runs any shell command
+from a cell (`!ls`, `!curl ...`).

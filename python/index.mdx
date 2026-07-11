@@ -7,8 +7,15 @@ Python is a widely used high-level, general-purpose, interpreted, dynamic progra
 
 ## Cookbook
 
+Compute the directory of the current file:
+
 ```python
+import os
+
 __path__ = os.path.dirname(os.path.join(os.getcwd(), __file__))
 ```
+
+## Links and references
+
 * [OrderedDict subclass implementing insertion methods to adjust the order](https://gist.github.com/jaredks/6276032)
 
