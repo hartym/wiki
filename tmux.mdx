@@ -1,7 +1,7 @@
 ---
 title: tmux
 description: "Terminal multiplexer: a verified cookbook for sessions, windows and panes."
-checkedOn: 2026-07-08
+checkedOn: 2026-07-13
 ---
 
 [tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
@@ -504,6 +504,75 @@ bound to swap-pane -U / -D. */}
 
 Tip article: [How to swap two tmux panes?](/blog/en/tips/2026/07/10/swap-tmux-panes/)
 
+### Reorganize the whole layout at once
+
+```shell
+tmux select-layout tiled            # apply the tiled (grid) layout now
+tmux select-layout main-vertical    # one large pane left, the rest stacked right
+```
+
+tmux ships five preset layouts. `prefix Space` (`next-layout`) cycles through them in order:
+`even-horizontal` (equal columns), `even-vertical` (equal rows), `main-horizontal` (one large
+pane on top, the rest in a row below), `main-vertical` (one large pane on the left, the rest in
+a column on the right), and `tiled` (an even grid). `select-layout <name>` jumps straight to one
+without cycling, which is the tool you want after pulling several panes into a window (see "Pull
+a pane from another window") and ending up with a lopsided split: `select-layout tiled` re-tiles
+everything evenly. Each layout also has a direct key: `prefix M-1` even-horizontal, `M-2`
+even-vertical, `M-3` main-horizontal, `M-4` main-vertical, `M-5` tiled.
+
+{/* Verification notes (tmux 3.2a): 4 panes, next-layout observed order even-horizontal ->
+even-vertical -> main-horizontal -> main-vertical -> tiled -> (wraps). select-layout tiled gives a
+2x2 grid (99x24 / 100x24 / 99x25 / 100x25 on 200x50). list-keys: prefix Space = next-layout;
+prefix M-1..M-5 = select-layout even-horizontal/even-vertical/main-horizontal/main-vertical/tiled. */}
+
+Tip article: [How to reorganize a tmux layout?](/blog/en/tips/2026/07/13/tmux-layouts/)
+
+### Run a tmux command from inside a session
+
+```shell
+# press: prefix :   then type a command without the leading "tmux"
+split-window -h
+resize-pane -D 10
+source-file ~/.tmux.conf
+```
+
+`prefix :` opens the command prompt (`command-prompt`), a one-line input at the bottom of the
+screen where you type any tmux command without the leading `tmux` word. It is the interactive twin
+of the shell CLI: same commands, same flags, run against the server you are attached to. Reach for
+it to try a command once before committing it to `~/.tmux.conf` or binding it to a key, or to run a
+command that has no default binding. A template can even prompt for input first:
+`command-prompt -p "new name:" "rename-window '%%'"` shows the prompt, then substitutes what you
+type for `%%` (use `%1`, `%2`... to match several `-p` prompts).
+
+{/* Verification notes (3.2a): list-keys -T prefix shows ':' bound to command-prompt; list-commands
+gives command-prompt [-1kiNTW] [-I inputs] [-p prompts] [-t target-client] [template]. */}
+
+Tip article: [How to run a tmux command from inside a session?](/blog/en/tips/2026/07/15/run-tmux-command-interactively/)
+
+### Discover and search key bindings
+
+```shell
+# press: prefix ?   lists every key binding, with a short note, scrollable
+tmux list-keys                    # same list, from the shell
+tmux list-keys -N                 # only bindings that carry a note (the readable overview)
+tmux list-keys -T copy-mode-vi    # one specific key table
+tmux list-commands                # syntax and flags of every tmux command
+```
+
+`prefix ?` runs `list-keys -N`, a scrollable list of every key binding with a one-line note. It
+is the fastest way to answer "what does this key do?" without leaving tmux. From the shell,
+`list-keys` prints the same table, and `-T <table>` limits it to one key table (`prefix`,
+`root`, `copy-mode-vi`, `copy-mode`), which is how you inspect copy-mode keys or your own binds.
+`list-commands` is the companion for the CLI: it prints the full syntax and flags of every
+command, so it is the reference to reach for when you forget whether resize is `-L` or `-x`. These
+three commands are how every other snippet on this page was checked.
+
+{/* Verification notes (tmux 3.2a): list-keys -T prefix shows '?' bound to 'list-keys -N'.
+list-keys -N returns 83 noted bindings; list-keys -T copy-mode-vi returns its own table. list-commands
+prints e.g. "resize-pane (resizep) [-DLMRTUZ] [-x width] [-y height] [-t target-pane] [adjustment]". */}
+
+Tip article: [How to discover and search tmux key bindings?](/blog/en/tips/2026/07/16/discover-tmux-key-bindings/)
+
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
@@ -532,3 +601,29 @@ bind - split-window -v   # - is the horizontal divider: panes stacked
 The default `prefix %` and `prefix "` still work; these just add keys that match the resulting
 layout. Append `-c "#{pane_current_path}"` to either bind to open the new pane in the current
 pane's directory.
+
+### Reload the config with a key
+
+```shell
+bind r source-file ~/.tmux.conf \; display-message "config reloaded"
+```
+
+`source-file` re-reads a config file into the running server, so a changed setting takes effect
+without killing and restarting tmux. Binding it to a key gives you `prefix r` after every edit;
+the `\;` chains a second command on the same key, here `display-message` to confirm the reload in
+the status line. The two commands are separate: `\;` is a tmux command separator, not shell
+syntax, so it works the same from the CLI (`tmux source-file ~/.tmux.conf \; display-message ok`)
+as inside the config. Without a binding you can always reload by hand with `tmux source-file
+~/.tmux.conf`, or from inside a session with `prefix :` then `source-file ~/.tmux.conf`.
+
+Reloading only adds or overrides what the file sets; it does not reset options a removed line used
+to set, and it re-runs commands like `new-window`, so keep a config file idempotent (settings and
+binds, not one-off actions).
+
+Verified on tmux 3.2a.
+
+{/* Verification notes (3.2a): bind r registers as source-file ... \; display-message; list-keys
+-T prefix shows the two-command bind. Live test: status-left V1 in the file, edit to V2,
+source-file, show -g status-left -> V2 without restarting the server. */}
+
+Tip article: [How to reload your tmux config without restarting?](/blog/en/tips/2026/07/14/reload-tmux-config/)

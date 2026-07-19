@@ -1,7 +1,7 @@
 ---
 title: Message Queues
 description: "Message queues notes: AMQP and RabbitMQ concepts, configuration, clients, and topology."
-checkedOn: 2026-06-22
+checkedOn: 2026-07-13
 ---
 
 ## AMQP
@@ -34,14 +34,17 @@ These changes are written to RabbitMQ's internal database under the node data di
 (`/var/lib/rabbitmq`). In a container they only survive as long as that directory does: mount a
 volume there to keep users and vhosts across restarts and rebuilds.
 
-Using the official docker image ([RabbitMQ on Docker Hub](https://hub.docker.com/_/rabbitmq/)), we can use an undocumented feature:
-the entrypoint will read `/etc/rabbitmq/definitions.json` if it exists and use it to define entities in rabbitmq,
-so if we derive our image from that adding this file, it will auto add them.
+The official docker image ([RabbitMQ on Docker Hub](https://hub.docker.com/_/rabbitmq/)) can import a
+definitions file on boot, but it is not automatic: dropping the file at `/etc/rabbitmq/definitions.json`
+is not enough, the config has to point to it. On 3.x set `load_definitions = /etc/rabbitmq/definitions.json`
+in `rabbitmq.conf`; on 4.x use `definitions.import_backend = local_filesystem` together with
+`definitions.local.path = /etc/rabbitmq/definitions.json`. Bake both the config and the definitions file
+into a derived image and the entities are created at startup.
 
 Definitions file (`/etc/rabbitmq/definitions.json`):
 
 ```json
-{       
+{
     "users":[
             {"name":"rmq_user","password_hash":"...","tags":""},
             {"name":"rmq_admin","password_hash":"...","tags":"administrator"}
