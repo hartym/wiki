@@ -1,7 +1,6 @@
 ---
 title: Pandas
 description: "Data analysis library for Python: DataFrames, indexing, and IO tools."
-checkedOn: 2026-07-10
 ---
 
 Pandas is an open source, BSD-licensed library providing high-performance, easy-to-use data
@@ -60,6 +59,60 @@ df = df.set_index('screen_name')
 ```
 
 `set_index` returns a new DataFrame, so assign it back (or pass `inplace=True`).
+
+### A frame to work with
+
+```python
+import pandas as pd
+
+df = pd.DataFrame({
+    "knight": ["Arthur", "Lancelot", "Galahad", "Robin"],
+    "quest": ["grail", "grail", "grail", "flee"],
+    "colour": ["blue", "blue", "yellow", "brave"],
+    "coconuts": [2, 0, 1, 3],
+})
+speeds = pd.DataFrame({"knight": ["Arthur", "Robin"], "mph": [11, 9]})
+```
+
+### Select rows with a boolean mask
+
+```python
+grail = df.loc[df["quest"] == "grail", ["knight", "coconuts"]]
+```
+
+`.loc[rows, cols]` selects by label; here the row part is a boolean Series and the column part a list.
+
+### Group and aggregate
+
+```python
+by_colour = df.groupby("colour")["coconuts"].sum().sort_values(ascending=False)
+```
+
+### Merge two frames
+
+```python
+joined = df.merge(speeds, on="knight", how="left")
+```
+
+`how` is one of `left`, `right`, `inner`, `outer`.
+
+### Count occurrences
+
+```python
+counts = df["quest"].value_counts()
+```
+
+### Parse and filter dates
+
+```python
+events = pd.DataFrame({
+    "when": pd.to_datetime(["0932-01-01", "0932-06-01"], format="%Y-%m-%d"),
+    "n": [1, 2],
+})
+recent = events[events["when"] >= "0932-03-01"]
+```
+
+Pass an explicit `format` so parsing is consistent and fast.
 
 ## Links and references
 

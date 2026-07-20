@@ -39,13 +39,13 @@ class Positive:
             raise ValueError(f"{self._name[1:]} must be > 0")
         setattr(obj, self._name, value)
 
-class Account:
-    balance = Positive()
-    def __init__(self, balance):
-        self.balance = balance   # goes through Positive.__set__
+class Knight:
+    honour = Positive()
+    def __init__(self, honour):
+        self.honour = honour   # goes through Positive.__set__
 ```
 
-Assigning a non-positive `balance` raises `ValueError`, from `__init__` or anywhere else.
+Assigning a non-positive `honour` raises `ValueError`, from `__init__` or anywhere else.
 
 ## Data vs non-data descriptors
 
