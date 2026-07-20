@@ -1,0 +1,75 @@
+---
+title: Descriptors
+description: Python descriptors - the __get__/__set__ protocol, a validating descriptor, data vs non-data precedence, and where descriptors already power the language.
+checkedOn: 2026-07-20
+---
+
+A descriptor is a class that implements `__get__`, `__set__` or `__delete__`, and is used as a **class attribute**. It intercepts attribute access on instances. Descriptors are the machinery behind `property`, bound methods, `classmethod`, `staticmethod`, `functools.cached_property` and ORM columns. Examples checked with Python 3.13.
+
+## The protocol
+
+```python
+class Descriptor:
+    def __set_name__(self, owner, name):  # called at class creation with the attribute name
+        ...
+    def __get__(self, obj, objtype=None):  # obj is None when accessed on the class
+        ...
+    def __set__(self, obj, value):
+        ...
+    def __delete__(self, obj):
+        ...
+```
+
+`__set_name__` (added in Python 3.6) hands the descriptor the name it was assigned to, so it no longer has to be told twice.
+
+## A validating descriptor
+
+Reusable validation, declared once and shared by every field that uses it:
+
+```python
+class Positive:
+    def __set_name__(self, owner, name):
+        self._name = "_" + name
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return getattr(obj, self._name)
+    def __set__(self, obj, value):
+        if value <= 0:
+            raise ValueError(f"{self._name[1:]} must be > 0")
+        setattr(obj, self._name, value)
+
+class Account:
+    balance = Positive()
+    def __init__(self, balance):
+        self.balance = balance   # goes through Positive.__set__
+```
+
+Assigning a non-positive `balance` raises `ValueError`, from `__init__` or anywhere else.
+
+## Data vs non-data descriptors
+
+* A **data descriptor** defines `__set__` (or `__delete__`). It takes **precedence over the instance `__dict__`**: `obj.x` uses the descriptor even if `obj.__dict__["x"]` exists.
+* A **non-data descriptor** defines only `__get__`. The instance `__dict__` wins over it, which is exactly why methods (non-data descriptors) can be shadowed by an instance attribute.
+
+This precedence is the subtle rule to remember when a descriptor "does not fire": a plain `__get__`-only descriptor is bypassed once the instance has that key.
+
+## Where descriptors already power things
+
+* `property` - a data descriptor wrapping getter/setter/deleter functions.
+* Functions - non-data descriptors; `__get__` is what binds `self` to produce a bound method.
+* `classmethod` / `staticmethod` - descriptors that change what `__get__` returns.
+* `functools.cached_property` - a non-data descriptor that computes once, then lets the instance `__dict__` shadow it.
+* ORM columns (SQLAlchemy, Django fields) - descriptors mapping attributes to columns.
+
+## Common uses
+
+Three recurring reasons to reach for a descriptor:
+
+* **ORMs and data mappers.** A mapped attribute *is* a descriptor: reading or assigning `user.email` runs code that loads the value, tracks the change, or resolves a lazy relation, instead of touching a plain field. This is how SQLAlchemy's instrumented attributes and Django's relation and deferred fields work.
+* **Data objects, plain objects with superpowers.** Typed, validated fields where assignment coerces and checks the value (the `Positive` example above generalizes to any typed field). It is the descriptor-level version of what validated-model libraries like Pydantic hand you out of the box.
+* **Adding behaviour to a specific attribute.** Lazy or computed values, unit conversion, access logging or auditing, attached to a single attribute without a metaclass and without touching the rest of the class.
+
+## See also
+
+* <Link to="decorators" /> - higher-level wrapping, often built on the descriptor protocol.
