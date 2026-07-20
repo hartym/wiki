@@ -1,10 +1,10 @@
 ---
 title: Decorators
-description: Python decorators - the basic shape with functools.wraps, decorators that take arguments, stacking order, and useful decorators from the standard library.
+description: Python decorators - the basic shape with functools.wraps, decorators that take arguments, stacking order, handy standard-library decorators, and the kinds of decorators.
 checkedOn: 2026-07-20
 ---
 
-A decorator is a callable that takes a function (or class) and returns a replacement. `@deco` above a `def` is just sugar for `func = deco(func)`. Examples checked with Python 3.13.
+A decorator is a callable that takes a function (or class) and returns a replacement. `@deco` above a `def` is just sugar for `func = deco(func)`. Examples checked with Python 3.13 (and, this being Python, themed after the films it is named for).
 
 ## The basic shape
 
@@ -13,14 +13,19 @@ Always wrap with [`functools.wraps`](https://docs.python.org/3/library/functools
 ```python
 import functools
 
-def timed(func):
+def announce(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
     return wrapper
+
+@announce
+def quest(name):
+    "state your quest"
+    return f"{name} seeks the Holy Grail"
 ```
 
-Without `functools.wraps`, `greet.__name__` becomes `"wrapper"` and the docstring is lost, which breaks introspection, logging and some frameworks.
+Without `functools.wraps`, `quest.__name__` becomes `"wrapper"` and the docstring is lost, which breaks introspection, logging and some frameworks.
 
 ## Decorators that take arguments
 
@@ -42,31 +47,61 @@ def retry(times):
     return deco
 
 @retry(3)
-def flaky():
+def black_knight():
+    "'Tis but a scratch! ... until it is not."
     ...
 ```
 
-`@retry(3)` calls `retry(3)` first, which returns `deco`, which then wraps `flaky`.
+`@retry(3)` calls `retry(3)` first, which returns `deco`, which then wraps `black_knight`.
 
 ## Stacking
 
 Decorators apply bottom-up (closest to the function first):
 
 ```python
-@a
-@b
-def f():
+@ni
+@shrubbery
+def knights():
     ...
-# equivalent to f = a(b(f))  -> b runs first, then a
+# equivalent to knights = ni(shrubbery(knights))  -> shrubbery runs first, then ni
 ```
 
-## Useful decorators in the standard library
+## Handy standard-library decorators
 
-* `functools.wraps` - preserve metadata (above).
-* `functools.lru_cache` / `functools.cache` - memoize a pure function; `fn.cache_info()` / `fn.cache_clear()`.
-* `functools.cached_property` - compute an instance property once, then store it.
-* `functools.singledispatch` - overload a function on the type of its first argument.
-* `contextlib.contextmanager` - turn a generator into a `with` context manager.
+The ones worth remembering, weighted toward the underrated:
+
+```python
+# functools.total_ordering: define __eq__ and one of <, and get <=, >, >= for free
+@functools.total_ordering
+class Knight:
+    def __init__(self, honour):
+        self.honour = honour
+    def __eq__(self, other):
+        return self.honour == other.honour
+    def __lt__(self, other):
+        return self.honour < other.honour
+
+# functools.singledispatch: pick an implementation by the first argument's type,
+# instead of an isinstance ladder
+@functools.singledispatch
+def taunt(target):
+    return "I fart in your general direction"
+
+@taunt.register
+def _(target: list):
+    return "your mother was a hamster"
+```
+
+* `functools.wraps` - preserve the wrapped function's metadata (used above).
+* `functools.cache` / `functools.lru_cache` - memoize a pure function; `cache` is the unbounded shorthand.
+* `functools.cached_property` - compute an instance property once, then store it on the instance.
+* `functools.total_ordering` - underrated: fill in the missing comparison methods.
+* `functools.singledispatch` / `singledispatchmethod` - underrated: type-based dispatch.
+* `contextlib.contextmanager` - turn a generator into a `with` block (`asynccontextmanager` for async).
+* `enum.unique` - underrated: reject an `Enum` that has duplicate values.
+* `atexit.register` - underrated as a decorator: run a function when the interpreter exits.
+* `dataclasses.dataclass` - generate `__init__`, `__repr__` and `__eq__` from annotations.
+* `abc.abstractmethod`, `typing.overload`, `typing.final` - marks for ABCs and type checkers.
 * `property`, `staticmethod`, `classmethod` - the built-in method decorators.
 
 ## Kinds of decorators
@@ -75,21 +110,23 @@ Andy Fundinger's [decorator taxonomy](https://github.com/bloomberg/decorator-tax
 
 ### Changing the arguments
 
-Adjust or inject arguments before the call. Injecting an overridable clock, for instance, keeps a function testable:
+Adjust or inject arguments before the call. Supplying an overridable default, for instance:
 
 ```python
-from datetime import datetime
-
-def with_default_now(func):
+def with_default_swallow(func):
     @functools.wraps(func)
-    def wrapper(*args, now=None, **kwargs):
-        return func(*args, now=now or datetime.now(), **kwargs)
+    def wrapper(*args, swallow="European", **kwargs):
+        return func(*args, swallow=swallow, **kwargs)
     return wrapper
+
+@with_default_swallow
+def airspeed(swallow=None):
+    return f"the airspeed of an unladen {swallow} swallow"
 ```
 
 ### Controlling the call
 
-Decide whether and how often the function runs. `retry` above is one, `functools.lru_cache` caches, and run-once is another:
+Decide whether and how often the function runs. `retry` above is one, `functools.cache` caches, and run-once (a Holy Hand Grenade only goes off the once) is another:
 
 ```python
 def once(func):
@@ -107,17 +144,17 @@ def once(func):
 Add the decorated function to a collection and return it unchanged. This is how plugin, command and dispatch registries are built:
 
 ```python
-handlers = {}
+round_table = {}
 
-def handler(name):
+def knight(name):
     def deco(func):
-        handlers[name] = func
+        round_table[name] = func
         return func            # returned as-is, not wrapped
     return deco
 
-@handler("ping")
-def ping():
-    return "pong"
+@knight("Lancelot")
+def charge():
+    return "Charge!"
 ```
 
 ### Binding to the class
@@ -126,11 +163,20 @@ Decorators that return a descriptor. `property`, `classmethod` and `staticmethod
 
 ### Rewriting the object
 
-Generate or rewrite code on the decorated object. `@dataclass` writes `__init__`, `__repr__` and `__eq__` from the annotations; at the far end, Cython and Numba rewrite a function for speed.
+Generate or rewrite code on the decorated object. `@dataclass` writes `__init__`, `__repr__` and `__eq__` from the annotations; at the far end, Cython and Numba rewrite a function for speed:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Swallow:
+    origin: str
+    laden: bool
+```
 
 ## Recipes
 
-Concrete, reusable snippets. Timing a call:
+Concrete, reusable snippets. Timing a call (how long is that silly walk?):
 
 ```python
 import time
