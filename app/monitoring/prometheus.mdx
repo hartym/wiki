@@ -1,0 +1,138 @@
+---
+title: Prometheus, Alertmanager and Grafana
+description: The Prometheus monitoring stack - scrape config, PromQL, recording and alerting rules (tested with promtool), Alertmanager routing, Grafana, and the Kubernetes operator.
+checkedOn: 2026-07-20
+---
+
+The common open-source monitoring stack, three separate components:
+
+* **Prometheus** scrapes and stores time series, and evaluates rules. Pull-based: it fetches `/metrics` from targets.
+* **Alertmanager** receives alerts from Prometheus and handles grouping, deduplication, silencing and routing to receivers (email, Slack, PagerDuty, ...).
+* **Grafana** queries Prometheus and draws dashboards.
+
+Config and rules below checked with promtool 3.13.1.
+
+## Prometheus config
+
+`prometheus.yml` sets the scrape interval, the rule files, where Alertmanager lives, and what to scrape:
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: node
+    static_configs:
+      - targets: ["localhost:9100"]   # node_exporter
+```
+
+`static_configs` is the simplest target source; in a real fleet you use service discovery (`kubernetes_sd_configs`, `ec2_sd_configs`, ...) instead. Validate before shipping:
+
+```
+promtool check config prometheus.yml
+```
+
+## PromQL, the basics
+
+* `up` - 1 if a target is scrapeable, 0 otherwise (per instance/job).
+* `rate(http_requests_total[5m])` - per-second average increase of a counter over 5m.
+* `sum by (job) (rate(http_requests_total[5m]))` - the same, aggregated per job.
+* `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))` - p95 latency.
+
+## Recording and alerting rules
+
+Recording rules precompute expensive queries; alerting rules fire when an expression holds for a duration.
+
+```yaml
+# rules.yml
+groups:
+  - name: examples
+    rules:
+      - record: job:up:ratio
+        expr: avg by (job) (up)
+      - alert: InstanceDown
+        expr: up == 0
+        for: 5m                      # must hold 5 minutes before firing
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.instance }} of job {{ $labels.job }} is down"
+```
+
+An alert inherits the series labels (`job`, `instance`) plus its own `labels`, and Alertmanager routes on them.
+
+## Test the rules
+
+Rules are logic, so test them. `promtool test rules` feeds synthetic series and asserts which alerts fire:
+
+```yaml
+# tests.yml
+rule_files:
+  - rules.yml
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{job="node", instance="a"}'
+        values: '0x10'              # up=0 for 10 minutes
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: InstanceDown
+        exp_alerts:
+          - exp_labels: { severity: page, job: node, instance: a }
+            exp_annotations: { summary: "a of job node is down" }
+```
+
+```
+promtool check rules rules.yml
+promtool test rules tests.yml
+```
+
+At `eval_time: 6m` the alert has held past its `for: 5m`, so the test passes.
+
+## Alertmanager
+
+`alertmanager.yml` groups related alerts, waits before firing, and routes by label to receivers:
+
+```yaml
+route:
+  group_by: ["alertname", "job"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: default
+  routes:
+    - matchers: ['severity="page"']
+      receiver: pager
+receivers:
+  - name: default
+  - name: pager
+    # slack_configs / pagerduty_configs / email_configs ...
+```
+
+Check it with `amtool check-config alertmanager.yml`, and manage silences with `amtool silence`.
+
+## Grafana
+
+Point Grafana at Prometheus as a data source, then build or import dashboards (the community dashboard for node_exporter is a good start). In infra-as-code setups, provision data sources and dashboards from files under `/etc/grafana/provisioning/` rather than clicking in the UI.
+
+## On Kubernetes
+
+Do not wire this by hand on a cluster. The [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) <Link to="/system/kubernetes/helm" /> chart installs Prometheus, Alertmanager and Grafana together via the Prometheus Operator, where you declare scrape targets and rules as `ServiceMonitor` and `PrometheusRule` custom resources.
+
+## See also
+
+* Official docs: https://prometheus.io/docs/
+* <Link to="/system/kubernetes/" /> and its <Link to="/system/kubernetes/tooling/" />.
