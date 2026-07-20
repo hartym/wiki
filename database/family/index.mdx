@@ -4,8 +4,142 @@ description: "Index of database families: graph, time series, GIS, key-value, do
 ---
 
 * <Link to="graphs" />
-* <Link to="timeseries" />
-* <Link to="geographicinformationsystems" />
-* <Link to="keyvalue" />
-* <Link to="document" />
-* <Link to="semanticweb" />
+
+## Time Series Oriented Databases (TSDB)
+
+### InfluxDB
+
+[InfluxDB](https://github.com/influxdata/influxdb) - Scalable datastore for metrics, events, and real-time analytics
+
+### TimescaleDB
+
+[TimescaleDB](https://github.com/timescale/timescaledb) - Time-series database built on PostgreSQL
+
+Timescale DB claims to be a horizontally scalable TSDB bundled as a PostgreSQL extension, allowing to _not_ run another database for timestamped data.
+
+### OpenTSDB
+
+[OpenTSDB](https://github.com/OpenTSDB/opentsdb) - Distributed, scalable Time Series Database on top of HBase
+
+### Graphite
+
+[Graphite](https://github.com/graphite-project/graphite-web) - Scalable real-time graphing system
+
+* [Whisper](https://github.com/graphite-project/whisper) - Fixed-size database for storing time-series data
+* [Carbon](https://github.com/graphite-project/carbon) - Backend data caching and persistence daemon
+
+### RRDtool
+
+[RRDtool](https://github.com/oetiker/rrdtool-1.x) - Round Robin Database for time series data
+
+### ELK Stack
+
+* [Elasticsearch](https://github.com/elastic/elasticsearch) - Distributed, RESTful search and analytics engine
+* [Logstash](https://github.com/elastic/logstash) - Server-side data processing pipeline
+* [Kibana](https://github.com/elastic/kibana) - Analytics and visualization platform
+
+Alternatives:
+
+* [Solr](https://github.com/apache/solr) - Enterprise search platform
+* <Link to="/bi/silk" /> - SOLR + Logstash + Banana (Kibana fork)
+
+### Other Time Series Databases
+
+* [Prometheus](https://github.com/prometheus/prometheus) - Monitoring system and time series database
+* [KairosDB](https://github.com/kairosdb/kairosdb) - Time series database on top of Cassandra
+* [Druid](https://github.com/apache/druid) - Real-time analytics database
+* [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) - Fast, cost-effective time series database
+* [QuestDB](https://github.com/questdb/questdb) - High-performance time series database
+
+## Geographic Information Systems
+
+* [PostGIS](https://github.com/postgis/postgis) - Spatial database extender for PostgreSQL
+* [MongoDB](https://github.com/mongodb/mongo) - Document database with geospatial queries support
+
+### Tiles & Web
+
+* [Awesome Vector Tiles](https://github.com/mapbox/awesome-vector-tiles) - Curated list of vector tiles resources
+* [GeoDjango](https://github.com/django/django) - Django's geographic web framework
+* [TileLive](https://github.com/mapbox/tilelive) - Map tile server and utilities
+* [Tessela](https://github.com/urbica/tessella) - Lightweight Node.js Mapbox Vector Tiles server
+* [Tippecanoe](https://github.com/mapbox/tippecanoe) - Build vector tilesets from large GeoJSON features
+
+### Coordinates
+
+* [EPSG.io](http://epsg.io/) - Coordinate systems worldwide
+* [PyProj](https://github.com/pyproj4/pyproj) - Python interface to PROJ (cartographic projections library)
+
+### Maps
+
+* [Folium](https://github.com/python-visualization/folium) - Python data to Leaflet.js maps (works in Jupyter)
+
+### Miscellaneous
+
+* WGS 84 (World Geodetic System 1984): the standard default ([EPSG:4326](https://epsg.io/4326)).
+* Lambert II: a French coordinate system ([EPSG:27572](https://epsg.io/27572)).
+
+Lots of resources: [GovHack Toolkit - Geographic Data](http://govhack-toolkit.readthedocs.io/technical/geographic-data/)
+
+[GeoFree - Coordinate Converter](http://geofree.fr/gf/coordinateconv.asp)
+
+## Key-Value Stores
+
+* [LevelDB](https://github.com/google/leveldb) - Fast key-value storage library by Google
+* [Redis](https://github.com/redis/redis) - In-memory data structure store, used as database, cache, and message broker
+* [MemcacheDB](https://github.com/stvchu/memcachedb) - Distributed key-value storage system designed for persistence
+* [Couchbase](https://github.com/couchbase/couchbase-server) - Distributed NoSQL cloud database
+
+## Document-Oriented Databases
+
+* [Couchbase](https://github.com/couchbase/couchbase-server) - Distributed NoSQL cloud database
+* [CouchDB](https://github.com/apache/couchdb) - Seamless multi-master sync, scales from mobile to global clusters
+* [Elasticsearch](https://github.com/elastic/elasticsearch) - Distributed, RESTful search and analytics engine
+* [MongoDB](https://github.com/mongodb/mongo) - The most popular NoSQL database
+* [RethinkDB](https://github.com/rethinkdb/rethinkdb) - The open-source database for the realtime web
+* [Solr](https://github.com/apache/solr) - Blazing-fast, open source enterprise search platform
+
+## Semantic Web
+
+Not a database family for real, but did not find a good place for it (yet). See also <Link to="graphs" /> (should we group both entries at some point?)
+
+### Standards
+
+* [Resource Description Framework - Wikipedia](https://en.wikipedia.org/wiki/Resource_Description_Framework)
+* [RDF 1.1 Concepts and Abstract Syntax - W3C](https://www.w3.org/TR/rdf11-concepts/)
+* [Linked Data Platform 1.0 - W3C](https://www.w3.org/TR/ldp/)
+
+RDF uses subject–predicate–object triples.
+
+Exemple RDF data as JSON, about Wayne Shorter : [Wayne Shorter - DBpedia](http://fr.dbpedia.org/data/Wayne_Shorter.json)
+
+### SPARQL
+
+* [SPARQL Query Examples - Find all triples](https://wiki.base22.com/display/btg/SPARQL+Query+Examples#SPARQLQueryExamples-Findalltriples)
+* [Exemples SPARQL - DBpedia FR](http://fr.dbpedia.org/wiki/Exemples_SPARQL)
+* [SPARQL Endpoint - DBpedia FR](http://fr.dbpedia.org/sparql) (human endpoint)
+* [Getting data from the Semantic Web](http://semanticweb.org/wiki/Getting_data_from_the_Semantic_Web.html)
+
+### Python tools & guides
+
+* [RDFLib](https://github.com/RDFLib/rdflib) - Python library for working with RDF
+* [RDFLib-SQLAlchemy](https://github.com/RDFLib/rdflib-sqlalchemy) - SQLAlchemy store for RDFLib
+* [SPARQLWrapper](https://github.com/RDFLib/sparqlwrapper) - SPARQL endpoint interface for Python
+* [Survey of Python RDF tools](http://www.michelepasin.org/blog/2011/02/24/survey-of-pythonic-tools-for-rdf-and-linked-data-programming/) - Comprehensive overview
+
+### Databases
+
+* [Virtuoso](https://github.com/openlink/virtuoso-opensource) - High-performance object-relational SQL database
+* [Apache Jena](https://github.com/apache/jena) - Java framework for building Semantic Web applications
+* [Blazegraph](https://github.com/blazegraph/database) - High-performance graph database for RDF
+* [GraphDB](https://github.com/Ontotext-AD/graphdb-free) - Enterprise triplestore with RDF and SPARQL support
+* (see also <Link to="graphs" />)
+
+### Scientific papers
+
+* [Scientific paper - IOS Press](http://content.iospress.com/articles/semantic-web/sw177)
+
+### Misc
+
+* [Dydra Documentation](http://docs.dydra.com/dydra)
+* [Europe Countries with DBpedia, SPARQL and Python](https://jcastellssala.com/2012/06/19/europe-countries-dbpediasparqlpython/)
+* [Introducing RDF - Linked Data Tools](http://www.linkeddatatools.com/introducing-rdf)
