@@ -1,0 +1,82 @@
+---
+title: Helm
+description: Helm, the Kubernetes package manager - chart structure, rendering and linting locally, and the release lifecycle (install, upgrade, rollback).
+checkedOn: 2026-07-20
+---
+
+[Helm](https://helm.sh/) is the package manager for Kubernetes. A **chart** is a templated bundle of manifests, an **install** of a chart into a cluster is a **release**, and each change produces a numbered **revision** you can roll back to. Helm 3 talks to the cluster directly (no more Tiller). Commands below checked with helm v3.15.2.
+
+## A chart's structure
+
+```
+helm create mychart
+```
+
+scaffolds:
+
+```
+mychart/
+  Chart.yaml          # name, version, appVersion
+  values.yaml         # default values, overridable at install time
+  .helmignore
+  templates/
+    deployment.yaml
+    service.yaml
+    serviceaccount.yaml
+    ingress.yaml
+    hpa.yaml
+    NOTES.txt         # message printed after install
+    _helpers.tpl      # reusable template snippets
+```
+
+Templates are Go templates; `{{ .Values.foo }}` pulls from `values.yaml` (or from overrides at install time).
+
+## Render and lint locally (no cluster needed)
+
+This is the fast feedback loop while writing a chart:
+
+```
+helm lint mychart                       # static checks
+helm template myrelease mychart         # render manifests to stdout, no cluster
+helm template myrelease mychart --set replicaCount=3   # override a value
+helm template myrelease mychart -f prod-values.yaml    # override with a file
+helm show chart mychart                 # Chart.yaml metadata
+helm show values mychart                # the default values
+```
+
+`helm template` is the honest way to see exactly what will be applied before touching a cluster.
+
+## Install, upgrade, roll back
+
+Against a cluster (uses the current kubectl context and namespace):
+
+```
+helm install myrelease mychart                  # install a release
+helm install myrelease mychart -f prod-values.yaml --set image.tag=1.4.2
+helm upgrade --install myrelease mychart        # create or update (idempotent)
+helm list -A                                    # releases across all namespaces
+helm history myrelease                          # revisions of a release
+helm rollback myrelease 2                       # roll back to revision 2
+helm uninstall myrelease                        # remove the release
+helm status myrelease                           # current state and notes
+helm get values myrelease                       # values a release was installed with
+```
+
+`helm upgrade --install` is the usual CI/CD form: it installs on first run and upgrades afterwards.
+
+## Repositories
+
+```
+helm repo add <name> <url>              # e.g. bitnami https://charts.bitnami.com/bitnami
+helm repo update                        # refresh the local index
+helm search repo <term>                 # find charts
+helm show values <name>/<chart>         # inspect before installing
+helm install myrelease <name>/<chart> -f my-values.yaml
+```
+
+[Artifact Hub](https://artifacthub.io/) indexes public charts.
+
+## See also
+
+* Official docs: https://helm.sh/docs/
+* <Link to="tooling" /> for the wider kubectl toolbox.
