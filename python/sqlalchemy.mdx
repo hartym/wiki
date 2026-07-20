@@ -1,7 +1,6 @@
 ---
 title: SQLAlchemy
 description: "SQLAlchemy notes: turn on engine SQL logging, and the Core / ORM split."
-checkedOn: 2026-07-08
 ---
 
 This page is a work in progress.
@@ -19,6 +18,35 @@ logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 engine = create_engine('sqlite:///basics.sqlite')
 ```
+
 ## Object Relational Mapper
+
+Declarative model, engine and a query (SQLAlchemy 2.0 style):
+
+```python
+from sqlalchemy import create_engine, select, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+
+class Base(DeclarativeBase):
+    pass
+
+class Knight(Base):
+    __tablename__ = "knights"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50))
+    quest: Mapped[str | None]
+
+engine = create_engine("sqlite://")
+Base.metadata.create_all(engine)
+
+with Session(engine) as session:
+    session.add(Knight(name="Arthur", quest="grail"))
+    session.commit()
+
+with Session(engine) as session:
+    knight = session.scalars(
+        select(Knight).where(Knight.quest == "grail")
+    ).one()
+```
 
 ## Miscellaneous

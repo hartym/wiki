@@ -1,7 +1,6 @@
 ---
 title: Testing with Python
 description: "Python testing notes: pytest recipes (parametrized tests) and property-based testing libraries."
-checkedOn: 2026-07-08
 ---
 
 ## Pytest recipes
@@ -21,6 +20,21 @@ import pytest
 def test_eval(test_input, expected):
     assert eval(test_input) == expected
 ```
+
+### Fixtures
+
+```python
+import pytest
+
+@pytest.fixture
+def bridgekeeper():
+    return {"colour": "blue"}
+
+def test_answer(bridgekeeper):
+    assert bridgekeeper["colour"] == "blue"
+```
+
+A fixture is requested by naming it as a test argument; pytest builds it fresh for each test.
 
 ## Other libraries
 
