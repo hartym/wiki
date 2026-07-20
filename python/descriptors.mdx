@@ -62,9 +62,13 @@ This precedence is the subtle rule to remember when a descriptor "does not fire"
 * `functools.cached_property` - a non-data descriptor that computes once, then lets the instance `__dict__` shadow it.
 * ORM columns (SQLAlchemy, Django fields) - descriptors mapping attributes to columns.
 
-## Recipes
+## Common uses
 
-Reusable descriptor patterns. This section is where the real-project usage lives (typed/validated fields, lazy loading, unit conversions, ...).
+Three recurring reasons to reach for a descriptor:
+
+* **ORMs and data mappers.** A mapped attribute *is* a descriptor: reading or assigning `user.email` runs code that loads the value, tracks the change, or resolves a lazy relation, instead of touching a plain field. This is how SQLAlchemy's instrumented attributes and Django's relation and deferred fields work.
+* **Data objects, plain objects with superpowers.** Typed, validated fields where assignment coerces and checks the value (the `Positive` example above generalizes to any typed field). It is the descriptor-level version of what validated-model libraries like Pydantic hand you out of the box.
+* **Adding behaviour to a specific attribute.** Lazy or computed values, unit conversion, access logging or auditing, attached to a single attribute without a metaclass and without touching the rest of the class.
 
 ## See also
 
