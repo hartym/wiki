@@ -1,0 +1,92 @@
+---
+title: Decorators
+description: Python decorators - the basic shape with functools.wraps, decorators that take arguments, stacking order, and useful decorators from the standard library.
+checkedOn: 2026-07-20
+---
+
+A decorator is a callable that takes a function (or class) and returns a replacement. `@deco` above a `def` is just sugar for `func = deco(func)`. Examples checked with Python 3.13.
+
+## The basic shape
+
+Always wrap with [`functools.wraps`](https://docs.python.org/3/library/functools.html#functools.wraps) so the returned function keeps the original's `__name__`, `__doc__` and signature metadata:
+
+```python
+import functools
+
+def timed(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+```
+
+Without `functools.wraps`, `greet.__name__` becomes `"wrapper"` and the docstring is lost, which breaks introspection, logging and some frameworks.
+
+## Decorators that take arguments
+
+A decorator with arguments is a function that returns a decorator (two levels of nesting):
+
+```python
+def retry(times):
+    def deco(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last = None
+            for _ in range(times):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as exc:
+                    last = exc
+            raise last
+        return wrapper
+    return deco
+
+@retry(3)
+def flaky():
+    ...
+```
+
+`@retry(3)` calls `retry(3)` first, which returns `deco`, which then wraps `flaky`.
+
+## Stacking
+
+Decorators apply bottom-up (closest to the function first):
+
+```python
+@a
+@b
+def f():
+    ...
+# equivalent to f = a(b(f))  -> b runs first, then a
+```
+
+## Useful decorators in the standard library
+
+* `functools.wraps` - preserve metadata (above).
+* `functools.lru_cache` / `functools.cache` - memoize a pure function; `fn.cache_info()` / `fn.cache_clear()`.
+* `functools.cached_property` - compute an instance property once, then store it.
+* `functools.singledispatch` - overload a function on the type of its first argument.
+* `contextlib.contextmanager` - turn a generator into a `with` context manager.
+* `property`, `staticmethod`, `classmethod` - the built-in method decorators.
+
+## Recipes
+
+Concrete, reusable patterns (retry above; timing below). This section is where the real-project usage lives.
+
+```python
+import functools, time
+
+def timed(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            print(f"{func.__name__} took {time.perf_counter() - start:.3f}s")
+    return wrapper
+```
+
+## See also
+
+* <Link to="descriptors" /> - the lower-level protocol behind `property`, methods and many decorators.
