@@ -69,12 +69,71 @@ def f():
 * `contextlib.contextmanager` - turn a generator into a `with` context manager.
 * `property`, `staticmethod`, `classmethod` - the built-in method decorators.
 
-## Recipes
+## Kinds of decorators
 
-Concrete, reusable patterns (retry above; timing below). This section is where the real-project usage lives.
+Andy Fundinger's [decorator taxonomy](https://github.com/bloomberg/decorator-taxonomy) (EuroPython 2018) is a handy way to think about what a decorator is *for*. The kinds, with small examples:
+
+### Changing the arguments
+
+Adjust or inject arguments before the call. Injecting an overridable clock, for instance, keeps a function testable:
 
 ```python
-import functools, time
+from datetime import datetime
+
+def with_default_now(func):
+    @functools.wraps(func)
+    def wrapper(*args, now=None, **kwargs):
+        return func(*args, now=now or datetime.now(), **kwargs)
+    return wrapper
+```
+
+### Controlling the call
+
+Decide whether and how often the function runs. `retry` above is one, `functools.lru_cache` caches, and run-once is another:
+
+```python
+def once(func):
+    result = []
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if not result:
+            result.append(func(*args, **kwargs))
+        return result[0]
+    return wrapper
+```
+
+### Registering the object
+
+Add the decorated function to a collection and return it unchanged. This is how plugin, command and dispatch registries are built:
+
+```python
+handlers = {}
+
+def handler(name):
+    def deco(func):
+        handlers[name] = func
+        return func            # returned as-is, not wrapped
+    return deco
+
+@handler("ping")
+def ping():
+    return "pong"
+```
+
+### Binding to the class
+
+Decorators that return a descriptor. `property`, `classmethod` and `staticmethod` are the everyday ones (see <Link to="descriptors" />).
+
+### Rewriting the object
+
+Generate or rewrite code on the decorated object. `@dataclass` writes `__init__`, `__repr__` and `__eq__` from the annotations; at the far end, Cython and Numba rewrite a function for speed.
+
+## Recipes
+
+Concrete, reusable snippets. Timing a call:
+
+```python
+import time
 
 def timed(func):
     @functools.wraps(func)
@@ -86,6 +145,8 @@ def timed(func):
             print(f"{func.__name__} took {time.perf_counter() - start:.3f}s")
     return wrapper
 ```
+
+More patterns will land here from real projects.
 
 ## See also
 
