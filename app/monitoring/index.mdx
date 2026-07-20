@@ -5,7 +5,7 @@ title: Monitoring
 
 ## Generic / multipurpose
 
-* <Link to="datadog" />: https://www.datadoghq.com/ (SaaS, ~15 $ / month / host)
+* Datadog: https://www.datadoghq.com/ (SaaS, ~15 $ / month / host)
 
 ## Status page applications
 
@@ -18,3 +18,57 @@ title: Monitoring
 * New relic: http://newrelic.com/ (SaaS, 50 to 150 $ / month, free lite version available too)
 * Sentry: https://github.com/getsentry/sentry (Python/Django)
 * Hosted Sentry: https://getsentry.com/welcome/ (SaaS, 20 to 200 $ / month)
+
+## Datadog
+
+Pretty standard monitoring app, run as a service. Possible to run the agent in a privileged container.
+
+### CoreOS unit to run agent
+
+```ini
+[Unit]
+Description=Monitoring Service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill dd-agent
+ExecStartPre=-/usr/bin/docker rm dd-agent
+ExecStartPre=/usr/bin/docker pull datadog/docker-dd-agent
+ExecStart=/usr/bin/bash -c \
+  "/usr/bin/docker run --privileged --name dd-agent -h `hostname` \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /proc/mounts:/host/proc/mounts:ro \
+  -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
+  -v /home/core/dd-agent:/etc/dd-agent:ro \
+  -e API_KEY=XXX_API_KEY_HERE_XXX \
+  datadog/docker-dd-agent"
+
+[X-Fleet]
+Global=true
+```
+
+### Add etcd watcher
+
+Grab default config to host (needed to mount the volume above anyway):
+
+```
+docker cp dd-agent:/etc/dd-agent .
+```
+
+dd-agent/conf.d/etcd.yaml:
+
+```yaml
+init_config:
+
+instances:
+  - url: "http://10.1.65.1:2379"
+    timeout: 5
+```
+
+To find the host IP address useable in the agent container, exec a bash and run `ip route`, the default gateway is the host.
+
+To check if we're good:
+
+```
+docker exec dd-agent service datadog-agent info
+```
