@@ -1,0 +1,83 @@
+---
+title: Kubernetes tooling
+description: The daily CLI toolbox around kubectl - context and namespace switching (kubectx, kubens), a terminal UI (k9s), and multi-pod log tailing (stern).
+checkedOn: 2026-07-20
+---
+
+The commands below are the everyday companions to `kubectl`. Verified with kubectx/kubens (ahmetb), k9s v0.32.5 and stern 1.30.0.
+
+## kubectx and kubens
+
+[kubectx](https://github.com/ahmetb/kubectx) switches between clusters (contexts), [kubens](https://github.com/ahmetb/kubectx) switches namespaces. They ship together.
+
+Install (macOS):
+
+```
+brew install kubectx
+```
+
+kubectx:
+
+```
+kubectx                 # list contexts
+kubectx <name>          # switch to context <name>
+kubectx -               # switch back to the previous context
+kubectx -c              # print the current context name
+kubectx <new>=<old>     # rename context <old> to <new>
+kubectx -d <name>       # delete a context
+kubectx -u              # unset the current context
+```
+
+kubens:
+
+```
+kubens                  # list namespaces in the current context
+kubens <name>           # set the active namespace
+kubens -                # switch back to the previous namespace
+kubens -c               # print the current namespace
+```
+
+With [fzf](https://github.com/junegunn/fzf) installed, running `kubectx` or `kubens` with no argument opens an interactive picker.
+
+## k9s
+
+[k9s](https://github.com/derailed/k9s) (v0.32.5) is a terminal UI to observe and manage a cluster: navigate resources, read logs, exec into pods, delete objects, all from the keyboard.
+
+Install:
+
+```
+brew install k9s
+```
+
+Launch with `k9s`. Inside:
+
+* `:` opens the command prompt, then a resource name (`:pods`, `:deploy`, `:svc`, `:ns`, ...).
+* `/` filters the current view.
+* `:ctx` switches context, `:ns` switches namespace.
+* `?` lists the shortcuts (they vary by view and version), `:q` quits.
+
+## stern
+
+[stern](https://github.com/stern/stern) (1.30.0) tails logs from multiple pods and containers at once, which `kubectl logs` cannot do. The pod query is a regular expression matched against pod names.
+
+Install:
+
+```
+brew install stern
+```
+
+```
+stern <pod-query>                 # tail all pods matching the query
+stern <pod-query> -n <namespace>  # limit to a namespace
+stern <pod-query> -A              # across all namespaces
+stern -l app=api                  # select by label instead of by name
+stern <query> -c <container>      # a specific container (regex) in multi-container pods
+stern <query> --tail 100          # start from the last 100 lines
+stern <query> -t                  # prefix each line with a timestamp
+stern <query> --no-follow         # print existing logs and exit
+```
+
+## See also
+
+* `kubectl` plugins via [krew](https://github.com/kubernetes-sigs/krew), the kubectl plugin manager.
+* `kustomize`, the overlay tool built into `kubectl` (`kubectl kustomize`) and available standalone ([kubernetes-sigs/kustomize](https://github.com/kubernetes-sigs/kustomize)).
