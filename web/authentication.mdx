@@ -1,6 +1,7 @@
 ---
 title: Authentication
 description: Authentication is the process of actually confirming the truth of an attribute, most likely the identity claimed by an user.
+checkedOn: 2026-07-21
 ---
 
 Authentication is the process of actually confirming the truth of an attribute, most likely the identity claimed by an user.
@@ -12,7 +13,7 @@ least one form of identification.
 
 ## OAuth
 
-* [The OAuth Bible ](http://oauthbible.com/)
+* [OAuth 2.0](https://oauth.net/2/) (the OAuth Bible at oauthbible.com is gone)
 
 ## Specific implementations
 
@@ -22,10 +23,10 @@ least one form of identification.
 
 Keywords : Enterprise Identity Management, OpenID Connect, Oauth2
 
-* [DEX (project by CoreOS) ](https://github.com/coreos/dex): OpenID Connect Identity (OIDC) and OAuth 2.0 Provider with Pluggable Connectors. Written in Go, backend + frontend.
-* [Hydra ](https://github.com/ory/hydra): OAuth2 server with OpenID Connect - cloud native, security-first, open source API security for your infrastructure. Written in Go, backend only.
-* [Ladon ](https://github.com/ory/ladon): A SDK for access control policies: authorization for the microservice and IoT age. Inspired by AWS IAM policies. Written for Go.
+* [Dex](https://github.com/dexidp/dex): OpenID Connect Identity (OIDC) and OAuth 2.0 Provider with Pluggable Connectors. Started at CoreOS, now maintained under the dexidp organization. Written in Go, backend + frontend.
+* [Hydra](https://github.com/ory/hydra): OAuth2 server with OpenID Connect - cloud native, security-first, open source API security for your infrastructure. Written in Go, backend only.
+* [Ladon](https://github.com/ory/ladon): A SDK for access control policies: authorization for the microservice and IoT age. Inspired by AWS IAM policies. Written for Go.
 * Maybe [UAA - Cloud Foundry](https://github.com/cloudfoundry/uaa) ?
-* [Keystone - OpenStack Identity Service](https://www.openstack.org/software/releases/ocata/components/keystone)
+* [Keystone - OpenStack Identity Service](https://docs.openstack.org/keystone/latest/)
 
-HTTP Middlewares that can be considered in front of APIs: [Kong ](https://getkong.org/) (written in Lua), [Istio](https://istio.io/) (a bit out of topic, but maybe not).
+HTTP Middlewares that can be considered in front of APIs: [Kong](https://konghq.com/) (written in Lua), [Istio](https://istio.io/) (a bit out of topic, but maybe not).
