@@ -8,7 +8,7 @@ checkedOn: 2026-07-22
 
 * **Object** := (sha1) -> (headers, body)
 
-  * The sha1 is always the full content hash (headers + body) and thus is a signature of the object and dependant objects.
+  * The sha1 is always the full content hash (headers + body) and thus is a signature of the object and dependent objects.
   
   * On forging: SHA-1 collisions are practical. In 2017 the SHAttered attack (Google and CWI Amsterdam) produced two different files sharing the same SHA-1, so a blob can in principle be crafted to collide with another. A commit still cannot be altered silently: changing it changes its hash, and because every descendant stores its parent's hash, rewriting one commit forces every later commit to change too, which is what makes mid-history tampering visible. Modern git ships a hardened SHA-1 (the sha1dc collision detector, on by default) that aborts when it sees a SHAttered-style collision attempt, and an experimental SHA-256 object format exists for new repositories.
 
