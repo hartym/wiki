@@ -16,7 +16,8 @@
       <supports element="stem" type="yes"/>
       </encoding>
     <miscellaneous>
-      <miscellaneous-field name="partName">Set de batterie</miscellaneous-field>
+      <miscellaneous-field name="creationDate">2026-07-25</miscellaneous-field>
+      <miscellaneous-field name="platform">Apple Macintosh</miscellaneous-field>
       </miscellaneous>
     </identification>
   <part-list>
@@ -206,6 +207,11 @@
           <sign>percussion</sign>
           </clef>
         </attributes>
+      <direction placement="above" system="only-top">
+        <direction-type>
+          <words>Pas de timbre, charley fermé</words>
+          </direction-type>
+        </direction>
       <note>
         <unpitched>
           <display-step>C</display-step>
@@ -344,11 +350,7 @@
         </barline>
       </measure>
     <measure number="3">
-      <attributes>
-        <measure-style>
-          <multiple-rest>7</multiple-rest>
-          </measure-style>
-        </attributes>
+      <print new-system="yes"/>
       <note>
         <rest measure="yes"/>
         <duration>8</duration>
