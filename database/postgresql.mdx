@@ -1,7 +1,7 @@
 ---
 title: PostgreSQL
 description: "PostgreSQL notes: relation sizes, filesystem tuning, JSONB, backup and restore."
-checkedOn: 2026-06-18
+checkedOn: 2026-07-24
 ---
 
 [PostgreSQL](https://github.com/postgres/postgres) - The world's most advanced open source relational database
@@ -44,13 +44,18 @@ More info and scripts: [PostgreSQL Wiki - Disk Usage](https://wiki.postgresql.or
 Simple backup command:
 
 ```shell
-pg_dump --format=c --role=<role> <dbname>
+pg_dump --format=c <dbname>
 ```
 Simple restore command:
 
 ```shell
 pg_restore --role=<role> -d <dbname> <filename>
 ```
+
+`--format=c` writes the custom archive format, which `pg_restore` reads. Note that `--role`
+is ignored by `pg_dump` when the output is an archive format (`-Fc`, `-Ft`, `-Fd`): for those,
+set the role at restore time on `pg_restore`, as shown above. `--role` only takes effect on
+`pg_dump` for plain SQL output (`-Fp`).
 
 ## Tools
 
