@@ -46,7 +46,7 @@ def handle(self, request):
 Fields and labels are callable and return safe markup (`markupsafe.Markup`), so no `| safe`
 filter is needed. Keyword arguments become HTML attributes:
 
-```jinja2
+```jinja
 <form class="form-inline" method="post" action="">
     {% for field in form %}
         <div class="form-group">
@@ -60,7 +60,7 @@ filter is needed. Keyword arguments become HTML attributes:
 
 To render validation errors, each field exposes an `errors` list:
 
-```jinja2
+```jinja
 <div class="form-group {% if form.some_field.errors %}has-error{% endif %}">
     {{ form.some_field.label(class="col-sm-2 control-label") }}
     <div class="col-sm-10">
