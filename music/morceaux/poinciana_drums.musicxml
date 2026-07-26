@@ -8,7 +8,7 @@
     <creator type="composer">Compositeur / Arrangeur</creator>
     <encoding>
       <software>MuseScore Studio 4.7.4</software>
-      <encoding-date>2026-07-25</encoding-date>
+      <encoding-date>2026-07-26</encoding-date>
       <supports element="accidental" type="yes"/>
       <supports element="beam" type="yes"/>
       <supports element="print" attribute="new-page" type="no"/>
@@ -209,7 +209,7 @@
         </attributes>
       <direction placement="above" system="only-top">
         <direction-type>
-          <words>Pas de timbre, charley fermé</words>
+          <words>Pas de timbre</words>
           </direction-type>
         </direction>
       <note>
