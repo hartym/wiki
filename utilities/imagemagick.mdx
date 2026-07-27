@@ -1,19 +1,33 @@
 ---
 title: "ImageMagick (and GraphicsMagick)"
-description: "ImageMagick batch recipe: strip, blur, compress and resize a folder of JPEGs for the web."
-checkedOn: 2026-06-30
+description: "ImageMagick and GraphicsMagick command-line recipes: inspect, batch-optimise, convert, flatten, trim and tile images for the web."
+checkedOn: 2026-07-27
 ---
 
 * https://en.wikipedia.org/wiki/ImageMagick
-* http://www.imagemagick.org/script/index.php
+* https://imagemagick.org/
 * https://en.wikipedia.org/wiki/GraphicsMagick
 * http://www.graphicsmagick.org/
+
+On ImageMagick 7 the single `magick` command replaces the old per-tool binaries, so the recipes
+below use `magick`, `magick identify`, `magick mogrify`, `magick montage`. On ImageMagick 6 drop the
+`magick` prefix and call `convert`, `identify`, `mogrify`, `montage` directly.
+
+### Inspect before you touch anything
+
+```shell
+magick identify -format "%f: %wx%h %m %b\n" *.jpg
+```
+
+Prints one line per file with name, dimensions, format and byte size, without opening a viewer. Quick
+way to spot the oversized outlier before running a batch. Drop the `-format` string to get the full
+verbose dump of a single file.
 
 ### Batch-optimise a folder of JPEGs for the web
 
 ```shell
 for i in *.jpg; do
-    convert -strip -interlace Plane -gaussian-blur 0.05 -quality 75% -resize 1800x $i output/$i
+    magick "$i" -strip -interlace Plane -gaussian-blur 0.05 -quality 75% -resize 1800x "output/$i"
 done
 ```
 
@@ -21,7 +35,54 @@ Walks every `.jpg` in the current directory and writes a lighter copy into `outp
 first with `mkdir -p output`). `-strip` drops EXIF and other metadata, `-interlace Plane` makes the
 JPEG progressive, `-gaussian-blur 0.05` smooths noise so it compresses better, `-quality 75%` sets
 the JPEG quality, and `-resize 1800x` caps the width at 1800px while keeping the aspect ratio.
-Verified on ImageMagick 6.9.11: a 2400x1600 source comes out at 1800x1200 and about half the size.
+Verified on ImageMagick 6.9.11 (with `convert`): a 2400x1600 source comes out at 1800x1200 and about
+half the size.
 
-On ImageMagick 7 the `convert` command is deprecated in favour of `magick`, so use
-`magick "$i" ... "output/$i"`.
+### Convert a whole folder without the loop
+
+```shell
+magick mogrify -format webp -quality 80 -path output *.jpg
+```
+
+`mogrify` is ImageMagick's built-in batch tool, so no shell loop is needed. `-format webp` writes
+`.webp` copies, `-path output` sends them to `output/` instead of next to the sources. Careful:
+`mogrify` without `-format` or `-path` overwrites the originals in place.
+
+### Flatten a transparent PNG onto a JPEG
+
+```shell
+magick logo.png -background white -flatten logo.jpg
+```
+
+JPEG has no alpha channel, so transparent pixels would otherwise come out black. `-background white
+-flatten` composites the image onto a solid canvas first. Swap `white` for any colour, e.g.
+`-background '#f5f5f5'`. On ImageMagick 6.7.5 and later, `-background white -alpha remove` does the
+same job without merging layers.
+
+### Trim surrounding whitespace
+
+```shell
+magick scan.png -trim +repage cropped.png
+```
+
+`-trim` removes a uniform border, like the white margin around a scan or the padding around a logo.
+`+repage` resets the virtual canvas afterwards; without it the trimmed-off offset lingers in the
+metadata and trips up later operations. Add `-fuzz 5%` before `-trim` when the border is not
+perfectly uniform.
+
+### Build a contact sheet
+
+```shell
+magick montage *.jpg -tile 4x -geometry 240x+8+8 -title "Shoot 2026" contact.jpg
+```
+
+`montage` tiles thumbnails into one overview image: 4 columns (`-tile 4x`, rows auto-computed), each
+thumbnail capped at 240px wide with an 8px gap on every side (`-geometry`). Handy to eyeball a whole
+shoot on a single page.
+
+### GraphicsMagick
+
+GraphicsMagick is a lighter fork with mostly the same options behind a single `gm` binary: prefix
+each command with `gm`, so `gm convert in.jpg -resize 1800x out.jpg`, `gm identify photo.png`,
+`gm montage ...`. There is no unified `magick` command, and it lags on newer formats (thinner
+WebP and HEIC support), but it stays fast and steady for the classic resize and convert jobs.
