@@ -1,6 +1,7 @@
 ---
 title: Pandas
-description: "Data analysis library for Python: DataFrames, indexing, and IO tools."
+description: "Data analysis library for Python: DataFrame recipes for selection, grouping, merging, and dates."
+checkedOn: 2026-08-04
 ---
 
 Pandas is an open source, BSD-licensed library providing high-performance, easy-to-use data
@@ -106,13 +107,16 @@ counts = df["quest"].value_counts()
 
 ```python
 events = pd.DataFrame({
-    "when": pd.to_datetime(["0932-01-01", "0932-06-01"], format="%Y-%m-%d"),
+    "when": pd.to_datetime(["2024-01-01", "2024-06-01"], format="%Y-%m-%d"),
     "n": [1, 2],
 })
-recent = events[events["when"] >= "0932-03-01"]
+recent = events[events["when"] >= "2024-03-01"]
 ```
 
-Pass an explicit `format` so parsing is consistent and fast.
+Pass an explicit `format` so parsing is consistent and fast. The default `datetime64[ns]` type
+only spans about 1677 to 2262 (nanoseconds held in a 64-bit integer); a value outside that range
+raises `OutOfBoundsDatetime`. For older or far-future dates, build the column at a coarser
+resolution, for example a numpy `datetime64[s]` array, which pandas keeps as `datetime64[s]`.
 
 ## Links and references
 

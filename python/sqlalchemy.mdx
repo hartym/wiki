@@ -1,6 +1,7 @@
 ---
 title: SQLAlchemy
 description: "SQLAlchemy notes: turn on engine SQL logging, and the Core / ORM split."
+checkedOn: 2026-07-30
 ---
 
 This page is a work in progress.
@@ -48,5 +49,3 @@ with Session(engine) as session:
         select(Knight).where(Knight.quest == "grail")
     ).one()
 ```
-
-## Miscellaneous

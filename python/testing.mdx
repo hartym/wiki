@@ -1,6 +1,7 @@
 ---
 title: Testing with Python
-description: "Python testing notes: pytest recipes (parametrized tests) and property-based testing libraries."
+description: "Python testing notes: pytest recipes (parametrized tests, fixtures) and pointers to property-based testing and HTTP recording libraries."
+checkedOn: 2026-07-28
 ---
 
 ## Pytest recipes
@@ -38,5 +39,5 @@ A fixture is requested by naming it as a test argument; pytest builds it fresh f
 
 ## Other libraries
 
-* [Hypothesis](https://hypothesis.readthedocs.io/)
-* [Cassette](http://cassette.readthedocs.io/)
+* [Hypothesis](https://hypothesis.readthedocs.io/) - property-based testing.
+* [vcrpy](https://vcrpy.readthedocs.io/) - record and replay HTTP interactions in tests.
