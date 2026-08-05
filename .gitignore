@@ -3,3 +3,7 @@
 
 # macOS folder metadata
 .DS_Store
+
+# Vim swap and backup files
+*.sw[a-p]
+*~
