@@ -1,18 +1,56 @@
 ---
 title: Jinja2
-description: "Jinja2: Python template engine with sandboxed evaluation, filters, and template inheritance; Flask's default."
+description: "Jinja2: Python template engine. Autoescaping and sandboxing are both opt-in, not defaults."
+checkedOn: 2026-08-05
 ---
 
-Jinja is a template engine for the Python programming language created by Armin Ronacher.
-It is similar to the Django template engine but provides Python-like expressions while
-ensuring that templates are evaluated in a sandbox. It is a text-based template language
-and thus can be used to generate any markup as well as source code.
+Jinja is a text-based template engine for Python, written by Armin Ronacher. It looks like the
+Django template language but allows Python-like expressions, including calling methods with
+arguments on the objects you pass in. It is Flask's default template engine, and it templates any
+text, not just HTML: config files, SQL, source code.
 
-The Jinja template engine allows customization of tags, filters, tests, and globals. Unlike
-the Django template engine, Jinja also lets the template designer call functions with
-arguments on objects. Jinja is Flask's default template engine.
+Tags, filters, tests and globals are all customisable on the `Environment`.
+
+## Two defaults worth knowing
+
+Both of these are commonly assumed to be on. They are not.
+
+**Autoescaping is off** in a bare `Environment`. Flask turns it on for `.html` and `.xml`
+templates; plain Jinja does not.
+
+```python
+from jinja2 import Environment, select_autoescape
+
+Environment().autoescape                      # False
+Environment().from_string("{{ x }}").render(x="<b>hi</b>")   # '<b>hi</b>', not escaped
+
+# opt in, either always
+Environment(autoescape=True)
+# or per file extension, the way Flask does it
+Environment(autoescape=select_autoescape(["html", "xml"]))
+```
+
+**Templates are not sandboxed** by default either. A plain `Environment` gives a template full
+attribute access on the objects it receives, which is enough to walk back up to arbitrary Python:
+
+```python
+from jinja2 import Environment
+from jinja2.sandbox import SandboxedEnvironment
+
+payload = "{{ ''.__class__.__mro__[1].__subclasses__()|length }}"
+
+Environment().from_string(payload).render()           # 303, it runs
+SandboxedEnvironment().from_string(payload).render()  # jinja2.exceptions.SecurityError
+```
+
+So: never render a template whose *source* comes from a user without
+`jinja2.sandbox.SandboxedEnvironment`, and even then read its documented limits first. Passing
+untrusted *data* into a trusted template is fine, that is the normal case.
+
+Verified on Jinja2 3.1.6.
 
 ## References
 
 * [Jinja documentation](https://jinja.palletsprojects.com/)
+* [Sandbox API](https://jinja.palletsprojects.com/en/stable/sandbox/)
 * [Flask documentation](https://flask.palletsprojects.com/)

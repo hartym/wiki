@@ -1,18 +1,27 @@
 ---
 title: Rust Web Frameworks
-description: "In-depth comparison of the Actix Web, Axum, Rocket and Poem web frameworks for Rust."
+description: "Actix Web, Axum, Rocket and Poem compared: release status, ecosystem crates and code sketches."
 ---
 
-This document provides an in-depth comparison of four major Rust web frameworks: Actix Web, Axum, Rocket, and Poem.
-Each framework is analyzed across multiple dimensions including performance, features, community support, and
-authentication capabilities.
+Four Rust web frameworks side by side: Actix Web, Axum, Rocket and Poem. Versions, release dates
+and star counts are a snapshot taken on 2026-08-05 from crates.io and GitHub.
+
+The crate names and module paths below were checked against crates.io and docs.rs. The code
+snippets were not compiled; they are being reviewed one framework at a time. Treat them as shape,
+not as copy-paste material.
 
 ## Actix Web
 
-[Actix Web](https://actix.rs/) is a fast web framework for Rust. Built on top of the
-[Actix actor](https://actix.rs/docs/actix/actor/) framework, it provides excellent performances and has
-been battle-tested in production environments. It's known for having one of the most comprehensive ecosystems in the
-Rust web development space.
+[Actix Web](https://actix.rs/) has the deepest set of ready-made middleware of the four. Despite
+the name it no longer runs on the Actix actor framework: version 4 is a plain Tokio application,
+and the last piece that still needed actors (`actix-web-actors`, for WebSockets) is deprecated in
+favour of [actix-ws](https://crates.io/crates/actix-ws).
+
+### Status
+
+- Latest release 4.14.0 (2026-06-21). The 4.x line has been stable since 4.0.0 (2022-02-25).
+- [actix/actix-web](https://github.com/actix/actix-web), about 24.8k stars, Apache-2.0.
+- Minimum supported Rust version: 1.88.
 
 ### Hello World Example
 
@@ -55,34 +64,22 @@ async fn main() -> std::io::Result<()> {
 // GET /hello?name=Alice -> {"message": "Hello, Alice!"}
 ```
 
-### Community & Development
+### Ecosystem
 
-- **GitHub Stars**: ~20,000+
-- **Contributors**: 350+ contributors
-- **Maintainers**: Active core team with regular contributors
-- **Release Cycle**: Regular releases every 2-3 months
-- **Breaking Changes**: Stable since v4.0 (2022)
-- **Documentation**: Comprehensive with extensive examples
-- **Discord/Forums**: Very active community (5000+ Discord members)
-- **Corporate Backing**: Used by Microsoft, Cloudflare, and others
-
-### Feature Support Table
-
-| Feature | Support Level | Recommended Libraries | Notes |
-|---------|--------------|----------------------|-------|
-| **OAuth2** | ⭐⭐⭐⭐⭐ Excellent | `actix-web-oauth2`, `oauth2-rs` | Multiple mature solutions |
-| **JWT** | ⭐⭐⭐⭐⭐ Excellent | `actix-web-httpauth`, `jsonwebtoken` | Built-in middleware support |
-| **Rate Limiting** | ⭐⭐⭐⭐⭐ Excellent | `actix-governor`, `actix-ratelimit` | Multiple strategies available |
-| **RBAC** | ⭐⭐⭐⭐ Very Good | `actix-casbin`, custom extractors | Flexible implementation options |
-| **CORS** | ⭐⭐⭐⭐⭐ Native | `actix-cors` | Official middleware |
-| **Sessions** | ⭐⭐⭐⭐⭐ Excellent | `actix-session` | Redis, Cookie backends |
-| **WebSockets** | ⭐⭐⭐⭐⭐ Native | Built-in | First-class support |
-| **SSE** | ⭐⭐⭐⭐ Very Good | `actix-web-lab` | Server-sent events |
-| **GraphQL** | ⭐⭐⭐⭐⭐ Excellent | `async-graphql`, `juniper` | Multiple integrations |
-| **OpenAPI** | ⭐⭐⭐⭐ Very Good | `paperclip`, `utoipa` | Auto-generation available |
-| **Metrics** | ⭐⭐⭐⭐⭐ Excellent | `actix-web-prom` | Prometheus integration |
-| **Tracing** | ⭐⭐⭐⭐⭐ Excellent | `tracing-actix-web` | OpenTelemetry support |
-
+| Need | Crates | Notes |
+|---|---|---|
+| OAuth2 | `oauth2` | Generic client, nothing Actix-specific required. |
+| JWT | `actix-web-httpauth`, `jsonwebtoken` | Bearer extractor, then token validation. |
+| Rate limiting | `actix-governor` | `actix-ratelimit` is dead, last release January 2021. |
+| RBAC | `actix-casbin-auth` | Casbin middleware. `actix-casbin` is the storage adapter, not the middleware. |
+| CORS | `actix-cors` | Official. |
+| Sessions | `actix-session` | Cookie and Redis stores. |
+| WebSockets | `actix-ws` | Replaces the deprecated `actix-web-actors`. |
+| SSE | `actix-web-lab` | `sse` module. |
+| GraphQL | `async-graphql`, `juniper` | |
+| OpenAPI | `utoipa`, `paperclip` | |
+| Metrics | `actix-web-prom` | Prometheus exporter. |
+| Tracing | `tracing-actix-web` | |
 
 ### Additional Examples
 
@@ -132,9 +129,17 @@ let app = App::new()
 
 ## Axum
 
-### Overview
+[Axum](https://github.com/tokio-rs/axum) is built by the Tokio team on top of Tower, so its
+middleware are plain Tower layers shared with the rest of that ecosystem (`tower-http`, `tonic`).
+No routing macros: handlers are ordinary async functions, and what they may take as arguments is
+decided by traits.
 
-[Axum](https://docs.rs/axum/latest/axum/) is a web framework built by the Tokio team, designed to work seamlessly with the Tower ecosystem. It focuses on ergonomics, modularity, and type safety while maintaining excellent performance. Its macro-free approach and strong integration with async Rust patterns make it a favorite among developers who prefer explicit, composable code.
+### Status
+
+- Latest release 0.8.9 (2026-04-14).
+- Still `0.x`, and minor bumps are breaking: 0.7 (2023-11-27), 0.8 (2025-01-01). Budget a
+  migration at each one.
+- [tokio-rs/axum](https://github.com/tokio-rs/axum), about 26.8k stars, MIT.
 
 ### Hello World Example
 
@@ -183,45 +188,22 @@ async fn main() {
 // GET /hello?name=Bob -> {"message": "Hello, Bob!"}
 ```
 
-### Main Characteristics
+### Ecosystem
 
-- **Architecture**: Built on Tower service abstraction
-- **Performance**: On par with Actix Web
-- **Async Runtime**: Tokio-native (by the same team)
-- **Middleware**: Tower middleware ecosystem
-- **Type System**: Leverages Rust's type system extensively
-- **Macro-free**: No proc macros for routing
-- **Composability**: Highly composable with Tower services
-- **Error Handling**: Explicit error handling with Result types
-
-### Community & Development
-
-- **GitHub Stars**: ~17,000+
-- **Contributors**: 200+ contributors
-- **Maintainers**: Tokio team (very active)
-- **Release Cycle**: Monthly releases
-- **Stability**: Stable API since 0.6
-- **Documentation**: Excellent with many examples
-- **Discord**: Part of Tokio Discord (10,000+ members)
-- **Corporate Backing**: Maintained by Tokio project contributors
-
-### Feature Support Table
-
-| Feature | Support Level | Recommended Libraries | Notes |
-|---------|--------------|----------------------|-------|
-| **OAuth2** | ⭐⭐⭐⭐ Very Good | `oauth2-rs`, `axum-login` | Good integrations available |
-| **JWT** | ⭐⭐⭐⭐⭐ Excellent | `jsonwebtoken`, `axum-auth` | Clean middleware patterns |
-| **Rate Limiting** | ⭐⭐⭐⭐⭐ Excellent | `tower-governor`, `rate-limiter` | Tower middleware |
-| **RBAC** | ⭐⭐⭐⭐ Very Good | `axum-casbin`, custom extractors | Flexible patterns |
-| **CORS** | ⭐⭐⭐⭐⭐ Native | `tower-http::cors` | Tower middleware |
-| **Sessions** | ⭐⭐⭐⭐ Very Good | `axum-sessions`, `tower-sessions` | Multiple backends |
-| **WebSockets** | ⭐⭐⭐⭐⭐ Native | Built-in | Excellent support |
-| **SSE** | ⭐⭐⭐⭐⭐ Native | Built-in | First-class support |
-| **GraphQL** | ⭐⭐⭐⭐⭐ Excellent | `async-graphql` | Perfect integration |
-| **OpenAPI** | ⭐⭐⭐⭐ Very Good | `utoipa`, `aide` | Good solutions |
-| **Metrics** | ⭐⭐⭐⭐⭐ Excellent | `metrics`, `tower-http` | Prometheus ready |
-| **Tracing** | ⭐⭐⭐⭐⭐ Native | `tracing`, `tower-http` | Built-in support |
-| **gRPC** | ⭐⭐⭐⭐⭐ Excellent | `tonic` | Same ecosystem |
+| Need | Crates | Notes |
+|---|---|---|
+| OAuth2 | `oauth2`, `axum-login` | |
+| JWT | `jsonwebtoken`, `axum-auth` | |
+| Rate limiting | `tower-governor` | Tower layer, works outside Axum too. |
+| RBAC | `axum-casbin` | |
+| CORS | `tower-http` | `cors` feature. |
+| Sessions | `tower-sessions` | Replaces `axum-sessions`, unmaintained since 2023. |
+| WebSockets | built in | `axum::extract::ws`. |
+| SSE | built in | `axum::response::sse`. |
+| GraphQL | `async-graphql` | |
+| OpenAPI | `utoipa`, `aide` | |
+| Metrics and tracing | `tower-http`, `tracing` | Trace layer plus the usual `tracing` subscribers. |
+| gRPC | `tonic` | Same Tower stack, so an Axum router and a Tonic service can share a port. |
 
 ### Additional Examples
 
@@ -287,9 +269,17 @@ let app = Router::new()
 
 ## Rocket
 
-### Overview
+[Rocket](https://rocket.rs/) trades explicitness for ergonomics: routes are attribute macros,
+request validation goes through guards (types implementing `FromRequest`), and configuration,
+forms and templating ship in the box. It is also the slowest moving of the four.
 
-[Rocket](https://rocket.rs/) is a web framework that prioritizes developer experience, ease of use, and rapid development. It uses Rust's type system and custom procedural macros to eliminate boilerplate while maintaining type safety. Rocket is known for its declarative approach and "batteries included" philosophy.
+### Status
+
+- Latest release 0.5.1 (2024-05-23). Before that: 0.5.0 (2023-11-17), and the previous major
+  0.4.0 dates from December 2018. Still pre-1.0.
+- [rwf2/Rocket](https://github.com/rwf2/Rocket), about 25.8k stars. The repository moved from
+  Sergio Benitez's account to the RWF2 organisation; last commit December 2025.
+- Async since 0.5, on Tokio.
 
 ### Hello World Example
 
@@ -323,46 +313,24 @@ fn rocket() -> _ {
 // GET /hello?name=Charlie -> {"message": "Hello, Charlie!"}
 ```
 
-### Main Characteristics
+### Ecosystem
 
-- **Architecture**: Macro-based declarative routing
-- **Performance**: Good (slightly behind Actix/Axum)
-- **Async Runtime**: Tokio-based since v0.5
-- **Type Safety**: Request guards for automatic validation
-- **Configuration**: Built-in configuration management (Rocket.toml)
-- **Testing**: Excellent testing utilities
-- **Form Handling**: Superior form and multipart support
-- **Templates**: Built-in templating support
-
-### Community & Development
-
-- **GitHub Stars**: ~23,000+
-- **Contributors**: 300+ contributors
-- **Maintainers**: Led by Sergio Benitez
-- **Release Cycle**: Major releases yearly, patches monthly
-- **Stability**: v0.5 stable, v1.0 in development
-- **Documentation**: Exceptional guide and examples
-- **Community**: Active Matrix/Discord channels
-- **History**: One of the oldest Rust web frameworks
-
-### Feature Support Table
-
-| Feature | Support Level | Recommended Libraries | Notes |
-|---------|--------------|----------------------|-------|
-| **OAuth2** | ⭐⭐⭐⭐ Very Good | `rocket_oauth2` | Official integration |
-| **JWT** | ⭐⭐⭐⭐ Very Good | `rocket_jwt`, custom guards | Clean guard pattern |
-| **Rate Limiting** | ⭐⭐⭐ Good | Custom fairings | No official solution |
-| **RBAC** | ⭐⭐⭐⭐ Very Good | Request guards | Elegant pattern |
-| **CORS** | ⭐⭐⭐⭐⭐ Native | `rocket_cors` | Official fairing |
-| **Sessions** | ⭐⭐⭐⭐ Very Good | `rocket_session` | Cookie/backend support |
-| **WebSockets** | ⭐⭐⭐ Good | `rocket_ws` | Recent addition |
-| **SSE** | ⭐⭐⭐⭐ Very Good | Stream responses | Built-in support |
-| **GraphQL** | ⭐⭐⭐⭐ Very Good | `juniper_rocket`, `async-graphql` | Good integrations |
-| **OpenAPI** | ⭐⭐⭐⭐ Very Good | `rocket_okapi`, `utoipa` | Auto-generation |
-| **Metrics** | ⭐⭐⭐ Good | `rocket_prometheus` | Community solutions |
-| **Tracing** | ⭐⭐⭐ Good | Manual integration | Requires setup |
-| **Templates** | ⭐⭐⭐⭐⭐ Native | Handlebars, Tera | Built-in support |
-| **Forms** | ⭐⭐⭐⭐⭐ Excellent | Native | Best-in-class |
+| Need | Crates | Notes |
+|---|---|---|
+| OAuth2 | `rocket_oauth2` | |
+| JWT | `jsonwebtoken` in a request guard | `rocket_jwt` exists but has not moved since December 2023. |
+| Rate limiting | none | No maintained crate. Write a fairing. |
+| RBAC | request guards | The guard pattern covers this cleanly, no crate needed. |
+| CORS | `rocket_cors` | |
+| Sessions | `rocket_session` | Small crate, few users. |
+| WebSockets | `rocket_ws` | |
+| SSE | built in | `rocket::response::stream::EventStream`. |
+| GraphQL | `juniper_rocket`, `async-graphql` | |
+| OpenAPI | `rocket_okapi` | |
+| Metrics | `rocket_prometheus` | |
+| Templates | `rocket_dyn_templates` | Handlebars and Tera. |
+| Static files | built in | `rocket::fs::FileServer`. |
+| Forms | built in | The strongest form and multipart handling of the four. |
 
 ### Additional Examples
 
@@ -440,9 +408,17 @@ impl Fairing for RateLimiter {
 
 ## Poem
 
-### Overview
+[Poem](https://github.com/poem-web/poem) is the smallest of the four and the most API-first:
+`poem-openapi` derives the OpenAPI document from your types, which is its main reason to exist.
+Development on GitHub is active but releases are rare.
 
-[Poem](https://github.com/poem-web/poem) is a full-featured, modern web framework that emphasizes simplicity and powerful features. It provides automatic OpenAPI documentation generation, making it ideal for API-first development. Despite being newer than other frameworks, it offers a comprehensive feature set with excellent ergonomics.
+### Status
+
+- Latest release: `poem` 3.1.12 and `poem-openapi` 5.1.16, both 2025-07-28. Last commit on
+  GitHub: August 2026, so a year of work sits unreleased.
+- [poem-web/poem](https://github.com/poem-web/poem), about 4.4k stars, Apache-2.0. Roughly a
+  fifth of the community of the other three.
+- Tokio-based. Tower layers can be reused through the `tower-compat` feature.
 
 ### Hello World Example
 
@@ -490,64 +466,28 @@ async fn main() -> Result<(), std::io::Error> {
 // GET /hello?name=Diana -> {"message": "Hello, Diana!"}
 ```
 
-### Main Characteristics
+### Ecosystem
 
-- **Architecture**: Middleware-based with Tower compatibility
-- **Performance**: Very good, comparable to major frameworks
-- **OpenAPI**: First-class OpenAPI support
-- **GraphQL**: Built-in GraphQL support
-- **Async Runtime**: Tokio-based
-- **I18n**: Internationalization support built-in
-- **WebSocket**: Native WebSocket support
-- **Testing**: Good testing utilities
+Most of what Poem offers lives in the crate itself, behind cargo features. There is almost no
+third-party layer around it, which cuts both ways: little to choose from, little to break.
 
-### Community & Development
-
-- **GitHub Stars**: ~3,000+
-- **Contributors**: 100+ contributors
-- **Maintainers**: Active development by poem-web team
-- **Release Cycle**: Regular monthly releases
-- **Stability**: API stabilizing, frequent updates
-- **Documentation**: Good with improving examples
-- **Community**: Growing Discord community
-- **Language**: Strong Chinese developer community
-
-### Feature Support Table
-
-| Feature | Support Level | Recommended Libraries | Notes |
-|---------|--------------|----------------------|-------|
-| **OAuth2** | ⭐⭐⭐⭐ Very Good | `poem-oauth2` | Native support |
-| **JWT** | ⭐⭐⭐⭐⭐ Excellent | `poem-jwt-auth` | Built-in middleware |
-| **Rate Limiting** | ⭐⭐⭐⭐ Very Good | Built-in middleware | Native support |
-| **RBAC** | ⭐⭐⭐⭐ Very Good | `poem-casbin` | Good integration |
-| **CORS** | ⭐⭐⭐⭐⭐ Native | Built-in | Middleware included |
-| **Sessions** | ⭐⭐⭐⭐ Very Good | Built-in | Multiple backends |
-| **WebSockets** | ⭐⭐⭐⭐⭐ Native | Built-in | First-class support |
-| **SSE** | ⭐⭐⭐⭐ Very Good | Built-in | Native support |
-| **GraphQL** | ⭐⭐⭐⭐⭐ Native | Built-in | Integrated support |
-| **OpenAPI** | ⭐⭐⭐⭐⭐ Native | Built-in | Automatic generation |
-| **Metrics** | ⭐⭐⭐⭐ Very Good | `poem-prometheus` | Prometheus support |
-| **Tracing** | ⭐⭐⭐⭐ Very Good | Built-in | OpenTelemetry |
-| **I18n** | ⭐⭐⭐⭐⭐ Native | Built-in | Unique feature |
-| **Static Files** | ⭐⭐⭐⭐⭐ Native | Built-in | Embedded support |
-
-### Advantages
-
-- **OpenAPI generation**: Automatic API documentation
-- **Feature-rich**: Most features built-in
-- **Modern design**: Benefits from lessons of older frameworks
-- **GraphQL integration**: Native GraphQL support
-- **I18n support**: Built-in internationalization
-- **Clean API**: Intuitive and ergonomic
-- **Active development**: Rapid feature additions
-
-### Disadvantages
-
-- **Smaller community**: Less third-party extensions
-- **Documentation**: Less comprehensive than established frameworks
-- **Maturity**: Still evolving, potential breaking changes
-- **Examples**: Fewer real-world examples available
-- **Enterprise adoption**: Limited production use cases
+| Need | Where | Notes |
+|---|---|---|
+| OAuth2 | `oauth2` plus a handler | No Poem-specific crate. `poem-openapi` only declares the scheme in the spec. |
+| JWT | `jsonwebtoken` in a middleware | No Poem-specific crate. |
+| Rate limiting | nothing built in | Not in `poem::middleware`. Write one, or put it in front of the process. |
+| RBAC | roll your own | |
+| CORS | `poem::middleware::Cors` | |
+| CSRF | `poem::middleware::Csrf` | Feature `csrf`. |
+| Sessions | `poem::session` | Feature `session`. |
+| WebSockets | `poem::web::websocket` | Feature `websocket`. |
+| SSE | `poem::web::sse` | Feature `sse`. |
+| GraphQL | `async-graphql-poem` | |
+| OpenAPI | `poem-openapi` | Derived from your types, the selling point. |
+| Metrics | `poem::middleware::OpenTelemetryMetrics`, `TokioMetrics` | Features `opentelemetry`, `tokio-metrics`. |
+| Tracing | `poem::middleware::Tracing`, `OpenTelemetryTracing` | |
+| I18n | `poem::i18n` | Feature `i18n`. The only one of the four with this in core. |
+| Static files | `poem::endpoint::StaticFilesEndpoint` | Feature `static-files`. Also `EmbeddedFilesEndpoint` for embedding. |
 
 ### Additional Examples
 
@@ -585,63 +525,27 @@ impl Api {
 // Automatically generates OpenAPI spec at /api-doc/openapi.json
 ```
 
-#### JWT Authentication Middleware
-
-```rust
-use poem::{
-    Endpoint, Middleware, Request, Result,
-    middleware::BoxEndpoint,
-};
-use poem_jwt_auth::{JwtAuth, Claims};
-
-let jwt_middleware = JwtAuth::<Claims>::new("secret".to_string());
-
-let app = Route::new()
-    .at("/protected", get(protected_handler))
-    .with(jwt_middleware);
-```
-
-#### Rate Limiting
-
-```rust
-use poem::middleware::RateLimiting;
-use std::time::Duration;
-
-let rate_limiter = RateLimiting::new(
-    100, // max requests
-    Duration::from_secs(60), // per minute
-);
-
-let app = Route::new()
-    .at("/api", get(handler))
-    .with(rate_limiter);
-```
-
 ---
 
-### Authentication Implementation Complexity
+## Picking one
 
-| Task | Actix | Axum | Rocket | Poem |
-|------|-------|------|--------|------|
-| Basic JWT | Medium | Medium | Easy | Easy |
-| OAuth2 Flow | Medium | Medium | Easy | Easy |
-| RBAC System | Medium | Medium | Easy | Medium |
-| Session Management | Easy | Medium | Easy | Easy |
-| API Key Auth | Easy | Easy | Very Easy | Easy |
+None of the four is a bad choice. Rough decision rules, from the facts above rather than from
+benchmark charts:
 
-### Learning Curve Comparison
+- **Axum** if you already live in the Tokio and Tower ecosystem, or expect to share middleware
+  with `tonic` gRPC services. The price is `0.x` versioning: plan a migration at every minor bump.
+- **Actix Web** if you want a major version that holds still and the widest choice of ready-made
+  middleware. The 4.x line has been stable since 2022 and still ships several releases a year.
+- **Rocket** if ergonomics and form handling matter more than release velocity. It is the slowest
+  moving: 0.5.1 dates from May 2024, and the previous major from 2018.
+- **Poem** if the OpenAPI document is the deliverable. `poem-openapi` derives it from your types,
+  which none of the other three do without a separate crate. Smallest community by a wide margin,
+  and releases are infrequent.
 
-1. **Easiest**: Rocket - Intuitive macros, excellent docs
-2. **Easy**: Poem - Modern, clean API
-3. **Medium**: Axum - Requires Tower understanding
-4. **Hardest**: Actix - Actor model complexity
+## Links & references
 
-### Production Readiness Score
-
-| Framework | Score | Notes |
-|-----------|-------|-------|
-| Actix Web | 10/10 | Battle-tested, used by major companies |
-| Axum | 9/10 | Stable, growing adoption |
-| Rocket | 8/10 | Stable but still pre-1.0 |
-| Poem | 7/10 | Newer, less production usage |
-
+- [Actix Web docs](https://docs.rs/actix-web/latest/actix_web/) and
+  [migration guide to 4.0](https://github.com/actix/actix-web/blob/main/actix-web/MIGRATION-4.0.md)
+- [Axum docs](https://docs.rs/axum/latest/axum/)
+- [Rocket guide](https://rocket.rs/guide/)
+- [Poem docs](https://docs.rs/poem/latest/poem/) and [poem-openapi](https://docs.rs/poem-openapi/latest/poem_openapi/)
