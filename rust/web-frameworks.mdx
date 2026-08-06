@@ -1,551 +1,240 @@
 ---
 title: Rust Web Frameworks
-description: "Actix Web, Axum, Rocket and Poem compared: release status, ecosystem crates and code sketches."
+description: "Comparison of Rust web frameworks as of August 2026: axum, actix-web, salvo, Rocket and Poem, the shared hyper/tower stack, and the framework-agnostic crates around them."
+checkedOn: 2026-08-04
 ---
 
-Four Rust web frameworks side by side: Actix Web, Axum, Rocket and Poem. Versions, release dates
-and star counts are a snapshot taken on 2026-08-05 from crates.io and GitHub.
+## Summary
 
-The crate names and module paths below were checked against crates.io and docs.rs. The code
-snippets were not compiled; they are being reviewed one framework at a time. Treat them as shape,
-not as copy-paste material.
+* **axum** leads on both adoption and maintainer count. Quite low level, only crate docs. Still pre 1.0.
 
-## Actix Web
+* **actix-web** uses its own http stack. Higher level.
 
-[Actix Web](https://actix.rs/) has the deepest set of ready-made middleware of the four. Despite
-the name it no longer runs on the Actix actor framework: version 4 is a plain Tokio application,
-and the last piece that still needed actors (`actix-web-actors`, for WebSockets) is deprecated in
-favour of [actix-ws](https://crates.io/crates/actix-ws).
+* **salvo** is only framework with HTTP/3 and WebTransport. One maintainer (91%), but looks promising.
 
-### Status
 
-- Latest release 4.14.0 (2026-06-21). The 4.x line has been stable since 4.0.0 (2022-02-25).
-- [actix/actix-web](https://github.com/actix/actix-web), about 24.8k stars, Apache-2.0.
-- Minimum supported Rust version: 1.88.
+## Comparison
 
-### Hello World Example
+| | Version | Released | HTTP core | tower | 90d downloads | Humans/12mo |
+|---|---|---|---|---|---:|---:|
+| **axum** | 0.8.9 | 2026-04-14 | hyper 1.x | native | 103,898,173 | 85 |
+| **actix-web** | 4.14.0 | 2026-06-21 | own, `http` 0.2 | no | 9,182,737 | 30 |
+| **warp** | 0.4.3 | 2026-05-04 | hyper 1.x | native | 4,686,736 | - |
+| **salvo** | 0.95.1 | 2026-07-29 | hyper 1.x | bridge | 1,253,707 | 19 |
+| **Rocket** | 0.5.1 | **2024-05-23** | hyper 0.14 | no | 1,172,659 | 10 |
+| **poem** | 3.1.12 | **2025-07-28** | hyper 1.x | bridge (0.4) | 756,504 | 20 |
+| **ntex** | 3.12.0 | 2026-07-30 | own | no | 94,887 | 13 |
+| **loco-rs** | 1.0.1 | 2026-07-31 | via axum | native | 91,939 | 28 |
 
-```rust
-use actix_web::{web, App, HttpServer, Result};
-use serde::{Deserialize, Serialize};
+tower column: **native** is a `tower::Service`, so `tower-http` middleware applies directly; **bridge** is a
+compatibility layer (poem's targets tower 0.4, a major behind); **no** means the tower ecosystem is out of
+reach and every concern needs a framework-specific crate.
 
-#[derive(Serialize)]
-struct HelloResponse {
-    message: String,
-}
+## axum
 
-#[derive(Deserialize)]
-struct HelloQuery {
-    name: Option<String>,
-}
+`0.8.9` (2026-04-14). 26,780 stars, 7,710 reverse dependencies, 410M downloads lifetime and 104M of them
+in the last quarter.
 
-async fn hello(query: web::Query<HelloQuery>) -> Result<web::Json<HelloResponse>> {
-    let name = query.name.as_deref().unwrap_or("World");
-    Ok(web::Json(HelloResponse {
-        message: format!("Hello, {}!", name),
-    }))
-}
+Built by the Tokio team on `hyper` 1.4, `http` 1.5, `tower` 0.5 and `tower-http`. WebSockets and SSE are
+first-party. `#![forbid(unsafe_code)]`. MSRV 1.80.
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    println!("Starting server at http://localhost:8080");
+Verified in production: crates.io itself pins `axum = "=0.8.9"`, and Lichess runs at least five axum
+services. `tonic` declares `axum ^0.8` as a normal dependency, so every Rust gRPC user pulls it in
+regardless of choice. JetBrains shipped axum-specific IDE support in RustRover 2026.2 (2026-07-23), which
+no other Rust framework has.
 
-    HttpServer::new(|| {
-        App::new()
-            .route("/hello", web::get().to(hello))
-    })
-    .bind("127.0.0.1:8080")?
-    .run()
-    .await
-}
+Development is active: 298 human commits across 85 contributors in the last year, last commit 2026-08-04,
+only 10 open issues predating 2024. Releases are another matter - two breaking versions in three years and
+no 1.0:
 
-// Usage:
-// GET /hello -> {"message": "Hello, World!"}
-// GET /hello?name=Alice -> {"message": "Hello, Alice!"}
-```
+* **0.7.0** (2023-11-27) migrated to hyper 1.0 and removed `Server`.
+* **0.8.0** (2025-01-01) changed path syntax from `/:id` to `/{id}`; the announcement calls it "a breaking
+  change for basically all axum users". The old form now panics. `Option<Path<T>>` semantics changed.
+  Three weeks later 0.8.2 was yanked.
+* **0.9** sits unreleased on `main`. Asked for a timeline on 2026-06-30, the maintainer answered "there
+  isn't any set timeline". `axum-extra` broke three more times inside the 0.8 line.
 
-### Ecosystem
+One blocker on 1.0 is external: axum exposes `tower_layer` and `tower_service` types in its public API,
+and `tower` is still 0.5.3. The `tower-service` 1.0 tracking issue has been silent since October 2024.
 
-| Need | Crates | Notes |
-|---|---|---|
-| OAuth2 | `oauth2` | Generic client, nothing Actix-specific required. |
-| JWT | `actix-web-httpauth`, `jsonwebtoken` | Bearer extractor, then token validation. |
-| Rate limiting | `actix-governor` | `actix-ratelimit` is dead, last release January 2021. |
-| RBAC | `actix-casbin-auth` | Casbin middleware. `actix-casbin` is the storage adapter, not the middleware. |
-| CORS | `actix-cors` | Official. |
-| Sessions | `actix-session` | Cookie and Redis stores. |
-| WebSockets | `actix-ws` | Replaces the deprecated `actix-web-actors`. |
-| SSE | `actix-web-lab` | `sse` module. |
-| GraphQL | `async-graphql`, `juniper` | |
-| OpenAPI | `utoipa`, `paperclip` | |
-| Metrics | `actix-web-prom` | Prometheus exporter. |
-| Tracing | `tracing-actix-web` | |
+Original author David Pedersen wrote 6 of the last 298 commits; the project is now run day to day by
+tottoto, jplatte, mladedav and yanns.
 
-### Additional Examples
+<Opinion ring="trial" date="2026-08-05" />
 
-#### JWT Authentication Middleware
+## actix-web
 
-```rust
-use actix_web::{web, App, HttpServer, HttpResponse};
-use actix_web_httpauth::middleware::HttpAuthentication;
-use actix_web_httpauth::extractors::bearer::BearerAuth;
+`4.14.0` (2026-06-21). 24,764 stars, 1,644 reverse dependencies, 9.2M downloads in 90 days.
 
-async fn validator(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, Error> {
-    // Validate JWT token
-    let token = credentials.token();
-    // ... validation logic ...
-    Ok(req)
-}
+Zero breaking releases since 4.0.0 on 2022-02-25: four and a half years, eleven minor releases, no yanks,
+and migration guides checked into the repository (`MIGRATION-4.0.md` and predecessors). No other framework
+here matches that record.
 
-async fn protected_route() -> HttpResponse {
-    HttpResponse::Ok().json(json!({ "data": "secret" }))
-}
+It does not use hyper. `actix-http` is its own HTTP implementation on `actix-rt`/`actix-server` over
+tokio, which produces the thread-per-core throughput profile. `actix-rt`'s own documentation notes that
+idle threads do not steal work from backlogged ones.
 
-let app = App::new()
-    .service(
-        web::scope("/api")
-            .wrap(HttpAuthentication::bearer(validator))
-            .route("/protected", web::get().to(protected_route))
-    );
-```
+Two consequences of being off the tower graph:
 
-#### Rate Limiting with Governor
+* **`http` 0.2.** `actix-http` depends on `http` 0.2.7 and `h2` 0.3.27, while reqwest 0.12, tonic,
+  tower-http and axum are on `http` 1.x. Mixing them requires hand-written conversion shims and puts two
+  HTTP/2 stacks in the binary. This is the declared blocker for v5, open as issue #3384 since 2024-05-31.
+  HTTP/3 is unsupported; that issue dates from 2018.
+* **Separate crates per concern.** No `tower-http`, so `actix-cors`, `actix-session`, `actix-governor`,
+  `actix-web-prom` and `tracing-actix-web` are needed instead. Most are maintained but slower than the
+  core: `actix-web-httpauth` has not released in 26 months, `actix-cors` in 17. SSE exists only in
+  `actix-web-lab`, which sits in a maintainer's personal namespace and which Meilisearch and Rauthy depend
+  on in production. There is no actix-native gRPC.
 
-```rust
-use actix_governor::{Governor, GovernorConfigBuilder};
+355 commits in the last year, 207 of them dependabot; two humans wrote 78% of the remainder, and the
+nominal lead commits about twice a month. 157 open issues, 74% predating 2024.
 
-let governor_conf = GovernorConfigBuilder::default()
-    .per_second(2)
-    .burst_size(5)
-    .finish()
-    .unwrap();
+Verified production users: Meilisearch and Qdrant, both direct dependencies at 4.13/4.14. The
+"used by Microsoft and Cloudflare" claim in circulation is asserted nowhere by the project and could not
+be verified.
 
-let app = App::new()
-    .wrap(Governor::new(&governor_conf))
-    .route("/limited", web::get().to(handler));
-```
+Two things to know: `actix-web-actors` is deprecated in its own version string (`4.3.1+deprecated`) yet
+still outdownloads its replacement `actix-ws`; and MSRV jumped to 1.88 in a minor release, 4.13.0.
 
----
+<Opinion ring="assess" date="2026-08-05" />
 
-## Axum
+## salvo
 
-[Axum](https://github.com/tokio-rs/axum) is built by the Tokio team on top of Tower, so its
-middleware are plain Tower layers shared with the rest of that ecosystem (`tower-http`, `tonic`).
-No routing macros: handlers are ordinary async functions, and what they may take as arguments is
-decided by traits.
+`0.95.1` (2026-07-29). 4,414 stars, 1.25M downloads in 90 days - more than Rocket or Poem.
 
-### Status
+It is the only framework here with **HTTP/3 and WebTransport**, alongside ACME automatic TLS certificates
+and in-tree OpenAPI generation. Neither axum nor actix-web has an HTTP/3 story, and `h3` upstream is still
+0.0.8; salvo maintains its own fork. `salvo-oapi` does 412k downloads a quarter.
 
-- Latest release 0.8.9 (2026-04-14).
-- Still `0.x`, and minor bumps are breaking: 0.7 (2023-11-27), 0.8 (2025-01-01). Budget a
-  migration at each one.
-- [tokio-rs/axum](https://github.com/tokio-rs/axum), about 26.8k stars, MIT.
+Stack is hyper 1 and http 1, with a `tower-compat` bridge on tower 0.5 for `tower-http` middleware.
+Releases land continuously; there is still no 1.0 after six years.
 
-### Hello World Example
+498 commits in the last year, 91% by `chrislearn`.
 
-```rust
-use axum::{
-    extract::Query,
-    response::Json,
-    routing::get,
-    Router,
-};
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize)]
-struct HelloResponse {
-    message: String,
-}
-
-#[derive(Deserialize)]
-struct HelloParams {
-    name: Option<String>,
-}
-
-async fn hello(Query(params): Query<HelloParams>) -> Json<HelloResponse> {
-    let name = params.name.as_deref().unwrap_or("World");
-    Json(HelloResponse {
-        message: format!("Hello, {}!", name),
-    })
-}
-
-#[tokio::main]
-async fn main() {
-    let app = Router::new()
-        .route("/hello", get(hello));
-
-    println!("Starting server at http://localhost:8080");
-
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
-        .await
-        .unwrap();
-
-    axum::serve(listener, app).await.unwrap();
-}
-
-// Usage:
-// GET /hello -> {"message": "Hello, World!"}
-// GET /hello?name=Bob -> {"message": "Hello, Bob!"}
-```
-
-### Ecosystem
-
-| Need | Crates | Notes |
-|---|---|---|
-| OAuth2 | `oauth2`, `axum-login` | |
-| JWT | `jsonwebtoken`, `axum-auth` | |
-| Rate limiting | `tower-governor` | Tower layer, works outside Axum too. |
-| RBAC | `axum-casbin` | |
-| CORS | `tower-http` | `cors` feature. |
-| Sessions | `tower-sessions` | Replaces `axum-sessions`, unmaintained since 2023. |
-| WebSockets | built in | `axum::extract::ws`. |
-| SSE | built in | `axum::response::sse`. |
-| GraphQL | `async-graphql` | |
-| OpenAPI | `utoipa`, `aide` | |
-| Metrics and tracing | `tower-http`, `tracing` | Trace layer plus the usual `tracing` subscribers. |
-| gRPC | `tonic` | Same Tower stack, so an Axum router and a Tonic service can share a port. |
-
-### Additional Examples
-
-#### JWT Authentication Layer
-
-```rust
-use axum::{
-    middleware::{self, Next},
-    response::Response,
-    extract::Request,
-};
-use jsonwebtoken::{decode, DecodingKey, Validation};
-
-async fn auth_middleware(
-    mut req: Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-    let token = req.headers()
-        .get("Authorization")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "));
-
-    match token {
-        Some(token) => {
-            // Validate JWT
-            let decoded = decode::<Claims>(
-                token,
-                &DecodingKey::from_secret(b"secret"),
-                &Validation::default()
-            ).map_err(|_| StatusCode::UNAUTHORIZED)?;
-
-            req.extensions_mut().insert(decoded.claims);
-            Ok(next.run(req).await)
-        }
-        None => Err(StatusCode::UNAUTHORIZED)
-    }
-}
-
-let app = Router::new()
-    .route("/protected", get(protected_handler))
-    .layer(middleware::from_fn(auth_middleware));
-```
-
-#### Rate Limiting with Tower Governor
-
-```rust
-use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
-
-let governor_conf = GovernorConfigBuilder::default()
-    .per_second(2)
-    .burst_size(10)
-    .finish()
-    .unwrap();
-
-let app = Router::new()
-    .route("/api/limited", get(handler))
-    .layer(GovernorLayer {
-        config: governor_conf,
-    });
-```
-
----
+<Opinion ring="assess" date="2026-08-05" />
 
 ## Rocket
 
-[Rocket](https://rocket.rs/) trades explicitness for ergonomics: routes are attribute macros,
-request validation goes through guards (types implementing `FromRequest`), and configuration,
-forms and templating ship in the box. It is also the slowest moving of the four.
+`0.5.1`, published **2024-05-23**. 25,775 stars. Downloads are still rising - 458k in July 2026, up 56%
+over the quarter.
 
-### Status
+`rocket_http` 0.5.1 depends on `hyper ^0.14.9`, `http ^0.2` and `rustls ^0.21`, which excludes it from
+`tower-http` and from type sharing with anything on `http` 1.x. `master` has completed the hyper 1.1
+migration and is 244 commits ahead, unreleased.
 
-- Latest release 0.5.1 (2024-05-23). Before that: 0.5.0 (2023-11-17), and the previous major
-  0.4.0 dates from December 2018. Still pre-1.0.
-- [rwf2/Rocket](https://github.com/rwf2/Rocket), about 25.8k stars. The repository moved from
-  Sergio Benitez's account to the RWF2 organisation; last commit December 2025.
-- Async since 0.5, on Tokio.
+Release and governance state:
 
-### Hello World Example
+* **No commits in calendar 2026.** Last commit 2025-12-28; 14 commits in the last twelve months, thirteen
+  of them on a single day.
+* On 2025-05-25 the active maintainer wrote that he planned to release `0.6-rc.1` "once I have access to
+  do so". All 58 published versions were pushed by Sergio Benitez, who has made one commit since December
+  2024. Fourteen months later there is no release candidate.
+* The RWF2 foundation, announced in November 2023 to address this, has taken in $5,559 lifetime, holds a
+  $0 balance, received its last contribution on 2024-03-11, and has published no roadmap or update. The
+  rocket.rs news page has been silent since the v0.5 announcement.
+* Issue #2998 (2026-06-10) reports RUSTSEC advisories against the `rustls-webpki` version Rocket pulls in.
+  No maintainer response; no in-line fix is possible, since clearing it requires a release. The affected
+  code paths are unlikely to be reached by a normal server, so it blocks scanners rather than exposing a
+  live exploit.
 
-```rust
-#[macro_use] extern crate rocket;
-use rocket::serde::{Serialize, json::Json};
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-struct HelloResponse {
-    message: String,
-}
-
-#[get("/hello?<name>")]
-fn hello(name: Option<String>) -> Json<HelloResponse> {
-    let name = name.as_deref().unwrap_or("World");
-    Json(HelloResponse {
-        message: format!("Hello, {}!", name),
-    })
-}
-
-#[launch]
-fn rocket() -> _ {
-    println!("Starting server at http://localhost:8080");
-    rocket::build()
-        .mount("/", routes![hello])
-}
-
-// Usage:
-// GET /hello -> {"message": "Hello, World!"}
-// GET /hello?name=Charlie -> {"message": "Hello, Charlie!"}
-```
-
-### Ecosystem
-
-| Need | Crates | Notes |
-|---|---|---|
-| OAuth2 | `rocket_oauth2` | |
-| JWT | `jsonwebtoken` in a request guard | `rocket_jwt` exists but has not moved since December 2023. |
-| Rate limiting | none | No maintained crate. Write a fairing. |
-| RBAC | request guards | The guard pattern covers this cleanly, no crate needed. |
-| CORS | `rocket_cors` | |
-| Sessions | `rocket_session` | Small crate, few users. |
-| WebSockets | `rocket_ws` | |
-| SSE | built in | `rocket::response::stream::EventStream`. |
-| GraphQL | `juniper_rocket`, `async-graphql` | |
-| OpenAPI | `rocket_okapi` | |
-| Metrics | `rocket_prometheus` | |
-| Templates | `rocket_dyn_templates` | Handlebars and Tera. |
-| Static files | built in | `rocket::fs::FileServer`. |
-| Forms | built in | The strongest form and multipart handling of the four. |
-
-### Additional Examples
-
-#### JWT Authentication Guard
-
-```rust
-use rocket::request::{self, Request, FromRequest};
-use rocket::outcome::Outcome;
-
-pub struct User {
-    pub id: String,
-    pub role: String,
-}
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
-    type Error = &'static str;
-
-    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
-        let token = req.headers()
-            .get_one("Authorization")
-            .and_then(|v| v.strip_prefix("Bearer "));
-
-        match token {
-            Some(token) => {
-                // Validate JWT and extract user
-                match validate_jwt(token) {
-                    Ok(user) => Outcome::Success(user),
-                    Err(_) => Outcome::Error((Status::Unauthorized, "Invalid token"))
-                }
-            }
-            None => Outcome::Error((Status::Unauthorized, "Missing token"))
-        }
-    }
-}
-
-#[get("/protected")]
-fn protected_route(user: User) -> Json<Value> {
-    Json(json!({ "user_id": user.id }))
-}
-```
-
-#### Custom Rate Limiting Fairing
-
-```rust
-use rocket::fairing::{Fairing, Info, Kind};
-use std::sync::Arc;
-use dashmap::DashMap;
-
-pub struct RateLimiter {
-    limits: Arc<DashMap<String, (u32, Instant)>>,
-}
-
-#[rocket::async_trait]
-impl Fairing for RateLimiter {
-    fn info(&self) -> Info {
-        Info {
-            name: "Rate Limiter",
-            kind: Kind::Request | Kind::Response
-        }
-    }
-
-    async fn on_request(&self, req: &mut Request<'_>, _: &mut Data<'_>) {
-        let ip = req.client_ip()
-            .map(|ip| ip.to_string())
-            .unwrap_or_else(|| "unknown".to_string());
-
-        // Check and update rate limit
-        // ... rate limiting logic ...
-    }
-}
-```
-
----
+Ecosystem: `rocket_cors` untouched since November 2023; `rocket_okapi` pins `rocket = "=0.5.1"` exactly and
+will break on any 0.6; `rocket_jwt` and `rocket_session` do 173 and 142 downloads a quarter. No named
+company running Rocket in production could be verified.
 
 ## Poem
 
-[Poem](https://github.com/poem-web/poem) is the smallest of the four and the most API-first:
-`poem-openapi` derives the OpenAPI document from your types, which is its main reason to exist.
-Development on GitHub is active but releases are rare.
+`3.1.12`, published **2025-07-28**. 4,427 stars, 756k downloads in 90 days and falling - 287k in May, 241k
+in June, 211k in July.
 
-### Status
+`poem-openapi` derives a spec-compliant OpenAPI v3 document from handler types, with Swagger UI, Scalar,
+RapiDoc and Redoc renderers included; roughly half of all Poem users pull it in. The rest arrives as cargo
+features rather than third-party crates - sessions, CSRF, Prometheus, OpenTelemetry, compression,
+WebSockets, SSE, i18n, ACME - so there is one version and one changelog to track. Stack has been hyper 1
+since 2.0.0 in January 2024.
 
-- Latest release: `poem` 3.1.12 and `poem-openapi` 5.1.16, both 2025-07-28. Last commit on
-  GitHub: August 2026, so a year of work sits unreleased.
-- [poem-web/poem](https://github.com/poem-web/poem), about 4.4k stars, Apache-2.0. Roughly a
-  fifth of the community of the other three.
-- Tokio-based. Tower layers can be reused through the `tower-compat` feature.
+Fifty commits landed in the last year, including a fix for `RUSTSEC-2025-0134` merged 2026-08-03. None is
+published, so every user runs a release carrying an unmaintained dependency. The maintainer commits daily
+to his employer's repositories and is the sole crates.io owner. A crate in the repository, `poem-worker`,
+has never been published.
 
-### Hello World Example
+There is no authentication crate and no rate limiting, and the released version's tower bridge targets
+tower 0.4 while the rest of the field is on 0.5. Verified production users - Databend, Aptos, Warpgate,
+Golem - are all pinned to 3.0 or 3.1.x.
 
-```rust
-use poem::{
-    get, handler,
-    listener::TcpListener,
-    web::{Query, Json},
-    Route, Server,
-};
-use serde::{Deserialize, Serialize};
+`poem-oauth2`, `poem-jwt-auth`, `poem-casbin` and `poem-prometheus` appear in older documentation; none
+exists on crates.io, and the first three never did.
 
-#[derive(Serialize)]
-struct HelloResponse {
-    message: String,
-}
+## Other frameworks
 
-#[derive(Deserialize)]
-struct HelloParams {
-    name: Option<String>,
-}
+* **[loco-rs](https://github.com/loco-rs/loco)** `1.0.1` - "Rails for Rust", on axum and SeaORM, with
+  generators, migrations, background jobs and mailers. First stable release 2026-07-29.
+* **[warp](https://github.com/seanmonstar/warp)** `0.4.3` - maintained, contrary to several comparison
+  sites. Did the hyper 1.x port in 0.4.0 (2025-08-05); 4.7M downloads a quarter.
+* **[ntex](https://github.com/ntex-rs/ntex)** `3.12.0` - by Nikolay Kim, actix-web's original author.
+  Pluggable runtimes including `io_uring` and `compio`. 90% one person.
+* **[cot](https://github.com/cot-rs/cot)** `0.7.0` - Django-shaped, on axum, with its own ORM and an admin
+  panel. 3,462 downloads a quarter; breaking changes every release.
+* **[xitca-web](https://github.com/HFQR/xitca-web)** `0.8.1` - tops the TechEmpower Rust entries. 95% one
+  person, ~3k downloads a quarter.
+* **[trillium](https://github.com/trillium-rs/trillium)** `1.3.0` - Tide's successor, written by a Tide
+  contributor after async-std was discontinued; RUSTSEC points Tide users here. 99% one person.
+* **[rama](https://github.com/plabayo/rama)** `0.3.0` - a service framework for proxies and network
+  middleboxes with TLS fingerprinting and MITM, not a web framework.
+* **[picoserve](https://github.com/sammhicks/picoserve)** - `no_std` async HTTP for bare metal and embassy.
+* **[pavex](https://github.com/LukeMathWalker/pavex)** - compile-time dependency injection generating a
+  plain Rust server. No release in nine months, no commits in three.
 
-#[handler]
-async fn hello(Query(params): Query<HelloParams>) -> Json<HelloResponse> {
-    let name = params.name.as_deref().unwrap_or("World");
-    Json(HelloResponse {
-        message: format!("Hello, {}!", name),
-    })
-}
+## Framework-agnostic crates
 
-#[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
-    println!("Starting server at http://localhost:8080");
+Most of the concerns below are solved by crates that do not depend on a web framework.
 
-    let app = Route::new()
-        .at("/hello", get(hello));
+**Foundation.** `hyper` 1.11.0 (179.8M/90d), `tower` 0.5.3 (151.2M), `tower-http` 0.7.0 (117.8M) -
+tower-http is downloaded more than axum. `tower` has not reached 1.0; its tracking issue has been quiet
+since October 2024.
 
-    Server::new(TcpListener::bind("127.0.0.1:8080"))
-        .run(app)
-        .await
-}
+**OpenAPI.** `utoipa` 5.5.0 is the default, framework-agnostic with opt-in extras per framework. Its
+satellites lag: `utoipa-axum` frozen at 0.2.0 since January 2025, `utoipa-swagger-ui` since May 2025.
+`aide` is the axum-specific alternative and changed hands to jplatte. In-tree generation exists in
+`salvo-oapi` and `poem-openapi`.
 
-// Usage:
-// GET /hello -> {"message": "Hello, World!"}
-// GET /hello?name=Diana -> {"message": "Hello, Diana!"}
-```
+**Auth.** `jsonwebtoken` 11.0.0 for JWT at 39.5M downloads a quarter, an order of magnitude ahead of
+alternatives, with two breaking majors in ten months (pluggable crypto backends in 10.0,
+`#[non_exhaustive]` enums in 11.0). For OAuth2 and OIDC, `oauth2` 5.0.0 and `openidconnect` 4.0.1, both
+from `ramosbugs`; the second has had two commits in the last twelve months. For sessions,
+`tower-sessions` 0.15.0 - `axum-sessions` has been dead since 2023.
 
-### Ecosystem
+**Authorization.** `cedar-policy` 4.12.0 took a third of its lifetime downloads in the last quarter.
+`casbin` 2.20.0 is now an Apache incubating project. **Oso is deprecated by its vendor** - the repository
+description reads "Deprecated: See README" and there has been no release since January 2024. Both live
+options are policy engines called from your own extractor; neither ships one.
 
-Most of what Poem offers lives in the crate itself, behind cargo features. There is almost no
-third-party layer around it, which cuts both ways: little to choose from, little to break.
+**Observability.** `tracing` 0.1.44 is universal, and `tower-http`'s `TraceLayer` works with any
+`tower::Service` (actix-web needs `tracing-actix-web`). OpenTelemetry has not shipped 1.0: `opentelemetry`
+is at 0.32.0, where logs and metrics are stable but **distributed tracing is still Beta**. It takes a
+breaking minor every three to four months and drags `tracing-opentelemetry` with it.
 
-| Need | Where | Notes |
-|---|---|---|
-| OAuth2 | `oauth2` plus a handler | No Poem-specific crate. `poem-openapi` only declares the scheme in the spec. |
-| JWT | `jsonwebtoken` in a middleware | No Poem-specific crate. |
-| Rate limiting | nothing built in | Not in `poem::middleware`. Write one, or put it in front of the process. |
-| RBAC | roll your own | |
-| CORS | `poem::middleware::Cors` | |
-| CSRF | `poem::middleware::Csrf` | Feature `csrf`. |
-| Sessions | `poem::session` | Feature `session`. |
-| WebSockets | `poem::web::websocket` | Feature `websocket`. |
-| SSE | `poem::web::sse` | Feature `sse`. |
-| GraphQL | `async-graphql-poem` | |
-| OpenAPI | `poem-openapi` | Derived from your types, the selling point. |
-| Metrics | `poem::middleware::OpenTelemetryMetrics`, `TokioMetrics` | Features `opentelemetry`, `tokio-metrics`. |
-| Tracing | `poem::middleware::Tracing`, `OpenTelemetryTracing` | |
-| I18n | `poem::i18n` | Feature `i18n`. The only one of the four with this in core. |
-| Static files | `poem::endpoint::StaticFilesEndpoint` | Feature `static-files`. Also `EmbeddedFilesEndpoint` for embedding. |
+**gRPC.** `tonic` 0.14.6 is the working choice. The repository moved to `grpc/grpc-rust` under the CNCF in
+May 2026 and the maintainers state it is "not accepting any significant new features". The official
+successor `grpc` 0.9.0 shipped 2026-05-28 and does 28k downloads a quarter against tonic's 80.9M.
 
-### Additional Examples
+**Database.** Framework-agnostic; the framework only decides how the pool is injected. `sqlx` 0.9.0
+shipped 2026-05-21 and the repository moved from `launchbadge` to `transact-rs`; the maintainers describe
+it as "in dire need of more support and resources" and it carries 770 open issues, while remaining the
+most-used option by a factor of five. `sea-orm` 2.0.1 landed 2026-08-02 after 43 release candidates with a
+new entity format, so material written before August 2026 describes the old one. `diesel` 2.3.11 plus
+`diesel-async` at 3.5M downloads means diesel is no longer sync-only. See also <Link to="/database" />.
 
-#### OpenAPI with Automatic Documentation
+**Validation.** `validator` 0.21.0 leads on volume eight to one; `garde` 0.23.0 is more active (50 commits
+against 11). Both are agnostic derive macros; only the extractor wrappers are framework-specific.
 
-```rust
-use poem_openapi::{OpenApi, Object, ApiResponse, payload::Json};
+**Templates.** `rinja` merged back into `askama` - rinja's final version is `0.4.0+deprecated`, the
+original askama repository was archived in March 2025, and the live one is `askama-rs/askama` at 0.16.0.
+Askama removed its per-framework integration crates in the process; templates render to a `String` that
+the handler returns. `tera` reached 2.0 in June 2026. `minijinja` and `maud` are the other live options.
 
-#[derive(Object)]
-struct User {
-    #[oai(example = "123")]
-    id: String,
-    #[oai(example = "John Doe")]
-    name: String,
-}
+**Fullstack.** Leptos and Dioxus both run on axum server-side (`leptos_axum`, `dioxus-server`), so
+choosing one inherits axum rather than replacing the decision. Both are mid-major-transition.
 
-#[derive(ApiResponse)]
-enum CreateUserResponse {
-    #[oai(status = 200)]
-    Ok(Json<User>),
-    #[oai(status = 400)]
-    BadRequest,
-}
+**MCP.** `rmcp` 3.1.0, the official Model Context Protocol SDK, went from zero in February 2025 to 9.35M
+downloads a quarter. Built on hyper and tower, and needs no framework.
 
-struct Api;
-
-#[OpenApi]
-impl Api {
-    #[oai(path = "/users", method = "post")]
-    async fn create_user(&self, user: Json<User>) -> CreateUserResponse {
-        CreateUserResponse::Ok(user)
-    }
-}
-
-// Automatically generates OpenAPI spec at /api-doc/openapi.json
-```
-
----
-
-## Picking one
-
-None of the four is a bad choice. Rough decision rules, from the facts above rather than from
-benchmark charts:
-
-- **Axum** if you already live in the Tokio and Tower ecosystem, or expect to share middleware
-  with `tonic` gRPC services. The price is `0.x` versioning: plan a migration at every minor bump.
-- **Actix Web** if you want a major version that holds still and the widest choice of ready-made
-  middleware. The 4.x line has been stable since 2022 and still ships several releases a year.
-- **Rocket** if ergonomics and form handling matter more than release velocity. It is the slowest
-  moving: 0.5.1 dates from May 2024, and the previous major from 2018.
-- **Poem** if the OpenAPI document is the deliverable. `poem-openapi` derives it from your types,
-  which none of the other three do without a separate crate. Smallest community by a wide margin,
-  and releases are infrequent.
-
-## Links & references
-
-- [Actix Web docs](https://docs.rs/actix-web/latest/actix_web/) and
-  [migration guide to 4.0](https://github.com/actix/actix-web/blob/main/actix-web/MIGRATION-4.0.md)
-- [Axum docs](https://docs.rs/axum/latest/axum/)
-- [Rocket guide](https://rocket.rs/guide/)
-- [Poem docs](https://docs.rs/poem/latest/poem/) and [poem-openapi](https://docs.rs/poem-openapi/latest/poem_openapi/)
