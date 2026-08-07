@@ -1,102 +1,88 @@
 ---
 title: Kubernetes
-description: Kubernetes is an open-source system for automating deployment, scaling, and management of containerized applications.
+description: Kubernetes cookbook - deployment rollouts and rollbacks, environment from ConfigMaps, liveness/readiness/startup probes, capacity planning, and the GKE checklist.
+checkedOn: 2026-08-07
 ---
 
-Kubernetes is an open-source system for automating deployment, scaling, and management of containerized applications.
+[Kubernetes](https://kubernetes.io/) automates the deployment, scaling and operation of containerized
+applications. This page is the section hub and a cookbook of things I actually run.
 
-http://kubernetes.io/
+## Pages in this section
 
-Introduction: https://docs.google.com/presentation/d/1zrfVlE5r61ZNQrmXKx5gJmBcXnoa_WerHEnTxu5SMco
+* <Link to="tooling" /> - the CLI toolbox around kubectl (kubectx, kubens, k9s, stern).
+* <Link to="helm" /> - the package manager (charts, releases, rollbacks).
+* <Link to="/app/monitoring/prometheus" /> - Prometheus, Alertmanager and Grafana, usually deployed
+  on the cluster with the kube-prometheus-stack chart.
 
-## Daily tooling
+## Rollout, rollback and restart a deployment
 
-<Link to="tooling" /> - the CLI toolbox around kubectl (kubectx, kubens, k9s, stern).
+Ship a new image. `set image` is the short form and the one to reach for:
 
-## Packaging
-
-<Link to="helm" /> - the Kubernetes package manager (charts, releases, rollbacks).
-
-## Observability
-
-<Link to="/app/monitoring/prometheus" /> - the Prometheus + Alertmanager + Grafana stack, usually deployed on the cluster with the kube-prometheus-stack chart.
-
-## Books and readings
-
-* Start with https://kubernetes.io/docs/tutorials/kubernetes-basics/
-* https://github.com/kelseyhightower/kubernetes-the-hard-way/tree/master/docs
-* https://github.com/hobby-kube/guide
-
-## Resources
-
-* https://ramitsurana.github.io/awesome-kubernetes/
-
-## Benchmarks
-
-* https://itnext.io/benchmark-results-of-kubernetes-network-plugins-cni-over-10gbit-s-network-updated-april-2019-4a9886efe9c4
-
-## Network
-
-* https://www.projectcalico.org/
-
-## Cookbook
-
-## Environment from ConfigMap
-
-```yaml
-envFrom:
-- configMapRef:
-  name: eat-at-joe
+```shell
+kubectl set image deployment/$DEPLOYMENT $CONTAINER=$IMAGE
 ```
-## Rollout / rollback using deployments
 
-Tip article: [How to rollout or rollback a deployment on a Kubernetes cluster?](/blog/en/tips/2016/08/27/rollout-rollback-kubernetes-deployment/)
-
-Rollout
-.......
+The general form is a strategic merge patch, useful when you change more than the image. Note the
+**double quotes**: inside single quotes the shell would not expand `$CONTAINER` and `$IMAGE`, and you
+would patch the deployment with those two literal strings.
 
 ```shell
 kubectl patch deployment $DEPLOYMENT \
-        -p'{"spec":{"template":{"spec":{"containers":[{"name":"$CONTAINER","image":"$IMAGE"}]}}}}'
+  -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$CONTAINER\",\"image\":\"$IMAGE\"}]}}}}"
 ```
-Rollback
-........
 
-```shell
-kubectl rollout undo deployment/$DEPLOYMENT [--to-revision 42]
-```
-Status
-......
+Watch it land, and get a non-zero exit code if it does not (handy in CI):
 
 ```shell
 kubectl rollout status deployment/$DEPLOYMENT
 ```
-Restart
-.......
+
+Go back. Without `--to-revision` it undoes the last rollout; `kubectl rollout history` lists the
+revisions.
 
 ```shell
-kubectl rollout restart deployment $DEPLOYMENT
+kubectl rollout history deployment/$DEPLOYMENT
+kubectl rollout undo deployment/$DEPLOYMENT --to-revision=42
 ```
-Available since kubectl 1.15 (client side feature), will respect the deployment strategy.
+
+Restart every pod without changing the spec. It stamps a `kubectl.kubernetes.io/restartedAt`
+annotation on the pod template, so it goes through the normal rolling update:
+
+```shell
+kubectl rollout restart deployment/$DEPLOYMENT
+```
+
+Longer write-up: [How to rollout or rollback a deployment on a Kubernetes cluster?](/blog/en/tips/2016/08/27/rollout-rollback-kubernetes-deployment/)
+
+## Environment from a ConfigMap
+
+`envFrom` injects every key of a ConfigMap as an environment variable. Mind the indentation: `name`
+belongs to `configMapRef`, not to the list item.
+
+```yaml
+envFrom:
+- configMapRef:
+    name: eat-at-joe
+```
+
+At two spaces, `name` would become a sibling of `configMapRef` and the API server rejects the pod
+(`envFrom` entries only accept `prefix`, `configMapRef` and `secretRef`).
 
 ## Probes
 
-**Liveness Probe**:
+Three probes, three different jobs.
 
-Checks if the application inside the container is still running. If the liveness probe fails, Kubernetes will restart the container.
-Detects and recovers from situations where the application is stuck or deadlocked.
+* **Startup**: is the application started yet? While it runs, the two others are held back. If it
+  fails, the container is killed and restarted. Only useful for slow starters.
+* **Liveness**: is the application still making progress? On failure the container is restarted.
+  This is the one that bites: a liveness probe that fails under load restarts pods that were merely
+  busy, and turns a slowdown into an outage.
+* **Readiness**: can the application serve traffic right now? On failure the pod's IP is pulled from
+  the EndpointSlices of every matching Service, so it stops receiving traffic, but the container
+  keeps running.
 
-**Readiness Probe**
-
-Checks if the application inside the container is ready to serve traffic.
-If the readiness probe fails, the container is removed from the service's endpoints, meaning it will not receive any traffic.
-Ensures that the application is fully initialized and ready to handle requests before sending traffic to it.
-
-**Startup Probe**
-
-Checks if the application inside the container has started successfully. If the startup probe fails, Kubernetes will restart the container. This probe is useful for applications that have a long initialization phase. Ensures that the application has successfully started before performing liveness and readiness checks.
-
-**Example Configuration**
+A probe fails only after `failureThreshold` consecutive failures (default 3), each `periodSeconds`
+apart (default 10).
 
 ```yaml
 apiVersion: v1
@@ -107,63 +93,76 @@ spec:
   containers:
   - name: example-container
     image: example-image
+    startupProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 30    # 30 x 10s = 5 minutes to start
     livenessProbe:
       httpGet:
         path: /healthz
         port: 8080
-      initialDelaySeconds: 3
-      periodSeconds: 3
+      periodSeconds: 5
+      failureThreshold: 3
     readinessProbe:
       httpGet:
         path: /healthz/ready
         port: 8080
-      initialDelaySeconds: 5
       periodSeconds: 5
-    startupProbe:
-      httpGet:
-        path: /healthz/startup
-        port: 8080
-      initialDelaySeconds: 10
-      periodSeconds: 10
 ```
-## Capacity Planning
 
-Poor-man's swiss-knife
+The `failureThreshold` of the startup probe is the whole point: leave it at the default 3 and the
+container gets 30 seconds to boot, which is exactly what you were trying to avoid. Give the startup
+probe a generous budget, keep the liveness probe tight.
+
+With a startup probe in place you rarely need `initialDelaySeconds` on the other two: their delays
+only start counting once the startup probe has succeeded.
+
+## Capacity planning
+
+Poor man's swiss army knife: one line per container, with its requests and whether the workload
+spreads itself across nodes.
 
 ```shell
-for rt in deploy daemonset; do
-  echo $rt
-  kubectl get $rt --all-namespaces -o json | \
-    jq -r '.items[] | [.metadata.namespace, .metadata.name, .spec.replicas] + (.spec.template.spec.containers[] | [.name, .resources.requests.cpu, .resources.requests.memory ]) + [(.spec.template.spec.affinity.podAntiAffinity | @text) ] | @tsv'
+for rt in deploy daemonset statefulset; do
+  echo "$rt"
+  kubectl get "$rt" --all-namespaces -o json | jq -r '
+    .items[]
+    | [.metadata.namespace, .metadata.name, (.spec.replicas // "-")]
+      + (.spec.template.spec.containers[]
+         | [.name, (.resources.requests.cpu // "-"), (.resources.requests.memory // "-")])
+      + [(.spec.template.spec.affinity.podAntiAffinity != null)]
+    | @tsv'
   echo
 done
 ```
-## Google Cloud Platform (GCP)
 
-Google Kubernetes Engine (GKE)
-..............................
+A `-` in the cpu or memory column is a container with no request: the scheduler has nothing to place
+it with, and it is the first thing to fix before sizing anything.
 
-GKE is a managed Kubernetes cluster.
+## Google Kubernetes Engine (GKE)
 
-Checklist when things goes wrong:
+When traffic does not reach the pods, walk the chain in order rather than guessing:
 
-* K8S: Ingress -> Service -> Deployment -> ReplicaSet -> Pod
-* GC: Firewall rules matches the service exposed NodePort (describe service to get the port)
-* GC: L7 router configuration is correct (backend, routes, frontend)
-* GC: Health checks show green status.
+* Kubernetes side: Ingress, Service, Deployment, ReplicaSet, Pod.
+* Google Cloud side: firewall rules match the NodePort exposed by the Service, which
+  `kubectl describe service` gives you.
+* Google Cloud side: the L7 load balancer is wired correctly (backend, routes, frontend).
+* Google Cloud side: health checks are green. They are separate from the Kubernetes probes, and a
+  readiness probe on a path the load balancer does not check will not save you.
 
-Google Compute Engine (GCE)
-...........................
+## Reading list
 
-Amazon Elastic Compute Cloude (EC2)
-...................................
+* [Kubernetes basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/), the official tutorial.
+* [Kubernetes the hard way](https://github.com/kelseyhightower/kubernetes-the-hard-way), to build a
+  cluster by hand once and understand what the managed offers do for you.
+* [hobby-kube/guide](https://github.com/hobby-kube/guide), a small self-hosted cluster with Terraform.
+* [awesome-kubernetes](https://ramitsurana.github.io/awesome-kubernetes/), the catch-all link list.
 
-Amazon Elastic Container Service on Kubernetes (EKS)
-....................................................
+On networking, the two CNI plugins worth knowing are [Cilium](https://cilium.io/) (eBPF based, CNCF
+graduated since October 2023) and [Calico](https://www.tigera.io/project-calico/) (iptables, with an
+eBPF mode).
 
-Scaleway
-........
-
-* https://github.com/NetzreichGmbH/scaleway-kubernetes
-* https://chmod666.org/2017/11/Hosting-a-self-made-Kubernetes-infrastructure-on-Scaleway
-* https://www.tauceti.blog/post/kubernetes-the-not-so-hard-way-with-ansible-at-scaleway-part-1/
+On managed clusters, [Scaleway Kubernetes Kapsule](https://www.scaleway.com/en/docs/kubernetes/) is
+the European option I keep an eye on.
