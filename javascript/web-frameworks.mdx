@@ -1,0 +1,229 @@
+---
+title: TypeScript Web Frameworks
+description: "Comparison of server-side JavaScript and TypeScript HTTP frameworks as of August 2026: Hono, Fastify, Express, NestJS, Elysia, the Node/Deno/Bun runtimes and the WinterTC standards layer."
+checkedOn: 2026-08-06
+---
+
+Figures come from the npm registry, the npm downloads API and the GitHub API on 2026-08-06.
+
+**Read the download column with two corrections.** npm counts roughly **doubled registry-wide between
+January and April 2026** - lodash went from 310M to 634M a month with nothing happening to lodash - so
+never compare a package against its own past. And `@modelcontextprotocol/sdk` depends on **both Express and
+Hono** at 55M weekly downloads, which distorts exactly the comparison people most want to make. Compare
+packages against each other in the same week, and treat contributor counts as the more honest signal.
+
+## Summary
+
+**Hono** `4.13.0` runs in more places than anything else here - Workers, Deno, Bun, Lambda, Node - because
+its core is a `Request => Response` function. Zero runtime dependencies, ships its own types, real
+end-to-end RPC inference. One person wrote 57% of its commits and there is no foundation behind it.
+
+**Fastify** `5.11.2` has the healthiest maintenance in this comparison: four people needed to reach half the
+commits, an OpenJS Foundation project, and the cleanest major migration anyone managed (v5 reached 80% of
+installs in 23 months).
+
+**Express** `5.2.1` has ten times Fastify's downloads and 44 human commits a year. It ships no types.
+
+**NestJS** `11.1.28` has the most stars, an Angular-shaped architecture, and one person writing 88% of its
+commits.
+
+**Elysia** `1.4.29` is the Bun-native option with excellent type inference and a small user base.
+
+## Comparison
+
+| | Version | Released | npm/week | Stars | Humans/12mo | Bus factor | Types |
+|---|---|---|---:|---:|---:|---|---|
+| **Express** | 5.2.1 | 2025-12-01 | 129,338,904 | 69,345 | 11 | 2 | **no** |
+| **Hono** | 4.13.0 | 2026-08-03 | 57,494,273 | 31,601 | 41 | **1** | yes |
+| **NestJS** | 11.1.28 | 2026-07-08 | 13,270,019 | 76,357 | 57 | **1** | yes |
+| **Fastify** | 5.11.2 | 2026-08-03 | 10,906,342 | 36,968 | **4** | yes |
+| **Koa** | 3.2.1 | 2026-05-21 | 7,823,226 | 35,693 | 6 | 1 | no |
+| **tRPC** | 11.18.0 | 2026-06-17 | 4,758,407 | 40,492 | 14 | 2 | yes |
+| **Elysia** | 1.4.29 | 2026-06-16 | 806,604 | 18,847 | 37 | 1 | yes |
+
+Bus factor is how many people it takes to account for half the human commits of the last year.
+
+## Hono
+
+`4.13.0` (2026-08-03). 57.5M weekly downloads, 31,601 stars.
+
+**Portability is the real differentiator and it holds.** The core is a function from `Request` to
+`Response`, so the same handler runs on Cloudflare Workers, Deno, Bun, Vercel, Netlify, AWS Lambda and
+Node - on Node via `@hono/node-server`. Nothing else in this comparison spans that range.
+
+**Zero runtime dependencies**, ESM-only, types shipped in the package. The `hono/client` RPC feature does
+genuine end-to-end inference - the server's route definitions become a type parameter the client consumes,
+with no codegen. It is the best version of this pattern in a general-purpose HTTP framework. Two real
+caveats: inference cost grows with route count, and the type is fragile across module boundaries unless
+you export the app type explicitly.
+
+v4.0.0 shipped 2024-02-09 and is now the longest-lived major in Hono's history, with no v5 announced and no
+breaking-change event since. 69 stable releases in the last 12 months.
+
+**The governance is a side project's.** No foundation; funding is personal GitHub Sponsors to two people.
+`yusukebe` wrote 202 of 356 human commits (57%) and is a Developer Advocate at Cloudflare - so the
+maintainer is employed by the platform vendor whose ecosystem Hono most benefits, without Cloudflare owning
+or funding the project. The backlog is 262 open issues with a median age of 650 days, 79% older than a
+year, which is stale for a project this young.
+
+**On speed:** in Fastify's own Node benchmark (2026-08-04, Node v24.19.0), Hono does 52,586 req/s against
+Fastify's 59,603. Hono's performance marketing is measured on Workers and Bun with its RegExpRouter, not on
+Node.
+
+Verified users are largely Cloudflare's own tooling - 88 `package.json` files in the `cloudflare` org
+reference it. Beyond that, named production users are unverified; the project's site lists none.
+
+<Opinion ring="assess" date="2026-08-11" />
+
+## Fastify
+
+`5.11.2` (2026-08-03). 10.9M weekly downloads, 36,968 stars.
+
+**The maintenance profile is the best here.** 236 human commits from 23 contributors, and it takes four
+people to reach half of them - no single point of failure. Only 59 open non-PR issues. An **OpenJS
+Foundation At-Large project**, so there is institutional neutrality behind it rather than one person's
+goodwill.
+
+**Major releases every ~2 years, predictably**: v3 2020-07-07, v4 2022-06-08, v5 2024-09-17. And the
+migration actually happened - v5 is now 79.8% of weekly installs against v4's 17.2%, reached in about 23
+months. That is the cleanest major transition of any framework in this comparison.
+
+Ships its own types, though as CJS-era `fastify.d.ts` rather than a TS-first codebase. 15 runtime
+dependencies. The plugin/encapsulation model and JSON-schema-based serialisation are the architectural
+distinctives. Matteo Collina, its lead, is co-founder and CTO of Platformatic, which builds on it.
+
+<Opinion ring="hold" date="2026-08-11" />
+
+## Express
+
+`5.2.1` (2025-12-01), with the v4 line still receiving patches (`4.22.2`, 2026-05-11). **129.3M weekly
+downloads** - ten times Fastify's - and 69,345 stars.
+
+**The downloads are infrastructure, not choice.** Monthly volume went 129M (Aug 2024) → 205M (Jul 2025) →
+523M (Jul 2026), quadrupling in two years. `@modelcontextprotocol/sdk` pinned `express ^5.0.1` in February
+2025 and contributes roughly 55M weekly installs by itself. Meanwhile the project produced **44 human
+commits in 12 months from 11 contributors**, and its issue backlog has a **median age of 6.7 years**.
+
+**For a TypeScript-first team the disqualifying fact is simple: it ships no types.** `@types/express`
+(65.5M weekly) is a community artefact tracking a JavaScript codebase, and `req.body` is `any` out of the
+box.
+
+This is a well-run project in the terminal phase of its life, not an abandoned one: OpenJS **Impact**
+status, a security working group shipping monthly, an external audit, a published LTS policy (v4 end of
+life no sooner than 2026-10-01) and commercial support through HeroDevs. It will be maintained correctly
+for years and will accrue no new mindshare.
+
+<Opinion ring="hold" date="2026-08-11" />
+
+## NestJS
+
+`11.1.28` (2026-07-08). 13.3M weekly downloads and **76,357 stars - the most here**.
+
+An Angular-shaped architecture for the server: modules, decorators, and dependency injection via
+`reflect-metadata`. That is the whole proposition, and for teams who want an opinionated structure imposed
+rather than assembled, nothing else competes.
+
+**Two structural facts to weigh.** First, `kamilmysliwiec` wrote 1,261 of 1,441 human commits - **88%** -
+across a nominal 57 contributors. Second, and more consequential going forward: **Nest's decorators and
+parameter properties are permanently incompatible with Node's native TypeScript support** (see below). It
+will need a build step forever, while Hono, Fastify, Elysia, h3 and tRPC will not.
+
+`12.0.0-alpha.5` appeared 2026-05-25. Only 6 open non-PR issues, though the median age is 2,498 days.
+
+<Opinion ring="trial" date="2026-08-11" />
+
+## Elysia
+
+`1.4.29` (2026-06-16). 806,604 weekly downloads, 18,847 stars.
+
+Bun-native, with type inference as the headline feature and Eden as its end-to-end typed client, comparable
+to Hono's RPC. 435 human commits from 37 contributors, but `SaltyAom` wrote 309 of them (71%).
+`2.0.0-beta.1` landed 2026-07-30. 274 open issues, though with the youngest median age here at 295 days.
+
+Its download figure is a fair proxy for real Bun-native application adoption, since almost nothing pulls it
+transitively.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## Other frameworks
+
+* **[Koa](https://koajs.com/)** `3.2.1` - Koa 3 shipped 2025-04-28, **nine years** after v2. 23 human
+  commits a year, no bundled types. Reasonable to keep, hard to justify starting.
+* **[h3](https://h3.dev/)** `2.0.1-rc.26` - **has been in release candidate for over a year, and the npm
+  `latest` tag points at a prerelease**. Already 78.5% of its own downloads because Nitro v3 pins it.
+  41.9M weekly downloads against 5,397 stars tells you it is almost entirely transitive.
+* **[Nitro](https://nitro.build/)** `3.0.260610-beta` - renamed from `nitropack` for v3, still beta after
+  ten months, and depends on an RC (`h3`) which depends on a 0.x (`srvx`). Powers Nuxt, and increasingly
+  TanStack Start, SolidStart and Analog.
+* **[srvx](https://srvx.h3.dev/)** `0.12.5` - one `serve()` across Node, Deno, Bun and Workers. 38.9M
+  weekly downloads against **835 stars** - the starkest transitive-versus-organic gap in the dataset. It
+  exists precisely because WinterTC has not standardised a server API.
+* **[tRPC](https://trpc.io/)** `11.18.0` - not an HTTP framework but an RPC layer mounted on one. v11 is
+  81.6% of installs, but human commits fell to 125 in a year. The performance cost is real: 11,067 req/s in
+  Fastify's harness, 5.4x slower than Fastify and 3x slower than Express.
+* **[Encore.ts](https://encore.dev/)** `1.57.13` - genuinely company-backed with a Go core, 29 contributors
+  and no single-person dependence, which is the best bus factor in this tier. But 30,238 weekly downloads,
+  and adopting it is a framework *and* platform bet.
+* **[AdonisJS](https://adonisjs.com/)** `7.3.5` - v7 shipped 2026-02-25. Full-stack and opinionated, six
+  contributors, one of whom wrote 159 of 185 commits.
+
+**Lucia is dead.** Deprecated March 2025 and replaced by a single-file copy-paste implementation plus a
+book. The npm package still pulls 303,591 weekly downloads on pure inertia. If a tutorial recommends it, the
+tutorial is out of date. **Auth.js/NextAuth was absorbed by Better Auth** on 2025-09-22 - `next-auth`'s own
+README now recommends Better Auth for new projects - and **Better Auth joined Vercel** on 2026-07-07.
+
+## Runtimes
+
+**Node.js** - v24 (Krypton) is Active LTS at `24.19.0`; v26 is Current and becomes LTS on 2026-10-28.
+
+**Native TypeScript is stable and deliberately limited.** Type stripping has been on by default since
+v23.6.0/v22.18.0 and marked Stable since v25.2.0/v24.12.0. It erases annotations in place, replacing them
+with whitespace so line numbers stay valid. It does **no type checking at all** - Node will happily run code
+with type errors - it ignores `tsconfig.json` entirely (no path aliases), and file extensions are mandatory.
+
+**Node 26 deleted `--experimental-transform-types` rather than stabilising it.** The maintainers reasoned
+that the supported syntax would keep shifting under TypeScript deprecations and could not be given semver
+guarantees. Node has therefore committed permanently to erasure-only TypeScript, which means `enum`,
+runtime `namespace`, parameter properties and **decorators** will never run natively. Anything built on
+decorators - NestJS, Ts.ED, TypeORM's decorator API - needs a build step forever.
+
+**Deno** `2.9.4` (2026-07-23). There is no Deno 3; the 2.x line has shipped monthly minors for 22 months.
+Recent work: Temporal stabilised in 2.7, faster type-checking via `tsgo` in 2.6, and in 2.8 a batch of new
+subcommands. It now ships a migration path *from* Bun, which is itself a signal about where installs are.
+
+**Bun** `1.3.14` (2026-05-13). No Bun 2.0 announced. The release pattern is odd and worth knowing: **no
+stable release in about twelve weeks, while 1,525 commits landed in that window** - development accelerating
+while shipping slows. **Bun was acquired by Anthropic on 2025-12-02**; the stated terms are that it stays
+open-source and MIT, with the same team full-time. **7,827 open issues** is by far the largest backlog here
+and the most honest answer to "is it production-ready": unambiguously yes as a package manager and test
+runner, yes for a Bun-native app, and worth your own compatibility testing as a drop-in Node replacement.
+
+<Opinion ring="adopt" date="2026-08-11">
+  Bun.
+</Opinion>
+
+<Opinion ring="hold" date="2026-08-11">
+  Deno.
+</Opinion>
+
+## The standards layer
+
+For your **handler**, "write once, run anywhere" holds. For your **server**, it does not.
+
+WinterCG became **Ecma TC55** in December 2024, and has standardised exactly one thing: **ECMA-429,
+"Minimum common web API", first edition, December 2025**. It covers roughly 80 interfaces - `fetch`,
+`Request`, `Response`, `Headers`, `FormData`, `Blob`, streams, `TextEncoder`, `CompressionStream`,
+`SubtleCrypto`, `URL`, `URLPattern`, `AbortController`, `Event`. That is why a Hono handler is portable.
+
+What was **not** standardised is how you start a server and bind a port. Every runtime still has its own -
+`node:http`, `Deno.serve`, `Bun.serve`, a Workers `fetch` export - which is why `srvx` exists and pulls 39M
+weekly downloads at 835 stars. Portability at the handler boundary is real and standardised; portability at
+the process boundary is a community shim.
+
+## Benchmarks
+
+TechEmpower archived itself on 2026-03-24, so the benchmark most often cited for this ecosystem has no
+current data. What remains is mostly vendor-run: Fastify publishes a Node benchmark harness, which is
+useful precisely because it is unflattering in places - it shows Hono slower than Fastify on Node, and tRPC
+at roughly a fifth of Fastify's throughput. Treat any framework's own published numbers as measuring the
+configuration that framework was tuned for.
