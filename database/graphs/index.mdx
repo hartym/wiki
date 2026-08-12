@@ -1,0 +1,94 @@
+---
+title: Graph Databases
+description: "Graph databases and triplestores: when the relationship is the data, Neo4j, JanusGraph, Dgraph, and the RDF/SPARQL side."
+checkedOn: 2026-08-11
+---
+
+A graph database stores the relationship as a first-class thing rather than as a join. In a
+relational schema, "who does X know, and through whom" is a link table plus a recursive query whose
+cost grows with the number of hops. In a graph store each node holds direct references to its
+neighbours, so traversal cost tracks the part of the graph you touch rather than the size of the
+table.
+
+That is the whole argument, and it is narrower than it sounds. If you traverse one or two hops, a
+relational database with the right index will beat the operational cost of running a second system.
+The case gets strong when the depth is unbounded or unknown in advance: reachability, shortest path,
+recommendation, fraud rings, dependency resolution.
+
+## Neo4j
+
+The one with the ecosystem: tooling, documentation, a large community, and Cypher, which fed heavily
+into **GQL**, the ISO standard for graph query languages
+([ISO/IEC 39075:2024](https://www.iso.org/standard/76120.html), published 12 April 2024). GPL-3.0
+for the community edition.
+
+<Opinion ring="trial" date="2026-08-11" />
+
+## Other engines
+
+* [JanusGraph](https://github.com/JanusGraph/janusgraph) - distributed, and the storage layer is
+  pluggable: Cassandra, HBase, Google Cloud Bigtable, ScyllaDB, BerkeleyDB JE, or in-memory. The
+  live successor to Titan.
+* [Dgraph](https://github.com/dgraph-io/dgraph) - Apache 2.0, and describes itself as *"a
+  horizontally scalable and distributed GraphQL database with a graph backend"*, so the query
+  language is GraphQL rather than a traversal DSL.
+* [ArangoDB](https://github.com/arangodb/arangodb) - multi-model: graph, document and key-value in
+  one engine, if you would rather not run three. **Not open source**: its `LICENSE` is the Business
+  Source License 1.1, which is source-available with a delayed open-source grant.
+* [OrientDB](https://github.com/orientechnologies/orientdb) - also multi-model, older, still
+  Apache 2.0. Read the ownership before committing: SAP acquired CallidusCloud, which owned it, on
+  30 January 2018, then discontinued commercial support. Founder Luca Garulli left on 1 September
+  2021 and started ArcadeDB. Development continues through the community.
+
+**Dormant:** [Titan](https://github.com/thinkaurelius/titan) has not moved since 2022 - use
+JanusGraph. [Gremlin](https://github.com/tinkerpop/gremlin) as a standalone repository is dead; the
+traversal language lives on inside [Apache TinkerPop](https://github.com/apache/tinkerpop), which is
+what to depend on if you want a query language that several engines understand.
+
+<Opinion ring="hold" date="2026-08-11">
+  ArangoDB: the Business Source License is the blocker, not the engine.
+</Opinion>
+
+## RDF and triplestores
+
+The semantic web tradition is graph storage with a different vocabulary and a standards body behind
+it. Data is subject-predicate-object triples, the schema is itself data, and the query language is
+SPARQL rather than a traversal DSL.
+
+The practical difference from the engines above: RDF is designed for merging graphs across
+organisations that never coordinated, which is why it carries URIs, ontologies and reification.
+If your graph belongs to one system, that machinery is cost with no return.
+
+* [Resource Description Framework](https://en.wikipedia.org/wiki/Resource_Description_Framework) -
+  the model, and [RDF 1.1 Concepts](https://www.w3.org/TR/rdf11-concepts/) for the specification.
+* [Linked Data Platform 1.0](https://www.w3.org/TR/ldp/) - the W3C recommendation for reading and
+  writing it over HTTP.
+
+**Triplestores:**
+
+* [Apache Jena](https://github.com/apache/jena) - the Java framework, Apache 2.0, actively
+  developed.
+* [Virtuoso](https://github.com/openlink/virtuoso-opensource) - multi-model and long-running.
+  DBpedia's structured data *"is made available on the World Wide Web using OpenLink Virtuoso"*,
+  which is the reference deployment.
+* [Blazegraph](https://github.com/blazegraph/database) - **archived on GitHub in April 2023**, and
+  still the triplestore behind the Wikidata Query Service. Worth knowing before you pick it: the
+  largest public deployment of it runs on unmaintained code.
+* GraphDB - Ontotext's triplestore. The free edition is no longer distributed from GitHub; see
+  [ontotext.com](https://www.ontotext.com/).
+
+**Python tooling:**
+
+* [RDFLib](https://github.com/RDFLib/rdflib) - the library for working with RDF.
+* [SPARQLWrapper](https://github.com/RDFLib/sparqlwrapper) - query a remote SPARQL endpoint.
+* [rdflib-sqlalchemy](https://github.com/RDFLib/rdflib-sqlalchemy) - store triples in a relational
+  database. See <Link to="/python/sqlalchemy" />.
+
+Public endpoints to try queries against: [Wikidata Query Service](https://query.wikidata.org/) and
+[DBpedia](https://dbpedia.org/sparql).
+
+## See also
+
+* <Link to="visualisation" /> - drawing and analysing the graphs, once you have them.
+* [GovHack Toolkit - Graph Databases](https://govhack-toolkit.readthedocs.io/technical/graph-dbs/) -
+  a broader introduction, CC BY 3.0 AU.

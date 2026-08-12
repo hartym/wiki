@@ -1,14 +1,17 @@
 ---
 title: Decorators
-description: Python decorators - the basic shape with functools.wraps, decorators that take arguments, stacking order, handy standard-library decorators, and the kinds of decorators.
-checkedOn: 2026-07-20
+description: "Python decorators - the basic shape with functools.wraps, a taxonomy of what they are for, why the name is the whole contract, the failure modes around async and classes, and typing them with ParamSpec."
+checkedOn: 2026-08-11
 ---
 
-A decorator is a callable that takes a function (or class) and returns a replacement. `@deco` above a `def` is just sugar for `func = deco(func)`. Examples checked with Python 3.13 (and, this being Python, themed after the films it is named for).
+A decorator is a callable that takes a function (or class) and returns a replacement. `@deco` above a `def` is sugar for `func = deco(func)`.
+
+A bit of a magic feel to it, sometimes, so understand the mechanism, then be deliberate.
+The name is all the reader gets, so think twice before using one: is it readable, and does it bring more than the decorator-free version? For real?
 
 ## The basic shape
 
-Always wrap with [`functools.wraps`](https://docs.python.org/3/library/functools.html#functools.wraps) so the returned function keeps the original's `__name__`, `__doc__` and signature metadata:
+Wrap with [`functools.wraps`](https://docs.python.org/3/library/functools.html#functools.wraps). It copies `__module__`, `__name__`, `__qualname__`, `__doc__`, `__type_params__` and the annotations from the wrapped function, updates the wrapper's `__dict__`, and sets `__wrapped__` to the original.
 
 ```python
 import functools
@@ -20,39 +23,33 @@ def announce(func):
     return wrapper
 
 @announce
-def quest(name):
+def quest(name: str, swallow: str = "European") -> str:
     "state your quest"
     return f"{name} seeks the Holy Grail"
 ```
 
-Without `functools.wraps`, `quest.__name__` becomes `"wrapper"` and the docstring is lost, which breaks introspection, logging and some frameworks.
+Without it, `quest.__name__` becomes `"wrapper"` and the docstring is lost. The `__wrapped__` link is the part that matters beyond cosmetics, because anything built on `inspect.signature` follows it back to the real parameter list. Decorate a pytest test without `wraps` and the fixtures stop arriving:
 
-## Decorators that take arguments
-
-A decorator with arguments is a function that returns a decorator (two levels of nesting):
-
-```python
-def retry(times):
-    def deco(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            last = None
-            for _ in range(times):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as exc:
-                    last = exc
-            raise last
-        return wrapper
-    return deco
-
-@retry(3)
-def black_knight():
-    "'Tis but a scratch! ... until it is not."
-    ...
+```
+TypeError: test_without_wraps() missing 1 required positional argument: 'value'
 ```
 
-`@retry(3)` calls `retry(3)` first, which returns `deco`, which then wraps `black_knight`.
+pytest saw `(*args, **kwargs)`, concluded the test requested no fixtures, and injected none. The identical test with `wraps` passes.
+
+A decorator that takes arguments is a function returning a decorator - one more level of nesting, so `@retry(3)` calls `retry(3)` first and applies the result.
+
+What `wraps` does **not** copy is the signature. `inspect.signature` looks correct only because it follows `__wrapped__` by default:
+
+```python
+>>> inspect.signature(quest)
+(name: str, swallow: str = 'European') -> str
+>>> inspect.signature(quest, follow_wrapped=False)
+(*args, **kwargs) -> str
+```
+
+The `-> str` on the second line is not real either: `wraps` copied the annotations wholesale onto a wrapper that accepts anything. Static type checkers see `(*args, **kwargs)`, which is what `ParamSpec` exists to fix.
+
+That annotations entry changed in **Python 3.14**: `functools.WRAPPER_ASSIGNMENTS` now carries `__annotate__` rather than `__annotations__`, so the wrapper inherits the wrapped function's deferred annotation machinery instead of an eagerly built dict ([PEP 649](https://peps.python.org/pep-0649/) and [PEP 749](https://peps.python.org/pep-0749/)). Reading `wrapper.__annotations__` still returns the same mapping, so nothing breaks unless you inspect that tuple yourself. Note that the 3.14 documentation for `update_wrapper` has not caught up - it still lists `__annotations__`, while `Lib/functools.py` on the same branch has said `__annotate__` since 3.14.
 
 ## Stacking
 
@@ -66,7 +63,220 @@ def knights():
 # equivalent to knights = ni(shrubbery(knights))  -> shrubbery runs first, then ni
 ```
 
-## Handy standard-library decorators
+The order stops being academic as soon as one decorator stamps an attribute rather than wrapping. A marking decorator applied *above* `@cached_property` stamps the `cached_property` object, which is what `getattr` on the class returns; applied *below*, it stamps the underlying function, where nothing inspecting the class will find it:
+
+```python
+class Above:
+    @mark("above")
+    @functools.cached_property
+    def value(self): ...
+
+class Below:
+    @functools.cached_property
+    @mark("below")
+    def value(self): ...
+```
+```
+>>> Above.__dict__["value"].__mark__
+'above'
+>>> Below.__dict__["value"].__mark__
+AttributeError: 'cached_property' object has no attribute '__mark__'
+```
+
+It landed on `.func` instead, where nothing walking the class will look for it.
+
+## Kinds of decorators
+
+Andy Fundinger's [decorator taxonomy](https://github.com/bloomberg/decorator-taxonomy) (EuroPython 2018) is a useful way to think about what a decorator is *for*.
+Each kind already has canonical examples in the standard library, which is the fastest way to recognise one in the wild.
+
+* **Changing the arguments.** Adjust or inject arguments before the call - supplying an overridable default, injecting a connection or a lock. The wrapper's signature differs from the wrapped one, which is exactly the case `Concatenate` was designed for.
+* **Controlling the call.** Decide whether, when and how often the function runs: `functools.cache` and `functools.lru_cache` skip the call, a retry decorator repeats it, a run-once decorator suppresses it after the first time.
+* **Registering the object.** Add the function to a collection and return it **unchanged**: `atexit.register`, `functools.singledispatch.register`, pytest fixtures, Flask and FastAPI route decorators. Nothing is wrapped, so nothing changes at the call site - the effect is entirely elsewhere.
+* **Binding to the class.** Return a descriptor. `property`, `classmethod` and `staticmethod` are the everyday ones; see <Link to="descriptors" />.
+* **Rewriting the object.** Generate or rewrite code on the decorated object. `dataclasses.dataclass` writes `__init__`, `__repr__` and `__eq__` from the annotations, `enum.unique` inspects and rejects, and at the far end Cython and Numba rewrite a function for speed.
+
+Worth adding to that list: **marking**, a variant of registering that stamps an attribute instead of filling a collection, so a later pass can find the object by scanning. It also returns the object untouched, so no `wraps` is needed and identity is preserved. Two things to know: `f.__marker__ = value` fails on `__slots__` classes and on C-level builtins, and validation happens whenever the marks are read rather than at decoration time, so a typo surfaces far from the line that caused it.
+
+Registering and marking are the two least visible kinds. Neither changes the object, so the only evidence either ever ran is the decorator line itself. Registration also runs at import time, which makes it silently dependent on the module being imported at all - the usual reason a handler "is not registered" is that nothing imported it. Registries are worth calling out as the dominant architectural use of decorators in application code, most often to break an import cycle between infrastructure and the modules it dispatches to.
+
+## The name is the contract
+
+A decorator can do anything. Return the function untouched, return a wrapper, return a different function, return a descriptor, or return something that is not callable at all:
+
+```python
+def replace_with_a_potato(func):
+    return Potato()
+```
+
+That is a legal decorator, and under that name it is an honest one: you read the line and you know. Call the identical code `@foo` and it becomes unreadable, with no amount of care at the call site able to recover it.
+
+This is the real difficulty in using decorators well. Everywhere else in Python the reader can follow along - a call shows its arguments, an assignment shows its value. `@foo` shows nothing at all. The name is the entire interface, and the reader either trusts it or goes and reads the decorator.
+
+So, the same test as anywhere magic is involved: is the cost lower or higher than the developer experience it buys? For decorators that cost is concentrated almost entirely in the name. Name it for what it does to the function, not for the concept behind it. `@retry`, `@cached`, `@requires_login` and `@register` all survive being read cold by someone who has never seen the codebase. `@smart`, `@handler` and `@process` do not.
+
+## Failure modes
+
+Four, all of them consequences of the mechanism rather than mistakes in the decorator.
+
+**`@deco` and `@deco()` are not interchangeable.** A decorator that takes arguments is a factory, so applying it bare passes the decorated function in as its first *argument*. Nothing raises at that point - the function is quietly replaced by the inner decorator, and the failure surfaces later, somewhere else:
+
+```python
+@joined          # the () is missing
+def lines():
+    yield "a"
+    yield "b"
+```
+
+`lines` is now the inner `apply` function rather than the wrapper, so calling it returns another function instead of a string. The classic fix is a `callable()` guard that accepts both forms:
+
+```python
+def dual(arg=None):
+    if callable(arg):          # applied bare: arg is the decorated function
+        return dual()(arg)
+    def apply(f):
+        ...
+        return f
+    return apply
+```
+
+Mixing the two conventions across a codebase is a readability cost in itself, since nothing at the call site says which decorators need the parentheses.
+
+**A synchronous decorator around `async def` measures nothing.** Calling a coroutine function returns a coroutine object; the body has not run yet. A timing wrapper therefore times object creation:
+
+```
+took 0.000001s
+result: the Holy Grail | real duration 0.2s
+```
+
+The `await` still works, so nothing visibly fails - the numbers are simply wrong. Anything that wraps the *call* rather than the *result* needs an `async def` wrapper, usually alongside the synchronous one.
+
+**A class used as a decorator does not bind as a method.** Decorate a method with a class that implements `__call__` but not `__get__`, and `self` never arrives:
+
+```
+TypeError: Knight.charge() missing 1 required positional argument: 'self'
+```
+
+This is not a decorator problem, it is the descriptor protocol: an attribute that does not define `__get__` is returned as-is, so nothing binds the instance. A function-based decorator works because functions *are* non-data descriptors, and `__get__` is what produces the bound method. Give the class a `__get__`, or use a function. See <Link to="descriptors" />.
+
+**Closure state is shared.** State in the enclosing scope belongs to the decoration, which happens once, at import. On a decorated method that means one counter or one cache for every instance of the class - the same trap as storing state on a descriptor.
+
+## Universal decorator recipe
+
+Two axes have to be handled to accept everything: the **call shape** (`@deco` or `@deco(...)`) and the **callable kind** (plain function, coroutine function, generator function, async generator function). Both are bounded problems with a known answer.
+
+**First, check you need one.** A `@contextlib.contextmanager` object is already a [`ContextDecorator`](https://docs.python.org/3/library/contextlib.html#contextlib.ContextDecorator), so it works as a decorator with no extra code, and it recreates the context on every call. On an async function it applies just as cleanly, and is silently wrong:
+
+```python
+@timer("slow")
+async def slow():
+    await asyncio.sleep(0.2)
+    return "done"
+```
+```
+enter slow
+exit slow after 0.000s
+body starts
+body ends
+```
+
+The context opened and closed before the body ever ran, because the wrapper is synchronous and calling a coroutine function only builds a coroutine. Nothing raises. That failure is the entire reason for the dispatch below.
+
+**Both call shapes, without guessing.** Make the options keyword-only. The first positional parameter can then only ever be the decorated function, so the `callable()` guard from the previous section becomes unnecessary:
+
+```python
+def timed(func=None, *, label=None):
+    if func is None:                       # @timed(...) - configured, function comes later
+        return functools.partial(timed, label=label)
+```
+
+`@timed` passes the function positionally. `@timed(label="x")` leaves `func` as `None`, returns a partial, and that receives the function on the next call. The `callable()` heuristic is only needed when you insist on positional options, and it misfires as soon as an option is itself a callable.
+
+**Both worlds, without duplicating the logic.** The wrapper bodies must differ - `await`, `yield from` and `async for` are not interchangeable - but the cross-cutting logic should exist once. Put it in a context manager and have every branch use it:
+
+```python
+import functools
+import inspect
+import time
+from contextlib import contextmanager
+
+
+@contextmanager
+def _timing(name):
+    """The cross-cutting logic, written once for all four branches."""
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        print(f"{name} took {time.perf_counter() - start:.3f}s")
+
+
+def timed(func=None, *, label=None):
+    if func is None:
+        return functools.partial(timed, label=label)
+    if isinstance(func, type):
+        raise TypeError("timed decorates functions, not classes")
+
+    name = label or func.__name__
+
+    if inspect.isasyncgenfunction(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            with _timing(name):
+                async for item in func(*args, **kwargs):
+                    yield item
+    elif inspect.iscoroutinefunction(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            with _timing(name):
+                return await func(*args, **kwargs)
+    elif inspect.isgeneratorfunction(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with _timing(name):
+                yield from func(*args, **kwargs)
+    else:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with _timing(name):
+                return func(*args, **kwargs)
+
+    return wrapper
+```
+
+Checked on 3.12, 3.13 and 3.14: all three call shapes on both sync and async, generators and async generators, plain methods, and `inspect.iscoroutinefunction(wrapper)` still `True` afterwards so the next decorator up can detect it. The timing now genuinely spans the `await`.
+
+**What it does not survive.**
+
+* **Classes.** Wrapping a class in a function replaces it - `isinstance(Thing, type)` becomes `False` and every subclass and `isinstance` check downstream breaks. Hence the explicit guard.
+* **`@staticmethod` and `@classmethod` must stay outermost.** Below them, class access appears to work and instance access does not: `TypeError: Bad.oops() takes 0 positional arguments but 1 was given`.
+* **Detection through a stack.** If an inner decorator already wrapped a coroutine function in a *synchronous* wrapper, `iscoroutinefunction` reports `False` and you get the sync branch - the exact bug you were avoiding. Since Python 3.12 the inner decorator can declare itself with [`inspect.markcoroutinefunction`](https://docs.python.org/3/library/inspect.html#inspect.markcoroutinefunction), which fixes detection for everything above it. Calling `inspect.unwrap` before testing is the other option, and it is wrong whenever an inner decorator deliberately turned an async function into a sync one.
+* Use `inspect.iscoroutinefunction`, not the `asyncio` one - it sees through `functools.partial`, and `asyncio.iscoroutinefunction` raises a `DeprecationWarning` from 3.14.
+
+Four branches, a context manager and a sentinel argument, to make one `@` accept every shape. By this page's own argument that has to earn its place: worth it for a decorator applied across a codebase, not for one used three times in a single module, where the two lines you actually need are clearer than the machinery.
+
+Note also what it should not be called. `@universal` names the machinery; `@timed` names what happens to the function.
+
+## Typing a decorator
+
+Getting a decorator past a type checker is the part the tutorials skip. `Callable[..., T]` discards every parameter type, so the decorated function ends up accepting anything.
+
+`ParamSpec` and `Concatenate` (Python 3.10, [PEP 612](https://peps.python.org/pep-0612/)) forward the parameters instead:
+
+```python
+from collections.abc import Callable
+
+def add_logging[T, **P](f: Callable[P, T]) -> Callable[P, T]:
+    def inner(*args: P.args, **kwargs: P.kwargs) -> T:
+        return f(*args, **kwargs)
+    return inner
+```
+
+`Concatenate` covers the decorator that adds or removes a parameter - injecting a lock, a session, a request - where the visible signature is the wrapped one minus the injected argument.
+
+The `[T, **P]` syntax above is PEP 695, Python 3.12. Before that, declare `P = ParamSpec("P")` at module level.
+
+## Standard-library decorators
 
 The ones worth remembering, weighted toward the underrated:
 
@@ -104,96 +314,7 @@ def _(target: list):
 * `abc.abstractmethod`, `typing.overload`, `typing.final` - marks for ABCs and type checkers.
 * `property`, `staticmethod`, `classmethod` - the built-in method decorators.
 
-## Kinds of decorators
-
-Andy Fundinger's [decorator taxonomy](https://github.com/bloomberg/decorator-taxonomy) (EuroPython 2018) is a handy way to think about what a decorator is *for*. The kinds, with small examples:
-
-### Changing the arguments
-
-Adjust or inject arguments before the call. Supplying an overridable default, for instance:
-
-```python
-def with_default_swallow(func):
-    @functools.wraps(func)
-    def wrapper(*args, swallow="European", **kwargs):
-        return func(*args, swallow=swallow, **kwargs)
-    return wrapper
-
-@with_default_swallow
-def airspeed(swallow=None):
-    return f"the airspeed of an unladen {swallow} swallow"
-```
-
-### Controlling the call
-
-Decide whether and how often the function runs. `retry` above is one, `functools.cache` caches, and run-once (a Holy Hand Grenade only goes off the once) is another:
-
-```python
-def once(func):
-    result = []
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        if not result:
-            result.append(func(*args, **kwargs))
-        return result[0]
-    return wrapper
-```
-
-### Registering the object
-
-Add the decorated function to a collection and return it unchanged. This is how plugin, command and dispatch registries are built:
-
-```python
-round_table = {}
-
-def knight(name):
-    def deco(func):
-        round_table[name] = func
-        return func            # returned as-is, not wrapped
-    return deco
-
-@knight("Lancelot")
-def charge():
-    return "Charge!"
-```
-
-### Binding to the class
-
-Decorators that return a descriptor. `property`, `classmethod` and `staticmethod` are the everyday ones (see <Link to="descriptors" />).
-
-### Rewriting the object
-
-Generate or rewrite code on the decorated object. `@dataclass` writes `__init__`, `__repr__` and `__eq__` from the annotations; at the far end, Cython and Numba rewrite a function for speed:
-
-```python
-from dataclasses import dataclass
-
-@dataclass
-class Swallow:
-    origin: str
-    laden: bool
-```
-
-## Recipes
-
-Concrete, reusable snippets. Timing a call (how long is that silly walk?):
-
-```python
-import time
-
-def timed(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        start = time.perf_counter()
-        try:
-            return func(*args, **kwargs)
-        finally:
-            print(f"{func.__name__} took {time.perf_counter() - start:.3f}s")
-    return wrapper
-```
-
-More patterns will land here from real projects.
-
 ## See also
 
-* <Link to="descriptors" /> - the lower-level protocol behind `property`, methods and many decorators.
+* <Link to="descriptors" /> - the lower-level protocol behind `property`, method binding and the class-decorator trap above.
+* [PEP 318](https://peps.python.org/pep-0318/) - the original decorator proposal, including the syntax alternatives that were rejected.

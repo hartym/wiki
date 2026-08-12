@@ -1,13 +1,66 @@
 ---
-title: Presto
-description: "Run distributed SQL queries over a datalake / datawarehouse."
+title: Presto and Trino
+description: "Distributed SQL over data you did not load. The 2019 fork that split Presto into PrestoDB and Trino, and how the two compare in 2026."
+checkedOn: 2026-08-11
 ---
 
-[Presto](https://github.com/prestodb/presto) - Distributed SQL query engine for big data
+A distributed SQL engine that queries data where it already lives - object storage, a data lake, an
+existing database - instead of holding it. You point it at connectors and write SQL across them.
 
-Run distributed SQL queries over a datalake / datawarehouse.
+Searching for it is confusing, because there are two projects, and both have a claim to the name.
 
-## Resources
+## The split
 
-* [Presto Overview](https://prestodb.io/overview.html)
-* [Presto Documentation](https://prestodb.io/docs/current/)
+* **2012** - Presto starts at Facebook.
+* **January 2019** - Martin Traverso, Dain Sundstrom and David Phillips, three of the original
+  creators who had left Facebook the year before, fork the project. They keep the name Presto and
+  use the **PrestoSQL** handle to distinguish it, and set up the Presto Software Foundation.
+* **2019** - Facebook applies for a trademark on Presto® and begins enforcing it.
+* **27 December 2020** - PrestoSQL is renamed **Trino**. The announcement is blunt about why: the
+  trademark meant *"we must now change the name in a short period of time, with little ability to
+  minimize user disruption."* The foundation is renamed too.
+
+So the fork carries the original authors, and the original name carries the original code. Neither
+is the impostor, which is why the confusion persists.
+
+## Where they stand
+
+Both are alive, and the star counts mislead - the Presto repository is seven years older, which is
+most of its lead. Figures from the GitHub API on 2026-08-11, commits and contributors over the
+preceding twelve months.
+
+| | Presto | Trino |
+|---|---|---|
+| Repository created | 2012-08-09 | 2019-01-19 |
+| Latest release | `0.298.1` (2026-06-17) | `483` (2026-07-18) |
+| Commits, 12 months | 1,463 | **4,268** |
+| Contributors, 12 months | 159 | 157 |
+| Stars | **16,721** | 13,126 |
+| Forks | **5,543** | 3,727 |
+| Governance | Linux Foundation | Trino Software Foundation |
+
+The number worth looking at is commits: near-identical contributor counts, and Trino doing roughly
+three times the work. The other one is the version. Presto has been on `0.x` for fourteen years and
+releases about five times a year; Trino ships numbered releases at a similar cadence but stopped
+pretending to be pre-1.0.
+
+## Choosing
+
+Trino if you have no other constraint - the development rate is the difference, and the query engine
+is where you feel it.
+
+Presto if something you already run picks it for you. It is a Linux Foundation project with real
+corporate weight behind it, and "less active than Trino" is not the same as inactive at 1,463
+commits a year.
+
+Check which one your vendor means before you read their benchmark. Both get called "Presto".
+
+<Opinion ring="trial" date="2026-08-11">
+  Trino. Presto stays worth knowing about, mostly because vendors keep shipping it.
+</Opinion>
+
+## Links
+
+* [prestodb.io](https://prestodb.io/) and [github.com/prestodb/presto](https://github.com/prestodb/presto)
+* [trino.io](https://trino.io/) and [github.com/trinodb/trino](https://github.com/trinodb/trino)
+* <Link to="relational" /> - if the data is small enough to load, load it.
