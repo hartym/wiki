@@ -1,0 +1,73 @@
+---
+title: Document Stores and Search Engines
+description: "Document-oriented databases and search engines: MongoDB, CouchDB, RethinkDB, Elasticsearch, OpenSearch and Solr, with their licences."
+checkedOn: 2026-08-11
+---
+
+Stores whose unit is a self-describing document (usually JSON) rather than a row. Search engines
+sit here too: they store documents and their reason to exist is the inverted index over them, not
+the storage.
+
+Licensing is the live issue in this family. Three of the six below are not open source under OSI
+terms, and the two that are plain Apache 2.0 are that way deliberately.
+
+## MongoDB
+
+The default answer in this family, for better or worse. Check the licence before you assume it is
+open source: the [repository](https://github.com/mongodb/mongo) ships `LICENSE-Community.txt`, the
+**Server Side Public License v1, dated 16 October 2018**.
+
+<Opinion ring="hold" date="2026-08-11" />
+
+## CouchDB
+
+[Apache-licensed](https://github.com/apache/couchdb). Multi-primary replication over HTTP is the
+distinguishing feature; built to sync with occasionally-connected clients.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## RethinkDB
+
+Push-based queries that stream changes to the client rather than making it poll. Its
+[README](https://github.com/rethinkdb/rethinkdb) now reads *"RethinkDB is licensed by the Linux
+Foundation under the open-source Apache 2.0 license"* - the project outlived the company that built
+it.
+
+## Elasticsearch and OpenSearch
+
+[Elasticsearch](https://github.com/elastic/elasticsearch) is the inverted index everyone reaches
+for, and the most licence-encumbered thing on this page. `LICENSE.txt` states a **triple licence**:
+AGPL v3 only, SSPL v1, and Elastic License 2.0, with individual files free to say otherwise.
+
+That history produced **[OpenSearch](https://github.com/opensearch-project/OpenSearch)**: Elastic
+announced the move away from Apache 2.0 to the SSPL on 14 January 2021, AWS forked that year, and
+governance passed to the OpenSearch Software Foundation under the Linux Foundation on 16 September
+2024. OpenSearch is **plain Apache 2.0**, and not a token fork - 1,492 commits from 213 contributors
+over the last twelve months, with 3.8.0 released 2026-08-05.
+
+On performance, treat the widely-cited numbers carefully. Trail of Bits
+[benchmarked the two](https://blog.trailofbits.com/2025/03/06/benchmarking-opensearch-and-elasticsearch/)
+and found OpenSearch 2.17.1 about 1.6x faster than Elasticsearch 8.15.4 on the Big5 workload and 11%
+faster on vector search - but the study was **commissioned by AWS**, who created OpenSearch, and the
+authors record that OpenSearch's tail latency is worse, with one maximum service time at 1412x the
+median. The licence is the durable argument; the benchmark is not.
+
+<Opinion ring="hold" date="2026-08-11">
+  Prefer OpenSearch, for the Apache licence.
+</Opinion>
+
+## Solr
+
+[Apache Solr](https://github.com/apache/solr) is the older Lucene-based engine, plain Apache 2.0
+with no asterisks, which is the main reason to prefer it.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## Notes
+
+* Elasticsearch is commonly paired with [Logstash](https://github.com/elastic/logstash) for
+  ingestion and [Kibana](https://github.com/elastic/kibana) for visualisation, the combination
+  usually written ELK. [Banana](https://github.com/lucidworks/banana) is a Kibana port that reads
+  from Solr instead.
+* Couchbase's server source is no longer published at a single public repository; see
+  [couchbase.com](https://www.couchbase.com/).

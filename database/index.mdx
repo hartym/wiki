@@ -1,32 +1,32 @@
 ---
 title: Databases
-description: "See also: Database/Family."
+description: "Database families and the engines in each: relational, graph, time series, key-value, document and search, and spatial."
+checkedOn: 2026-08-11
 ---
 
-See also: <Link to="family" />.
+Notes on database families and the engines in each. The families are a way to navigate, not a
+recommendation to use one of each - most systems want a relational database and, occasionally, one
+more thing for a workload it genuinely handles badly.
 
-## Document and key-value stores
+## Families
 
-* [CouchDB](https://github.com/apache/couchdb) - Seamless multi-master sync, scales from mobile to global clusters
-* [MongoDB](https://github.com/mongodb/mongo) - The most popular NoSQL database
-* [RethinkDB](https://github.com/rethinkdb/rethinkdb) - The open-source database for the realtime web
+* <Link to="relational" /> - PostgreSQL, MySQL. The default, and usually the right one.
+* <Link to="graphs" /> - Neo4j, JanusGraph, Dgraph, plus RDF and SPARQL. When the relationship is
+  the data and the traversal depth is unbounded.
+* <Link to="timeseries" /> - InfluxDB, TimescaleDB, Prometheus, Graphite. Timestamped,
+  append-mostly.
+* <Link to="keyvalue" /> - Redis, LevelDB. Split by whether it is a server or a library.
+* <Link to="document" /> - MongoDB, CouchDB, Elasticsearch, Solr. Self-describing documents, and
+  the search engines that index them.
+* <Link to="gis" /> - PostGIS, coordinate systems, vector tiles.
 
-## <Link to="family/graphs" />
+## Engines and tools
 
-## Geographic information systems
+* <Link to="postgresql" /> - the deep dive. Reaches into three of the families above through
+  extensions.
+* <Link to="presto" /> - Presto and Trino, distributed SQL over data you did not load.
 
+## Related
 
-## Relational Databases
-
-Relational database search tree: http://howfuckedismydatabase.com/
-
-* [MySQL](https://github.com/mysql/mysql-server) - The world's most popular open source database
-* <Link to="postgresql" />
-
-## Round Robin / Time Series Oriented Databases
-
-See <Link to="family" />.
-
-## Previously on homepage, sorting needed
-
-* <Link to="presto" />
+* <Link to="/python/sqlalchemy" /> - SQL toolkit and ORM for Python.
+* <Link to="/messagequeues" /> - overlaps more than you would like, since Redis ends up in both.

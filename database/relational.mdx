@@ -1,0 +1,42 @@
+---
+title: Relational Databases
+description: "Relational databases: PostgreSQL, MySQL, and where the relational model still wins."
+checkedOn: 2026-08-11
+---
+
+Still the default, and still the right default. The relational model buys transactions, constraints
+the database enforces on every writer, and a query planner that reorganises work you did not have
+to think about. Most arguments for leaving it turn out to be arguments about one query.
+
+## PostgreSQL
+
+The one to reach for. Extensible enough that several other families on this page are reachable from
+it without running a second server: <Link to="gis" /> through PostGIS, <Link to="timeseries" />
+through TimescaleDB, JSON documents natively.
+
+The deep dive is on <Link to="postgresql" />.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## MySQL
+
+Still enormously deployed. Sun bought MySQL AB in February 2008; Oracle announced its acquisition of
+Sun on 20 April 2009 and closed it on 27 January 2010. **MariaDB was forked in between**, by
+original author Michael Widenius, in anticipation rather than reaction - its first release, 5.1.38,
+shipped on 29 October 2009, three months before Oracle actually owned the code.
+
+Note the version numbers if you are pinning: the newest tag in the
+[repository](https://github.com/mysql/mysql-server) is `mysql-26.7.0` (2026-07-28), straight after
+`mysql-9.7.2`.
+
+<Opinion ring="hold" date="2026-08-11" />
+
+## Query engines over other people's data
+
+Distributed SQL over object storage and existing databases, rather than a store of its own:
+<Link to="presto" />.
+
+## Reference
+
+* [How f*cked is my database](http://howfuckedismydatabase.com/) - a decision tree, and funnier than
+  it has any right to be.

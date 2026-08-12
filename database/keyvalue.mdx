@@ -1,0 +1,33 @@
+---
+title: Key-Value Stores
+description: "Key-value stores: Redis, LevelDB and the embedded-versus-server split."
+checkedOn: 2026-08-11
+---
+
+The simplest data model: opaque values addressed by key. The useful distinction is not the model
+but whether the store is a **server** you talk to over the network or a **library** you embed in
+your process.
+
+## Redis
+
+A server, and the only one most projects need here. In-memory, with data structures (lists, sets,
+sorted sets, streams) rather than opaque blobs, which is why it ends up used as a cache, a queue and
+a lock manager as much as a database. See <Link to="/messagequeues" />.
+
+**Check the version before you assume the licence.** `LICENSE.txt` states that from **Redis 8** the
+project is tri-licensed - your choice of the Redis Source Available License v2, the Server Side
+Public License v1, or AGPLv3 - while *"Redis Open Source 7.2 and prior releases remain subject to
+the BSDv3 clause license"*.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## Embedded
+
+* [LevelDB](https://github.com/google/leveldb) - an ordered key-value library from Google, BSD-3,
+  not a server. Widely used as a storage engine inside other databases.
+
+## Dormant
+
+* [MemcacheDB](https://github.com/stvchu/memcachedb) - a persistent memcached. **The repository has
+  not been touched since 2009**; listed only because it still turns up in search results. For a
+  cache, use memcached or Redis.
