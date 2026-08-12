@@ -1,10 +1,89 @@
 ---
 title: FastAPI
-description: FastAPI - an ASGI web framework built on Starlette and Pydantic, deriving validation and OpenAPI docs from type hints. Notes to come.
+description: "FastAPI in practice: the async threadpool rule, when dependency exit code actually runs, response_model filtering, and the breaking changes that bite."
+checkedOn: 2026-08-11
 ---
 
-FastAPI is an ASGI web framework built on <Link to="starlette" /> and Pydantic. It derives request validation, serialization and OpenAPI docs from ordinary type hints.
+FastAPI is an ASGI framework built on <Link to="starlette" /> and Pydantic, where type hints drive
+parsing, validation, serialization, dependency injection and OpenAPI generation.
 
-Notes to come: routing, dependency injection, request and response models, background tasks, testing.
+Whether to pick it - adoption, bus factor, the commercial pivot - is on
+<Link to="web-frameworks" />. This page is what bites once you have.
+
+Checked against FastAPI 0.141.x.
+
+## async def, def, and the threadpool
+
+The rule is inverted from most frameworks, and getting it backwards costs you the whole event loop.
+
+A plain `def` endpoint is safe: *"When you declare a path operation function with normal `def`
+instead of `async def`, it is run in an external threadpool that is then awaited."* An `async def`
+endpoint is called directly on the loop, so **any blocking call inside it stalls every other
+request in the process** - a synchronous database driver, `requests`, `time.sleep`, a large file
+read.
+
+The docs are explicit that the default should be `async def`, and that plain `def` is the escape
+hatch *"unless your path operation functions use code that performs blocking I/O"*. The same rule
+applies to dependencies: a `def` dependency also goes to the threadpool.
+
+Nothing warns you. A blocking `async def` endpoint works perfectly under one user and collapses
+under load, which is why it usually reaches production. <Link to="web-frameworks" /> notes that
+Litestar requires an explicit `sync_to_thread` instead of inferring this - stricter, and harder to
+get wrong.
+
+## Dependency exit code runs after the response
+
+For a dependency with `yield`, the cleanup after the `yield` does **not** run before the client gets
+its answer: *"Normally the exit code of dependencies with `yield` is executed after the response is
+sent to the client."*
+
+That matters when the cleanup is a database transaction commit or rollback, because a failure there
+cannot change a response that has already gone out. Two consequences:
+
+* An exception raised in the exit code cannot become a `500` for that request.
+* Anything the client does immediately after the response may observe state the cleanup has not
+  finished touching yet.
+
+The escape hatch is `scope`: `Depends(get_thing, scope="function")` runs the exit code *before* the
+response is sent, where `scope="request"` is the default. A `scope="request"` dependency requires
+its sub-dependencies to be `"request"` too.
+
+If you catch an exception in such a dependency, re-raise it unless you are deliberately converting
+it to an `HTTPException`. Swallowing it hides the failure entirely.
+
+## response_model filters silently
+
+`response_model` *"will limit and filter the output data to what is defined in the return type"*.
+Fields the endpoint returns but the model does not declare are dropped, with no error and no
+warning.
+
+This is deliberate and is the main reason to use it - returning a `UserIn` containing a password
+from an endpoint declared `response_model=UserOut` strips the password. It also means a field
+missing from a response is as likely to be a typo in the model as a bug in the query, and the two
+look identical from the outside.
+
+## Breaking changes worth tracking
+
+Breaking changes live in a flat changelog. There is no migration guide comparable to Django's
+release notes, so this is the part that requires reading diffs.
+
+* **Pydantic v1 support was removed in six days.** 0.127.0 (2025-12-21) added deprecation warnings
+  for `pydantic.v1`; **0.128.0 (2025-12-27) dropped it entirely**. Anything still on the
+  compatibility shim is pinned below 0.128 permanently. Current metadata requires
+  `pydantic>=2.9.0`.
+* **0.137.0 (2026-06-14)** turned `router.routes` from a flat list into a tree. Observability, auth
+  and codegen tooling commonly iterates or mutates it, and all of that breaks. The release notes
+  retroactively declare it an internal implementation detail.
+* **0.132.0 (2026-02-23)** made `strict_content_type` the default, rejecting JSON requests without a
+  valid `Content-Type`. Escape hatch: `strict_content_type=False`. This breaks sloppy clients
+  silently in production rather than in tests.
+* **0.131.0** deprecated `ORJSONResponse` and `UJSONResponse`. **0.129.0** dropped Python 3.9.
+
+## Notes
+
+* Ships `py.typed`.
+* `app.frontend()` arrived in 0.141.0 (2026-07-29), moving FastAPI into full-stack territory.
+* Installing `fastapi[standard]` pulls a vendor CLI you did not ask for - see
+  <Link to="web-frameworks" /> for the detail and the opt-out extra.
 
 * https://fastapi.tiangolo.com/

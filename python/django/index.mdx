@@ -1,53 +1,77 @@
 ---
 title: Django
-description: "Django is an open-source web framework, written in Python, which follows the model-view-template (MVT) architectural pattern, which is just a name variant of MV"
+description: "Django in practice: what async mode still cannot do, the 6.0 and 6.1 breaking changes, and a few recipes."
+checkedOn: 2026-08-11
 ---
 
-Django is an open-source web framework, written in Python, which follows the model-view-template (MVT) architectural pattern, which is just a name variant of MVC.
+Django is the batteries-included Python web framework: ORM, migrations, admin, auth and templates
+in one release, on a published schedule.
 
-Django's primary goal is to ease the creation of complex, database-driven websites. Django emphasizes reusability and "pluggability" of components, rapid development, and the principle of don't repeat yourself. Python is used throughout, even for settings files and data models. Django also provides an optional administrative create, read, update and delete interface that is generated dynamically through introspection and configured via admin models.
+Whether to pick it - governance, release cadence, contributor base - is on
+<Link to="/python/web-frameworks" />. This page is what bites once you have.
 
-[Django with included batteries](https://django-zero.github.io/)
+Checked against Django 6.1.
 
-## Applications
+## Async mode is a query API, not an async data layer
 
-A few useful django applications...
+Every `QuerySet` method that issues SQL has an `a`-prefixed variant, `async for` works on all
+querysets, and model methods like `asave()` and `acreate()` exist. That is real, and it is also the
+whole of it.
 
-## Views
+The documentation is blunt about the limit: **"Transactions do not yet work in async mode."** The
+recommendation is to *"write that piece as a single synchronous function and call it using
+`sync_to_async()`"*.
 
-* [Django Vanilla Views](http://django-vanilla-views.org/)
-* [Django Braces](https://django-braces.readthedocs.io/)
-* [Django Extra Views Compatibility](http://django-vanilla-views.org/topics/django-extra-views-compatibility)
-* [Django Includes](https://github.com/hartym/django-includes) (experiment)
+No async transactions means no async unit of work, so every write path that needs atomicity still
+funnels through a thread. If your handler does more than one related write, the async version buys
+you nothing and costs you a thread hop.
 
-## Forms
+The second limit is easy to miss: **persistent connections must be turned off**. *"Persistent
+database connections, set via the `CONN_MAX_AGE` setting, should also be disabled in async mode.
+Instead, use your database backend's built-in connection pooling if available."* Leaving the
+synchronous default in place is a slow, hard-to-attribute failure under load rather than an error.
 
-* [Django Crispy Forms](https://django-crispy-forms.readthedocs.io/)
+## Breaking changes in 6.0 and 6.1
 
-## Assets
+Both quoted from the release notes, because both are the silent kind.
 
-* Whitenoise
+**`Field.pre_save()` must now be idempotent.** From the 6.0 notes: *"`Field.pre_save()` may now be
+called more than once when saving model instances, so custom implementations should be idempotent
+and free of side effects."* Any custom field that incremented a counter, wrote a log line or
+generated a token in `pre_save` now does it twice.
 
-## Object lists
+**`first()` and `last()` changed which row they return.** From the 6.1 notes: *"`first()` and
+`last()` no longer order by the primary key when a `QuerySet`'s ordering has been forcibly cleared
+by calling `order_by()` with no arguments."* No exception, no warning - a different row.
 
-* [Django Filter](https://django-filter.readthedocs.io/)
+**`DEFAULT_AUTO_FIELD` now defaults to `BigAutoField`** in 6.0. Most projects are unaffected, since
+Django has raised the `models.W042` check for this since 3.2. If you never dealt with that warning,
+set `DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'` explicitly before upgrading.
+
+Django 6.0 supports Python 3.12, 3.13 and 3.14, and officially supports only the latest release of
+each series. Django does **not** ship `py.typed`; type checking still needs `django-stubs`.
+
+## Field fetch modes, for N+1
+
+New in 6.1, and the structural answer to deferred-field N+1 queries. Three modes: `FETCH_ONE` (the
+default, existing behaviour, fetches the missing field for the current instance only), `FETCH_PEERS`
+(fetches it for every instance from the same `QuerySet`), and `FETCH_RAISE` (raises
+`FieldFetchBlocked`).
+
+`FETCH_RAISE` in tests is the useful one: it turns an accidental N+1 into a failure instead of a
+slow endpoint.
 
 ## Recipes
 
-## How to add created/updated fields to django models
+Created and updated timestamps on a model:
 
 ```python
 class MyTimestampedModel(models.Model):
-    # ... other fields ...
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-```## Django ORM
+```
 
-* [Less Obvious Things To Do With Django's ORM](https://markusholtermann.eu/2019/03/less-obvious-things-to-do-with-djangos-orm/)
-
-## E-mails
-
-## Settings
+Email settings:
 
 ```python
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -58,6 +82,16 @@ EMAIL_HOST_PASSWORD = '...'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 ```
+
+## Applications
+
+* [Django Filter](https://django-filter.readthedocs.io/) - queryset filtering from query parameters.
+* [Django Crispy Forms](https://django-crispy-forms.readthedocs.io/) - form rendering.
+* [Django Braces](https://django-braces.readthedocs.io/) - class-based view mixins.
+* [Django Vanilla Views](http://django-vanilla-views.org/) - simplified class-based views.
+
 ## Related
 
 * <Link to="./authentication">Django Authentication</Link>
+* <Link to="/python/web-frameworks" /> - how Django compares to the rest of the field.
+* [Less Obvious Things To Do With Django's ORM](https://markusholtermann.eu/2019/03/less-obvious-things-to-do-with-djangos-orm/)
