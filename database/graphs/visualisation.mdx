@@ -1,0 +1,43 @@
+---
+title: Graph Visualisation
+description: "Tools for drawing graphs and networks: Gephi, Cytoscape, sigma.js, and the tree and flow layouts that are usually a better fit."
+checkedOn: 2026-08-11
+---
+
+Drawing a network is harder than storing one. The default result of throwing a graph at a layout
+engine is a hairball that shows the data exists and nothing else. Most of the craft is in picking a
+layout that matches the shape of the data, and often in noticing the data is not really a network.
+
+## Desktop
+
+* [Gephi](https://gephi.org/) - the usual starting point. Interactive exploration, several automatic
+  layout algorithms, handles large graphs and many input formats.
+* [Cytoscape](https://cytoscape.org/) - more platform than tool, with a Java plugin ecosystem.
+  Created at the Institute for Systems Biology in Seattle in 2002 for molecular interaction
+  networks, and now agnostic about what the nodes and edges mean.
+
+## In the browser
+
+* [sigma.js](https://www.sigmajs.org/) - dedicated to graph drawing and nothing else. Give it JSON,
+  get Canvas or WebGL, and it reads what Neo4j and Gephi export.
+* [Cytoscape.js](https://github.com/cytoscape/cytoscape.js) - the Cytoscape model as a JavaScript
+  library.
+
+## When it is not really a network
+
+Check first whether the data has interconnections at all. If it is a tree or a strict hierarchy, a
+tree layout is faster to compute and far easier to read than any force-directed graph.
+
+* [D3 tree layouts](https://observablehq.com/@d3/tidy-tree) - and
+  [circle packing](https://observablehq.com/@d3/zoomable-circle-packing) when nesting matters more
+  than branching.
+* [Sankey diagrams](https://observablehq.com/@d3/sankey) - when the weight of a connection matters
+  more than the connection: how much flows between nodes rather than what links to what.
+
+## Analysis rather than drawing
+
+* [NetworkX](https://networkx.org/) - the Python library for graph analysis. Community detection,
+  centrality, path finding. Frequently the right answer when the question is about the graph rather
+  than about the picture.
+
+See <Link to="." /> for the databases themselves.

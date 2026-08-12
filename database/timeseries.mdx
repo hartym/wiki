@@ -1,0 +1,51 @@
+---
+title: Time Series Databases
+description: "Time series and round-robin databases: InfluxDB, TimescaleDB, Prometheus, VictoriaMetrics, QuestDB, Druid, Graphite and RRDtool."
+checkedOn: 2026-08-11
+---
+
+Stores optimised for timestamped, append-mostly data: metrics, events, sensor readings. The
+distinguishing features are cheap ingestion of ordered writes, downsampling or retention policies,
+and query languages built around time windows rather than joins.
+
+## General purpose
+
+* [InfluxDB](https://github.com/influxdata/influxdb) - the widest-known of the dedicated engines.
+* [TimescaleDB](https://github.com/timescale/timescaledb) - a PostgreSQL extension rather than a
+  separate server, so timestamped data stays in the database you already run. See
+  <Link to="postgresql" />. Split licensing: `LICENSE` says the source is *"variously licensed under
+  the Apache License Version 2.0, an Apache compatible license, or the Timescale License"*, so the
+  community features are source-available rather than open source. The company renamed itself
+  **TigerData on 17 June 2025**, which is why search results disagree about what it is called.
+* [QuestDB](https://github.com/questdb/questdb) - a *"column-oriented, time-partitioned storage
+  engine with memory-mapped files and vectorized (SIMD) execution"*, with SQL extended by
+  `SAMPLE BY`, `LATEST ON` and `ASOF JOIN`.
+* [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) - describes itself as
+  *"long-term storage for Prometheus, or as a drop-in replacement for Prometheus and Graphite in
+  Grafana"*. Apache 2.0, with separate enterprise releases.
+* [Apache Druid](https://github.com/apache/druid) - real-time analytics rather than pure metrics.
+* [KairosDB](https://github.com/kairosdb/kairosdb) - *"written on top of Cassandra"*.
+
+<Opinion ring="trial" date="2026-08-11">
+  TimescaleDB, for staying inside Postgres.
+</Opinion>
+
+<Opinion ring="trial" date="2026-08-11">
+  InfluxDB, when a dedicated server is genuinely warranted.
+</Opinion>
+
+## Monitoring stacks
+
+* [Prometheus](https://github.com/prometheus/prometheus) - a monitoring system that happens to
+  contain a time series database; the pull model and alerting are the point. See
+  <Link to="/app/monitoring/prometheus" />.
+* [Graphite](https://github.com/graphite-project/graphite-web) - the older graphing stack, split
+  across [Whisper](https://github.com/graphite-project/whisper) (the file format) and
+  [Carbon](https://github.com/graphite-project/carbon) (the ingestion daemon).
+* [RRDtool](https://github.com/oetiker/rrdtool-1.x) - the original round-robin database. Fixed-size
+  files, automatic downsampling, still behind a lot of network monitoring.
+
+## Slowing down
+
+* [OpenTSDB](https://github.com/OpenTSDB/opentsdb) - on HBase. Last release activity is well behind
+  the others here.

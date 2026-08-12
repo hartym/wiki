@@ -1,0 +1,41 @@
+---
+title: Geographic Information Systems
+description: "Spatial data: PostGIS, coordinate systems and projections, vector tiles, and mapping libraries."
+checkedOn: 2026-08-11
+---
+
+Storing and querying data that has a position. The database side is small - PostGIS does most of
+it - and the real work is in coordinate systems, projections and tiling.
+
+## Storage
+
+* [PostGIS](https://github.com/postgis/postgis) - the spatial extension for PostgreSQL, and the
+  default choice. Geometry and geography types, spatial indexes, and a large function library. See
+  <Link to="postgresql" />.
+* [MongoDB](https://github.com/mongodb/mongo) - geospatial indexes and queries, if the data is
+  already there. See <Link to="document" />.
+
+## Coordinate systems
+
+The thing that bites first. A coordinate pair means nothing without knowing its reference system.
+
+* **WGS 84** ([EPSG:4326](https://epsg.io/4326)) - *"World Geodetic System 1984, used in GPS"*. A
+  geographic system: latitude and longitude in **degrees**, not metres.
+* **NTF (Paris) / Lambert zone II** ([EPSG:27572](https://epsg.io/27572)) - a *projected* French
+  system in metres, Lambert Conic Conformal, introduced in 1972. Still turns up in older French
+  datasets.
+* [EPSG.io](https://epsg.io/) - look up any system by code.
+* [PyProj](https://github.com/pyproj4/pyproj) - Python bindings to PROJ, for converting between them.
+
+## Vector tiles
+
+* [Awesome Vector Tiles](https://github.com/mapbox/awesome-vector-tiles) - the catalogue of
+  implementations, and the fastest way into the topic.
+* [Tippecanoe](https://github.com/mapbox/tippecanoe) - build tilesets from large GeoJSON.
+
+## Mapping and display
+
+* [Folium](https://github.com/python-visualization/folium) - Python data onto Leaflet maps, works
+  inside Jupyter. See <Link to="/python/jupyter" />.
+* [GeoDjango](https://docs.djangoproject.com/en/stable/ref/contrib/gis/) - the spatial framework
+  bundled with Django. See <Link to="/python/django" />.

@@ -1,32 +1,34 @@
 ---
 title: JavaScript
-description: "JavaScript notes: the React and Webpack pages, the test runners I used, and what survives of a 2016 React/Redux stack."
-checkedOn: 2026-08-10
+description: "JavaScript and TypeScript notes - backend frameworks and runtimes, meta-frameworks, front-end frameworks, and the build toolchain."
 ---
 
-<img src="https://turnoff.us/image/en/love-ecmascript6.png" width="600" alt="turnoff.us comic about ECMAScript 6" />
+Notes on the JavaScript and TypeScript ecosystem, mostly from the TypeScript side. The four pages
+below follow the [State of JS](https://stateofjs.com/) categories, which is the closest thing the
+ecosystem has to agreed vocabulary.
 
-Source: https://turnoff.us/image/en/love-ecmascript6.png
+## Backend frameworks and runtimes
 
-## Pages in this section
+* <Link to="web-frameworks" /> - HTTP frameworks (Hono, Fastify, Express, NestJS, Elysia), the Node,
+  Deno and Bun runtimes, and the WinterTC portability work.
 
-* [React](/wiki/javascript/react/): routing, state management, forms.
-* [Webpack](/wiki/utilities/webpack/): archived Webpack 1 notes, including the Django integration
-  that used to live on this page.
+## Meta-frameworks
 
-## Test runners
+* <Link to="meta-frameworks" /> - Next.js, Astro, Nuxt, SvelteKit, React Router and TanStack Start,
+  plus where React Server Components actually ship.
 
-* [Mocha](https://mochajs.org/)
-* [Jasmine](https://jasmine.github.io/)
-* [tape](https://github.com/tape-testing/tape), moved from `substack/tape` to the `tape-testing`
-  organisation. Still maintained, and the old URL redirects.
+## Front-end frameworks
 
-## Older notes
+* <Link to="frontend-frameworks" /> - React, Vue, Angular, Svelte and Solid, compared on their
+  reactivity models rather than their syntax.
 
-Written around 2016, kept as a record rather than as advice.
+## Build tooling
 
-* [LeanJS](https://github.com/hartym/LeanJS), my universal React / Redux / Webpack starter, with
-  its [documentation](https://leanjs.readthedocs.io/). Untouched since December 2016.
-* [react-helmet](https://github.com/nfl/react-helmet) to manage the document head. Last commit
-  July 2023.
-* [js-bits](https://github.com/vasanthk/js-bits), JavaScript concepts explained by example.
+* <Link to="build-tools" /> - Vite and Rolldown, esbuild, Rollup, webpack, Turbopack, Rspack, the
+  TypeScript compiler port, linters, test runners and package managers.
+
+## Links and references
+
+* [MDN JavaScript reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+* [TC39 proposals](https://github.com/tc39/proposals) - what is coming to the language, by stage.
+* [js-bits](https://github.com/vasanthk/js-bits) - a collection of language quirks explained.

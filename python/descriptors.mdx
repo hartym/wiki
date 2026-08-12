@@ -1,10 +1,15 @@
 ---
 title: Descriptors
-description: Python descriptors - the __get__/__set__ protocol, a validating descriptor, data vs non-data precedence, and where descriptors already power the language.
-checkedOn: 2026-07-20
+description: "Python descriptors - the __get__/__set__ protocol, data vs non-data precedence, what Django's model fields actually do on assignment, and when the magic costs more than it buys."
+checkedOn: 2026-08-11
 ---
 
-A descriptor is a class that implements `__get__`, `__set__` or `__delete__`, and is used as a **class attribute**. It intercepts attribute access on instances. Descriptors are the machinery behind `property`, bound methods, `classmethod`, `staticmethod`, `functools.cached_property` and ORM columns. Examples checked with Python 3.13.
+A descriptor is a class that implements `__get__`, `__set__` or `__delete__`, and is used as a **class attribute**.
+It intercepts attribute access on instances. Descriptors are the machinery behind `property`, bound methods, `classmethod`, `staticmethod`, `functools.cached_property` and ORM columns.
+
+Like decorators, there's a tiny taste of magic here, and that should be a trigger for caution.
+Understand the mechanism (you are already using it, whether or not you ever write one).
+Then be very reluctant to write one yourself. Think twice, then once again: is that really better than the version without descriptors? Will a developer who knows nothing of what I intended understand it easily? What walls will a new reader hit? Magic comes at a cost, so be sure the value is greater than that cost. Far greater.
 
 ## The protocol
 
@@ -20,56 +25,217 @@ class Descriptor:
         ...
 ```
 
-`__set_name__` (added in Python 3.6) hands the descriptor the name it was assigned to, so it no longer has to be told twice.
+`__set_name__` (Python 3.6) hands the descriptor the name it was assigned to, so it no longer has to be told twice. It fires from `type.__new__` while the class body is being turned into a class, and only then. The [data model](https://docs.python.org/3/reference/datamodel.html#object.__set_name__) is explicit about the consequence: *"If the class variable is assigned after the class is created, `__set_name__` will not be called automatically."* Build a class dynamically and you have to call the hook yourself.
 
-## A validating descriptor
+The other half of the same rule, from the [Descriptor HowTo Guide](https://docs.python.org/3/howto/descriptor.html): *"Descriptors only work when used as class variables. When put in instances, they have no effect."*
 
-Reusable validation, declared once and shared by every field that uses it:
+`__get__` receives `obj=None` on class access and the owner class as `objtype`, which is how a single attribute can serve two purposes - `Model.objects` on the class and a bound value on an instance are the same idea. Guard on `obj is None`, never on truthiness. An instance whose class defines `__len__` or `__bool__` can be falsy, and `if obj:` then quietly hands it the class branch:
 
 ```python
-class Positive:
-    def __set_name__(self, owner, name):
-        self._name = "_" + name
+class Guard:
     def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-        return getattr(obj, self._name)
-    def __set__(self, obj, value):
-        if value <= 0:
-            raise ValueError(f"{self._name[1:]} must be > 0")
-        setattr(obj, self._name, value)
+        return "instance branch" if obj else "class branch"   # should be `obj is None`
 
-class Knight:
-    honour = Positive()
-    def __init__(self, honour):
-        self.honour = honour   # goes through Positive.__set__
+class Basket:
+    tag = Guard()
+    def __len__(self):
+        return len(self.items)
+```
+```
+>>> Basket(items=[1]).tag
+'instance branch'
+>>> Basket(items=[]).tag
+'class branch'
 ```
 
-Assigning a non-positive `honour` raises `ValueError`, from `__init__` or anywhere else.
+Two instances of the same class, and emptying one changes which branch it takes.
 
 ## Data vs non-data descriptors
 
-* A **data descriptor** defines `__set__` (or `__delete__`). It takes **precedence over the instance `__dict__`**: `obj.x` uses the descriptor even if `obj.__dict__["x"]` exists.
-* A **non-data descriptor** defines only `__get__`. The instance `__dict__` wins over it, which is exactly why methods (non-data descriptors) can be shadowed by an instance attribute.
+`a.x` starts with `a.__dict__['x']`, then `type(a).__dict__['x']`, then the base classes of `type(a)`.
 
-This precedence is the subtle rule to remember when a descriptor "does not fire": a plain `__get__`-only descriptor is bypassed once the instance has that key.
+* A **data descriptor** defines `__set__` and/or `__delete__`. It **always overrides the instance `__dict__`**: `obj.x` goes through the descriptor even when `obj.__dict__['x']` exists.
+* A **non-data descriptor** defines only `__get__`. The instance `__dict__` wins over it.
 
-## Where descriptors already power things
+This is the rule to reach for when a descriptor "does not fire": a `__get__`-only descriptor is bypassed the moment the instance has that key. It is also a feature rather than an accident - `functools.cached_property` computes once, writes the result into the instance `__dict__`, and is never consulted again.
 
-* `property` - a data descriptor wrapping getter/setter/deleter functions.
-* Functions - non-data descriptors; `__get__` is what binds `self` to produce a bound method.
-* `classmethod` / `staticmethod` - descriptors that change what `__get__` returns.
-* `functools.cached_property` - a non-data descriptor that computes once, then lets the instance `__dict__` shadow it.
-* ORM columns (SQLAlchemy, Django fields) - descriptors mapping attributes to columns.
+## Case study: Django model fields
 
-## Common uses
+Django is worth reading before writing a descriptor of your own. It shows both the payoff and the price, and most Python developers already depend on it without knowing that is what they are doing.
 
-Three recurring reasons to reach for a descriptor:
+Two fields on the same model, declared one line apart:
 
-* **ORMs and data mappers.** A mapped attribute *is* a descriptor: reading or assigning `user.email` runs code that loads the value, tracks the change, or resolves a lazy relation, instead of touching a plain field. This is how SQLAlchemy's instrumented attributes and Django's relation and deferred fields work.
-* **Data objects, plain objects with superpowers.** Typed, validated fields where assignment coerces and checks the value (the `Positive` example above generalizes to any typed field). It is the descriptor-level version of what validated-model libraries like Pydantic hand you out of the box.
-* **Adding behaviour to a specific attribute.** Lazy or computed values, unit conversion, access logging or auditing, attached to a single attribute without a metaclass and without touching the rest of the class.
+```python
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+```
+
+`book.title = "..."` and `book.author = ...` are the same syntax. They do not do remotely the same thing.
+
+**`title` is backed by `DeferredAttribute`** (`django/db/models/query_utils.py`), which defines only `__get__`. It is a non-data descriptor: it loads the value from the datastore on first lookup, caches it in the instance `__dict__`, and is bypassed from then on. Assignment is a plain dictionary write. Nothing is validated, and `save()` does not call `full_clean()` for you.
+
+**`author` is backed by `ForwardManyToOneDescriptor`** (`django/db/models/fields/related_descriptors.py`), which does define `__set__`. Assigning to it runs, in order:
+
+1. a type check against `self.field.remote_field.model._meta.concrete_model`, raising `Cannot assign "%r": "%s.%s" must be a "%s" instance.`
+2. a database-router check, raising `Cannot assign "%r": the current database router prevents this relation.`
+3. `setattr(instance, lh_field.attname, getattr(value, rh_field.attname))` - writing the raw `author_id`
+4. `self.field.set_cached_value(instance, value)` - populating the forward cache, so re-reading costs no query
+5. for a one-to-one, `remote_field.set_cached_value(value, instance)` - mutating the **other** object as well
+
+**What that buys.** `author` and `author_id` cannot drift apart. Re-reading `book.author` is free. A wrong type fails on the assignment, at the line responsible, instead of at `save()` or in the database. A relation the router forbids is refused rather than silently written.
+
+Nothing simpler solves that. Keeping two attributes consistent on every write, in a library whose call sites are user code you do not control, is the problem descriptors exist for. The complexity is earned here.
+
+**What it costs.** The two assignments are indistinguishable at the call site. One is free and unchecked; the other can raise and mutates three other things. Nothing in the syntax says which is which, and reading `Book` does not tell you either - the behaviour is contributed by a field object to a base class at class-creation time.
+
+## One attribute, two behaviours
+
+The goal here is to **feel** like a Django manager while implementing something completely different underneath. `Model.objects.update_or_create(...)` on the class and `instance.save()` on the row are a shape every Django developer already carries in their head, and borrowing it means the reader spends nothing working out where to look.
+
+That is what makes it worth a descriptor rather than something simpler. `__get__` receives both the instance *and* the owner class, so one name can mean two things depending on how it is reached - which is precisely how `Model.objects` behaves.
+
+The example: a second namespace on a model that speaks an upstream system's vocabulary. Reached on the class it works on the table; reached on an instance it works on that row.
+
+```python
+class UpstreamModelProxy:
+    def __init__(self, model, *, meta):
+        self.model, self.meta = model, meta
+        self.objects = model._default_manager
+    # get_identity / update_or_create / ...
+
+class UpstreamInstanceProxy:
+    def __init__(self, instance, *, meta):
+        self.instance, self.meta = instance, meta
+    # push / patch / ...
+
+class UpstreamManager:
+    model_proxy_class = UpstreamModelProxy
+    instance_proxy_class = UpstreamInstanceProxy
+
+    def __init__(self, **meta):
+        self.meta = meta
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self.model_proxy_class(objtype, meta=self.meta)
+        return self.instance_proxy_class(obj, meta=self.meta)
+```
+
+Declared once in the model body, next to the ordinary manager, with the field mapping inline - the only place where the two vocabularies meet:
+
+```python
+class Order(models.Model):
+    objects = OrderManager()
+
+    upstream = UpstreamManager(
+        identity={"idOrder": "id"},
+        fields={"sReference": "reference", "dDate": "date"},
+    )
+```
+
+```python
+Order.upstream.update_or_create(**payload)   # obj is None    -> UpstreamModelProxy
+order.upstream.push()                        # obj is the row -> UpstreamInstanceProxy
+```
+
+Nothing simpler covers both ends. A `property` only fires on instances. Putting one on a metaclass covers only the class, and costs a metaclass. Subclassing the proxy classes then moves per-model behaviour into the proxy instead of into the descriptor.
+
+The resemblance is the whole point, and also the whole risk. `Order.upstream.update_or_create(...)` reads like the ORM and is not: it may cross the network, there is no queryset, nothing is lazy, and nothing joins the surrounding transaction. A reader who trusts the shape will assume all of it. Borrowing a familiar interface lowers the cost of the magic only while the differences are documented at least as loudly as the similarities.
+
+What follows from the mechanics, all of it observable:
+
+* **`objtype` is the accessing class, not the declaring one.** A subclass gets a proxy bound to itself, so anything the proxy derives from the model follows inheritance for free.
+* **It is a non-data descriptor**, which cuts both ways. A subclass can switch the whole mechanism off with `upstream = None`, because that is just a class attribute. An entry in the instance `__dict__` would shadow it - Django never creates one, but that is a property of Django, not a guarantee.
+* **Nothing is cached.** A fresh proxy is built on every access, so `Order.upstream is Order.upstream` is `False`. Two consequences: an expression naming it twice builds two proxies, and tests must patch the proxy *class*, never the object it returns.
+* **The meta is shared by reference** across every proxy the descriptor ever returns. Proxies must treat it as read-only.
+* **Django's metaclass never sees it.** `ModelBase.add_to_class` calls `contribute_to_class` only when the attribute has one, and falls back to a plain `setattr` otherwise. Despite the name, `UpstreamManager` is not a `models.Manager` and has no such method, so `_meta` ignores it entirely - which is exactly what lets it sit beside `objects` without registering as a model manager.
+
+The guard is `if obj is None`, for the reason given above. Writing `if obj:` here would hand the model-level proxy to any row that happens to be falsy.
+
+## Descriptors on dunder methods
+
+Assigning a descriptor to `__str__`, `__repr__` or another special method works, and is occasionally the only thing that does. Two independent abstract mixins that each want a say in `__str__` cannot both use a plain `def`: the MRO picks one, and the combination of the two becomes unreachable. Installing the same descriptor on both defers the choice to a runtime check on the actual instance.
+
+There is one rule, and the traceback does not point at it. **`__get__` must return a callable, not the finished value.** `str(obj)` looks up `__str__` on the type, invokes the descriptor, then *calls* whatever comes back:
+
+```python
+class Stringify:
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return f"<{type(obj).__name__}>"   # a str, not a callable
+
+class Thing:
+    __str__ = Stringify()
+```
+```
+>>> str(Thing())
+TypeError: 'str' object is not callable
+```
+
+Return an inner function that builds the string and it works. Returning `self` on class access keeps `Thing.__str__` introspectable.
+
+The second half is that **special-method lookup skips the instance `__dict__` entirely**. CPython resolves `__str__` on the type, so the non-data shadowing rule does not apply here - an instance cannot override it:
+
+```python
+>>> p = Plain()                                    # Plain defines __str__ normally
+>>> p.__dict__["__str__"] = lambda: "from the instance"
+>>> str(p)
+'from the class'
+```
+
+## The cost of the magic
+
+Readability wins. Descriptors are magic, and magic makes code harder to read for juniors and for anyone who is not deep in Python - which is most readers, most of the time.
+
+The trap is that nobody reaches for a descriptor *against* readability. You reach for one in its name: to kill repetition, to keep a rule in one place, to shorten call sites. So "is this more readable" is not a question you can answer honestly - you already believe it is. The real question is whether you are looking at a genuine gain or at a bias, either over-technicality or confirmation of a design you have already committed to.
+
+In concrete terms: **is the cost of the magic lower or higher than the increment in developer experience it buys?**
+
+That cost is real, and you are not the one who pays it. It falls on whoever reads the code next and has to know that assignment is not assignment. A quick way to price it: do you actually know what happens when you set a value on a bound Django model instance? On a Pydantic model?
+
+For Pydantic the answer surprises most people. `validate_assignment` is documented as *"Whether to validate the data when the model is changed. Defaults to `False`."* Setting a field on a Pydantic model does not validate it. `revalidate_instances` defaults to `'never'`. If you cannot answer that for libraries you use daily, that is the measure of what the magic costs.
+
+One failure mode is worth knowing because it is what the cost looks like in practice. **State stored on the descriptor is shared.** There is one descriptor object on the class, not one per instance, so anything written to `self` inside it belongs to every instance of the owner at once. The Descriptor HowTo runs into the same wall from the other side, with a hardwired private name: *"each instance can only have one logged attribute and that its name is unchangeable."* The way out is to key by instance - which is what `__set_name__` plus a private key in the instance `__dict__` is for, and it is already two concepts deep before the descriptor does anything useful.
+
+## When a descriptor earns its place
+
+For calibration: a production Django/DRF codebase of a few hundred models and views contained exactly **two** classes implementing the protocol, both non-data, with no `__set__`, no `__delete__` and no `__set_name__` anywhere - next to three functions returning a plain `property`. That is the ratio to expect. Descriptors are load-bearing in the frameworks you import, and rare in the code you write on top of them.
+
+**There is a middle ground before the protocol.** A function returning a built-in `property` gives you a parameterised descriptor with nothing new to learn:
+
+```python
+def entity_field(key):
+    return property(lambda self: self._data[key])
+
+class Row:
+    name: str = entity_field("name")
+    status: str = entity_field("status")
+```
+
+The reader sees a `property`, which they already know, and it costs one function. In practice this covers most of what people write a descriptor class for: delegating to a related object, exposing one key of a raw payload, folding two stored fields into one virtual one.
+
+It has a trap of its own - the annotation is a lie:
+
+```python
+>>> Row.__annotations__["name"]
+<class 'str'>
+>>> type(Row.__dict__["name"])
+<class 'property'>
+```
+
+A type checker reads `str`. At runtime the class attribute is a `property`, and it is the *getter's* return type that determines what you actually get.
+
+The conditions Django meets and most application code does not:
+
+* **Many call sites you do not control.** A framework, a library, an API used across teams. When the descriptor and its call sites live in the same module, a `property` or an explicit method says the same thing and hides nothing.
+* **Bookkeeping that must not drift.** Two pieces of state that have to stay consistent on every single write, where forgetting is a real bug rather than a hypothetical one.
+* **Behaviour worth writing down.** If you would not document it, the reader will not discover it.
+
+Otherwise, in order of preference: a plain attribute; `dataclasses`; `property` for one attribute on one class; `functools.cached_property` for a computed value; a validated-model library such as Pydantic or attrs when you want a whole typed object. Every one of those is something the next reader has already seen.
 
 ## See also
 
-* <Link to="decorators" /> - higher-level wrapping, often built on the descriptor protocol.
+* <Link to="decorators" /> - the same trade-off, where the cost lands on the name instead of on assignment.
+* [Descriptor HowTo Guide](https://docs.python.org/3/howto/descriptor.html) - the full reference treatment, including pure-Python equivalents of `property`, `staticmethod` and `classmethod`.

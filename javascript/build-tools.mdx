@@ -1,0 +1,212 @@
+---
+title: JavaScript Build Tools
+description: "State of JavaScript and TypeScript build tooling in August 2026: Vite 8 and Rolldown, esbuild, webpack, Turbopack, Rspack, oxc, TypeScript 7, plus package managers, linters and test runners."
+checkedOn: 2026-08-06
+---
+
+Figures come from the npm registry and GitHub on 2026-08-06. npm counts roughly **doubled registry-wide
+between January and April 2026**, so compare packages against each other in the same week, never against
+their own past.
+
+## Summary
+
+**Vite** `8.2.0` collapsed its long-standing split personality: since 8.0 (2026-03-12) it ships **Rolldown
+as a single unified Rust bundler** for both dev and build. Rollup is gone from the dependency tree and
+esbuild was demoted to an optional peer.
+
+**esbuild** `0.28.1` is still 0.x and its author has said it will stay that way - he describes it as *"a
+late-stage beta"* and is not doing active feature development. It remains the most-downloaded bundler here
+purely on inertia.
+
+**webpack** `5.109.2` is **not in maintenance mode**, contrary to the common belief: 1,222 commits from 47
+contributors in the last year, including 203 in July 2026 alone, and the commits are feature work.
+
+**TypeScript** `7.0.2` is the Go port, shipped 2026-07-08. Real speedups are **7.7x to 11.9x**, not the
+round "10x" in circulation.
+
+**The ownership picture matters more than any benchmark.** Vite, Rolldown, Oxc, Vitest and Vite+ are now
+all owned by **Cloudflare**; Vercel owns Turbopack and Next; ByteDance owns Rspack. This is three vendor
+stacks, not a neutral commons.
+
+## Comparison
+
+| | Version | Released | npm/week | Stars | Commits/12mo | Contributors | Backing |
+|---|---|---|---:|---:|---:|---:|---|
+| **TypeScript** | 7.0.2 | 2026-07-08 | 263,394,364 | 110,079 | 198 | 45 | Microsoft |
+| **esbuild** | 0.28.1 | 2026-06-11 | 258,195,701 | 40,007 | **139** | **11** | none |
+| **Babel** | 8.0.1 | 2026-06-17 | 172,373,937 | 43,971 | 464 | 30 | grants |
+| **Vite** | 8.2.0 | 2026-07-30 | 163,302,198 | 82,227 | 1,250 | **201** | **Cloudflare** |
+| **ESLint** | 10.8.0 | 2026-07-24 | 156,159,541 | 27,445 | 654 | 86 | OpenJS |
+| **pnpm** | 11.20.0 | 2026-08-03 | 152,260,249 | 35,985 | 2,442 | 199 | OSS |
+| **Prettier** | 3.9.6 | 2026-07-21 | 129,572,220 | - | - | - | OSS |
+| **Rollup** | 4.62.4 | 2026-08-01 | 123,110,173 | 26,304 | 342 | 48 | independent |
+| **Vitest** | 4.1.10 | 2026-07-06 | 89,357,805 | 16,920 | 1,144 | 191 | **Cloudflare** |
+| **Rolldown** | 1.2.3 | 2026-08-05 | 88,635,823 | 13,867 | 3,239 | 96 | **Cloudflare** |
+| **webpack** | 5.109.2 | 2026-07-28 | 55,447,890 | 65,985 | 1,222 | 47 | OpenJS |
+| **Jest** | 30.4.2 | 2026-05-09 | 46,282,726 | 45,466 | 217 | 54 | OpenJS |
+| **SWC** | 1.15.47 | 2026-07-29 | 40,861,216 | 34,166 | 1,014 | 51 | none |
+| **oxlint** | 1.77.0 | 2026-08-03 | 14,626,566 | 22,233 | - | 157 | **Cloudflare** |
+| **Biome** | 2.5.7 | 2026-08-04 | 12,446,047 | 25,511 | 2,231 | **226** | OSS |
+| **Rspack** | 2.1.8 | 2026-08-04 | 8,484,360 | 12,843 | 2,461 | 91 | ByteDance |
+| **Parcel** | 2.16.4 | 2026-02-02 | 399,839 | 44,026 | **15** | **3** | side project |
+
+## Vite and Rolldown
+
+**Vite 8 shipped 2026-03-12 with Rolldown as its single bundler.** The strongest evidence is the dependency
+tree rather than the announcement:
+
+| | bundler | esbuild |
+|---|---|---|
+| `vite@7.3.6` | `rollup ^4.43.0` | **hard dependency** |
+| `vite@8.0.0` | `rolldown 1.0.0-rc.9` | **peer only** |
+| `vite@8.2.0` | `rolldown ~1.2.0` | **peer only** |
+
+Rollup was removed entirely and esbuild demoted from a required dependency to an optional peer. That ends
+the architecture Vite was known for - esbuild in dev, Rollup in production, with the behaviour differences
+that implied. The transitional `rolldown-vite` package is dead, frozen at 7.3.1 in January 2026.
+
+**Rolldown** reached 1.0.0 on 2026-05-07. Its stability guarantee is narrower than it first appears: option
+names, types and plugin hook signatures stay backward-compatible, but **output behaviour explicitly does
+not** - dead code elimination, chunking and inlining heuristics will keep changing and defaults may shift.
+Its own docs still mark minification and HMR "WIP" after 1.0. Its 88.6M weekly downloads against 13,867
+stars is the signature of pure infrastructure.
+
+Vite is also the healthiest project across all four of these JavaScript pages: **1,250 commits from 201
+distinct contributors** in the last year.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## The other bundlers
+
+**esbuild** `0.28.1`. Still 0.x, permanently. Its FAQ is direct: *"I'm not doing active feature development
+for esbuild at the moment"*, describing it as **"a late-stage beta"**, with code splitting and possibly
+HTML as the only remaining planned work. Permanently out of scope: TypeScript type checking, custom AST
+manipulation, **HMR**, module federation. `evanw` has 4,247 commits; the next contributor has 16. **139
+commits in the last year, and zero in May, July or August 2026.** Its 258M weekly downloads are inertia -
+transitive under tsx, tsup, Vitest tooling and every Vite 7-and-earlier install still in service. It is no
+longer in Vite's build path.
+
+**Rollup** `4.62.4` is actively maintained - 342 commits, 48 contributors, regular minors - but its
+principal consumer left. Rolldown's own documentation states its goal is to replace esbuild and Rollup
+inside Vite. No maintainer has called Rollup legacy, so the honest description is healthily maintained on a
+declining trajectory.
+
+**webpack is not in maintenance mode.** This is the most commonly wrong belief in this space. 1,222 commits
+across 47 contributors in the last year, 203 in July 2026 alone, four releases that month, and the commits
+are features rather than upkeep - CSS minification transforms, analyzable ESM output for async WebAssembly,
+parser performance. The maintainers' own explanation for the absence of majors: *"we have experiments, we
+don't need to make major releases often."* Tobias Koppers is not among them any more - he is at Vercel
+working on Turbopack, and recent commits are roughly 60% Alexander Akait.
+
+**Turbopack** has no standalone npm package; it ships inside Next.js, where it became stable and default in
+Next 16. **Rspack** `2.1.8` is ByteDance's webpack-compatible Rust bundler and the third vendor stack.
+**Parcel** `2.16.4` managed **15 commits from 3 contributors** in the last year and is best described as a
+side project now.
+
+<Opinion ring="adopt" date="2026-08-11">
+  esbuild.
+</Opinion>
+
+<Opinion ring="hold" date="2026-08-11">
+  webpack. Still very much alive - see above - but not where new work starts.
+</Opinion>
+
+<Opinion ring="assess" date="2026-08-11">
+  Turbopack and Rspack.
+</Opinion>
+
+## Compilers and type checking
+
+**TypeScript 7.0.2 shipped 2026-07-08 and is the Go port.** The registry proves it: `bin` contains only
+`tsc` - **`tsserver` is gone** - it declares 20 per-platform native binary dependencies, and the unpacked
+size dropped from 24.3 MB to **2.50 MB** because the JavaScript compiler is no longer in the tarball. TS
+6.0 had shipped four months earlier, on 2026-03-23.
+
+**Be precise about the speedup.** Microsoft's own published numbers are *"typically between 8x and 12x on
+full builds"*: VS Code 11.9x, Sentry 8.9x, Bluesky 8.7x, Playwright 8.7x, tldraw 7.7x. So the honest range
+is **7.7x to 11.9x**, not a flat 10x, the 16.7x figure for VS Code requires a non-default `--checkers 8`,
+and these are cold full-compile wall-clock times rather than incremental editing latency. Memory improves
+6-26%. `@typescript/native-preview` is frozen and superseded, though still pulling 9.89M weekly from stale
+lockfiles.
+
+**Babel's funding-crisis narrative needs updating.** `@babel/core` 8.0.0 shipped 2026-06-16 - the first
+major in seven years - with 464 commits from 30 contributors, funded by grants from the Sovereign Tech
+Agency, Igalia and Tidelift. **SWC**, by contrast, shows no backing entity in its metadata despite 40.9M
+weekly downloads and being the engine behind Node's own type stripping.
+
+**oxc** supplies `oxlint` `1.77.0` (14.6M weekly) and `oxfmt` `0.62.0`, which is still 0.x. Since Vite 8
+propagates Oxc as well as Rolldown, most Vite users now depend on it a layer deeper than they track.
+
+<Opinion ring="trial" date="2026-08-11">
+  TypeScript 7, the Go port.
+</Opinion>
+
+## Linters, formatters and test runners
+
+**ESLint** `10.8.0` at 156.2M weekly is still the default, under OpenJS and **deficit-funded**. **Biome**
+`2.5.7` has the second-broadest contributor base in this document at **226 people**, with Vercel sponsoring
+its type-inference work. **Prettier** `3.9.6` remains dominant; its 4.0 alpha has not moved since November
+2025.
+
+**Vitest** `4.1.10` at 89.4M weekly has overtaken **Jest** `30.4.2` at 46.3M. Jest is now an OpenJS project
+with Meta stepped back. For library bundling, **tsup is unmaintained by its own README** (last release
+2025-11-12) and points at **tsdown**, which is Cloudflare-backed but still `0.22.14`; **unbuild** is
+similarly soft-EOL in favour of obuild.
+
+<Opinion ring="adopt" date="2026-08-11">
+  Biome.
+</Opinion>
+
+<Opinion ring="adopt" date="2026-08-11">
+  Vitest.
+</Opinion>
+
+<Opinion ring="hold" date="2026-08-11">
+  Jest.
+</Opinion>
+
+## Package managers and supply chain
+
+| | Current | Notes |
+|---|---|---|
+| **npm** | 12.0.2 | lifecycle scripts **off by default** since 12.0.0 |
+| **pnpm** | 11.20.0 | 24-hour quarantine on new versions; 12.0 RC is a Rust rewrite |
+| **Yarn Berry** | 4.18.0 | monthly; no Yarn 5. Classic frozen at 1.22.22 since 2024 |
+| **Bun** | 1.3.14 | no stable release in ~3 months |
+| **Deno** | 2.9.4 | no Deno 3; majors shipped incrementally under 2.x |
+
+**Supply-chain security reshaped defaults across three vendors independently in 2025-2026.** npm 12
+(2026-07-08) turned off lifecycle scripts by default and removed `npm shrinkwrap` - though no Node line
+bundles npm 12 yet, so most people have not felt it. pnpm 11 (2026-04-28) shipped `minimumReleaseAge=1440`,
+a **24-hour quarantine on newly published versions**, having already blocked lifecycle scripts in v10 some
+18 months before npm. Deno 2.9 independently shipped the same 24-hour quarantine.
+
+The attacks that caused this: the **chalk/debug compromise** of 2025-09-08 (18 packages, ~2.6B weekly
+downloads, maintainer phished, malicious versions live about two hours), and more seriously **Shai-Hulud**,
+a self-propagating worm that stole credentials and planted GitHub Actions backdoors - roughly 500 packages
+in September 2025, then **700+ npm packages and 27,000+ malicious GitHub repositories in November 2025**,
+with a destructive dead-man's switch. Aggregator pages carrying cumulative figures with 2026 timestamps are
+usually describing the November 2025 wave.
+
+**pnpm 12** is a Rust rewrite where `pacquet` replaces fetching and linking, with lockfile generation
+staying in JavaScript and no API breaks. Its claimed ~30x warm install improvement is vendor-stated and
+unreplicated.
+
+## Consolidation, and who owns it
+
+Most of the meta-framework layer now builds on Vite: Astro, Nuxt, SvelteKit, React Router v8 (a hard Vite 7+
+floor), TanStack Start, SolidStart, Analog, Qwik, Waku, RedwoodSDK, VitePress and Vitest.
+
+The exceptions are large and mostly permanent. **Next.js** uses Turbopack, and that is 54M weekly downloads
+sitting outside - roughly the rest of the category combined. **Docusaurus** and **Gatsby** are still on
+webpack. **Eleventy** uses no bundler by design. And **Remix 3** rejects the premise outright: its
+*"Religiously Runtime"* principle holds that *"designing for bundlers/compilers/typegen leads to poor API
+design"*, and requires all its tests to run without bundling.
+
+The tempting comparison is to how Rust consolidated on hyper and tower, but it breaks in one important way.
+hyper and tower are foundation-neutral and multi-vendor maintained. **Vite, Rolldown, Oxc, Vitest and Vite+
+are all owned by Cloudflare** since June 2026, while Vercel owns the largest holdout (Turbopack and Next) as
+well as Nuxt and Svelte's maintainers, and ByteDance owns the third stack. The independent bench is thin -
+webpack under OpenJS with no full-time engineers, Rollup with one maintainer, esbuild with one author who
+has stopped adding features. The MIT licences and Cloudflare's $1M Vite ecosystem fund are real mitigations,
+not structural ones.

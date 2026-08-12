@@ -1,0 +1,279 @@
+---
+title: Python Web Frameworks
+description: "Comparison of Python web frameworks as of August 2026: Django, FastAPI, Flask, Litestar, Starlette, the ASGI substrate and the framework-agnostic libraries around them."
+checkedOn: 2026-08-06
+---
+
+Figures come from the PyPI JSON API, pypistats and the GitHub API on 2026-08-06. Downloads are per month
+and **count CI, mirrors and container builds** - they measure installs, not people. Compare packages
+against each other, not against their own past. "Humans/12mo" counts distinct non-bot commit authors,
+which predicts survival better than any other number here.
+
+## Summary
+
+**Django** `6.1` is the only Python web framework with institutional resilience: 216 contributors, three
+paid Fellows, and a four-person releasers team under a foundation. Feature releases land every ~8 months
+on a published schedule.
+
+**FastAPI** `0.141.1` has the most stars of any Python web framework and the second-highest download
+count. It also has **one PyPI maintainer**, and its author wrote 67% of human commits while running a
+VC-backed company built on the framework. Still 0.x after seven years, still classified Beta.
+
+**Flask** `3.1.3` is stable to the point of stillness - 105 commits in a year, 90% of them by one person,
+and the only framework here whose downloads are *falling*.
+
+**Litestar** `2.24.0` has the best-distributed contributor base outside Django and no Pydantic dependency,
+at 0.36% of FastAPI's download volume.
+
+**Starlette** `1.4.1` left ZeroVer in March 2026 and now follows strict SemVer. It also left the encode
+organisation - the repository is owned by one person, who is employed by Pydantic.
+
+## Comparison
+
+| | Version | Released | Interface | Downloads/mo | Humans/12mo | Top author |
+|---|---|---|---|---:|---:|---:|
+| **aiohttp** | 3.14.3 | 2026-07-23 | own | 631,874,236 | 86 | 46% |
+| **Starlette** | 1.4.1 | 2026-08-05 | ASGI | 608,120,868 | 31 | 73% |
+| **FastAPI** | 0.141.1 | 2026-07-29 | ASGI | 568,634,222 | 98 | **67%** |
+| **Flask** | 3.1.3 | 2026-02-19 | WSGI | 206,781,788 | 11 | **90%** |
+| **Django** | 6.1 | 2026-08-05 | both | 55,309,213 | **216** | 23% |
+| **DRF** | 3.17.2 | 2026-08-05 | WSGI | 28,145,932 | 67 | 29% |
+| **Django Ninja** | 1.6.2 | 2026-03-18 | both | 3,144,815 | 20 | 59% |
+| **Litestar** | 2.24.0 | 2026-06-11 | ASGI | 2,043,838 | 79 | 32% |
+
+Starlette and aiohttp outrank FastAPI because nearly every FastAPI install pulls Starlette, and aiohttp is
+as much an HTTP *client* as a server.
+
+## Django
+
+`6.1`, released 2026-08-05. 88,393 stars, 55.3M downloads a month. Requires Python 3.12+.
+
+**The release cadence is a metronome.** Feature releases every ~8 months, LTS every fourth: 5.0
+(2023-12-04), 5.1 (2024-08-07), 5.2 LTS (2025-04-02), 6.0 (2025-12-03), 6.1 (2026-08-05). 6.2 LTS is
+scheduled for April 2027 with extended support to April 2030. Every breaking change ships with a
+documented deprecation timeline and an LTS-to-LTS upgrade path.
+
+**Governance is the strongest here by a distance.** Three paid Django Fellows (Jacob Walls, Natalia
+Bidart, Sarah Boyce) are also the top three committers - the system working as designed. A dedicated
+four-person Releasers team can cut a release; there are 17 teams in total, including an 11-person security
+team, under a 501(c)(3). 1,126 commits from 216 distinct contributors in the last year, and **effectively
+zero bot commits**. Losing any single person changes nothing structural.
+
+**Recent releases absorbed things that used to be third-party.** 6.0 shipped a Background Tasks framework,
+Content Security Policy support and template partials into core; 6.1 added field fetch modes as a structural
+answer to N+1 queries. Django does **not** ship `py.typed`; type checking still needs `django-stubs`.
+
+The async ORM remains a query-execution API rather than an async data layer - transactions still do not work
+in async mode - and 6.0/6.1 carry two silent breaking changes. Both are on <Link to="django" />.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## FastAPI
+
+`0.141.1`, released 2026-07-29. **101,354 stars - more than Django** - and 568.6M downloads a month. The
+PyPI classifier is still `Development Status :: 4 - Beta` after seven years.
+
+Type hints *are* the API: they drive parsing, validation, serialization, dependency injection and OpenAPI
+generation through Pydantic v2. Ships `py.typed`. This is why it won, and it remains the best typed-API
+story in Python.
+
+**The bus factor is the central fact.** `fastapi` has **one PyPI maintainer**. Of ~756 human commits in the
+last year, `tiangolo` wrote 507 (67%) and `YuriiMotov` 110 - two people account for 82%. The mitigation is
+real but partial: releases go through PyPI Trusted Publishing via GitHub Releases, so they are gated on
+repository permissions rather than one person's credentials, and the `fastapi` org has nine public members.
+
+**There is a documented demonstration of what that concentration costs.** After 0.115.0 on 2024-09-17 the
+project shipped **no new minor version for ten months**, until 0.116.0 on 2025-07-07. Then 25 minors landed
+in the following ten months. That gap maps onto the founding of FastAPI Labs, whose seed round led by
+Sequoia was announced 2025-05-05.
+
+**Commercial entanglement is now visible in the package metadata.** `fastapi[standard]` pulls in
+`fastapi-cli[standard]`, which pulls in `fastapi-cloud-cli` - the CLI for the author's commercial
+deployment product, currently in public beta. There is an explicit `fastapi[standard-no-fastapi-cloud-cli]`
+opt-out extra, whose existence indicates the default bundling was contested.
+
+**There is no public commitment to 1.0.** The nearest signal is from Starlette's maintainer, who wrote on
+2026-03-22: *"Sebastián, Starlette is now out of your way to release FastAPI 1.0"* - the ZeroVer dependency
+that partly blocked it is gone. FastAPI has not moved.
+
+The Microsoft/Uber/Netflix names in circulation come from README testimonials by individual engineers, not
+company statements. Treat them as unverified.
+
+Breaking changes live in a flat changelog with no migration guide, and the async threadpool rule is
+inverted from most frameworks. Both are on <Link to="fastapi" />.
+
+<Opinion ring="trial" date="2026-08-11" />
+
+## Flask
+
+`3.1.3`, released 2026-02-19. 72,160 stars, 206.8M downloads a month.
+
+**WSGI only, by design and unapologetically.** `async def` views work through the `flask[async]` extra,
+which runs coroutines in a worker thread via `asgiref`. That buys syntax compatibility, not concurrency -
+there is no event loop serving requests. It is the most honest async story here precisely because it does
+not pretend otherwise.
+
+**Nine releases in three years, and one maintainer.** 105 commits in the last year, of which `davidism`
+wrote 94 - **90%**. Eleven contributors total, most with one or two commits. Only 7 open issues, which
+reflects aggressive triage rather than absence of demand. Flask is a mature, small-surface library that
+genuinely needs little work, but there is no succession visible in the commit record.
+
+Pallets is a fiscal sponsoree of the Python Software Foundation. Whether anyone is paid to maintain Flask
+full-time is unverified.
+
+**There is no Flask 4.** The next version in the changelog is 3.2.0, unreleased, which drops Python 3.9,
+merges `RequestContext` into `AppContext`, and **changes `redirect` to return 303 instead of 302** - a real
+behavioural break. Flask ships `py.typed`, but type hints are for static checking only; they drive no
+validation or injection.
+
+Flask is the only framework here whose downloads declined over the last quarter, from 219.9M in March to
+210.6M in July.
+
+<Opinion ring="hold" date="2026-08-11" />
+
+## Litestar
+
+`2.24.0`, released 2026-06-11. 8,374 stars, 2.0M downloads a month.
+
+**Zero breaking major releases in three years.** The whole 2.x line has held compatibility across 24 minor
+releases at a steady one-to-three-month rhythm since 2.0.0 in August 2023.
+
+**It is genuinely independent of the FastAPI stack.** Its dependencies include `msgspec` and **no Pydantic
+at all**; Pydantic, attrs and dataclasses are optional plug-ins. It has no Starlette dependency either -
+the project began on Starlette and completed the de-coupling in 2022. It shares no runtime code with
+FastAPI.
+
+**The contributor base is the best-distributed outside Django**: 79 contributors, top author at 32%. But
+302 open issues against ~296 human commits a year is the worst backlog-to-size ratio here - more open
+issues than Starlette, Quart, Sanic, Pyramid and Falcon combined. And while contribution is distributed,
+releases are not: every recent release was published by one person, and the governance model could not be
+verified - the project's own organisation and releases pages return 404.
+
+Sync handlers require an explicit `sync_to_thread` rather than being inferred, which is stricter and less
+surprising than FastAPI's automatic behaviour. Ships `py.typed`. Litestar 3.0 has an open milestone with no
+due date; branches indicate it will remove the bundled SQLAlchemy contrib layer and the pagination API.
+
+No production users could be verified.
+
+<Opinion ring="assess" date="2026-08-11" />
+
+## Starlette
+
+`1.4.1`, released 2026-08-05. 12,526 stars, 608.1M downloads a month - higher than FastAPI's, since almost
+every FastAPI install pulls it.
+
+**Two structural changes happened in 2026.**
+
+**It left ZeroVer.** 1.0.0 shipped 2026-03-22 after nearly eight years of 0.x. Per the maintainer's
+announcement it was a stability milestone rather than a rewrite - *"not about reinventing the framework or
+introducing a wave of breaking changes"* - limited to removing long-deprecated code. The project now
+commits to **strict SemVer**. For everything built on it, that is the most consequential governance
+improvement in the async Python stack.
+
+**It left the encode organisation.** `encode/starlette` now redirects to `Kludex/starlette`, personally
+owned by Marcelo Trylesinski. The original creator is credited in the past tense.
+
+**Independent, but not at arm's length.** Two PyPI maintainers rather than FastAPI's one, its own domain,
+its own SemVer policy. But Trylesinski is a member of the `fastapi` GitHub org, `tiangolo` is one of his
+named personal sponsors, he framed 1.0's purpose in FastAPI's terms, and his employer is Pydantic. He wrote
+73% of Starlette's commits, and also the majority of uvicorn's and httpx2's. The async Python foundation
+rests on a small, financially interlinked group.
+
+Recent 1.3.x/1.4.x work is largely request-parsing DoS hardening - an argument against pinning it low. That,
+and the `BaseHTTPMiddleware` contextvars trap, are on <Link to="starlette" />.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## Other frameworks
+
+* **[Django REST Framework](https://www.django-rest-framework.org/)** `3.17.2` - 28.1M downloads a month,
+  four PyPI maintainers, and Tom Christie no longer runs it day to day. Community-maintained and stable.
+  Does **not** ship `py.typed`.
+* **[Django Ninja](https://django-ninja.dev/)** `1.6.2` - FastAPI-style typed APIs inside Django, now at
+  3.1M downloads a month, **ahead of Litestar**. One author wrote 59% of commits and is the sole PyPI
+  maintainer.
+* **[aiohttp](https://docs.aiohttp.org/)** `3.14.3` - highest raw download count here, though two thirds of
+  its commits are bots. Genuinely multi-maintainer under the `aio-libs` org. Still the standard async HTTP
+  client as much as a server.
+* **[Falcon](https://falcon.readthedocs.io/)** `4.3.1` - the only one here supporting both WSGI and ASGI
+  from a single codebase.
+* **[Tornado](https://www.tornadoweb.org/)** `6.5.7` - predates asyncio, still releasing, and one person
+  wrote 85% of commits.
+* **[Sanic](https://sanic.dev/)** `25.12.1` - 35 commits in a year against 18,641 stars. The clearest
+  fading signal among mid-size frameworks.
+* **[Quart](https://quart.palletsprojects.com/)** `0.21.0` - Pallets' ASGI answer, 25 commits a year, still
+  0.x with no verified 1.0 plan. Effectively parked.
+* **[Pyramid](https://trypyramid.com/)** `2.1` - PyPI classifier is `Development Status :: 6 - Mature`,
+  which is accurate. Six contributors in the last year.
+* **[Bottle](https://bottlepy.org/)** `0.13.4` - 10.9M downloads a month against **9 commits a year**.
+  Feature-complete by design, maintenance-only in practice.
+* **[Robyn](https://robyn.tech/)** `0.88.0` - Rust-backed server, 7,358 stars but 12,938 downloads a month.
+  A ~570:1 star-to-download ratio: stars measuring curiosity about "Rust + Python", not adoption.
+* **[BlackSheep](https://www.neoteroi.dev/blacksheep/)** `2.6.3` and **Emmett** `2.8.1` - competent,
+  well-typed, and used by almost nobody (38,898 and 377 downloads a month respectively).
+
+Dead, with evidence: **Vibora**, **molten** and **apistar** are all GitHub-archived with final releases in
+2018-2020. **Japronto** has had no release since 2018. **CherryPy** has not released since June 2024.
+**Masonite** was abandoned after the death of its creator Joe Mancuso - the repository states it will
+receive no further updates including security fixes, and PyPI marks it `Development Status :: 7 - Inactive`;
+a small community successor exists at `masonite-framework`.
+
+Two corrections to widely-repeated claims: **web2py is alive** (v3.1.1, December 2025 - its PyPI package is
+frozen at 2012 because PyPI was never its distribution channel), and **Responder is alive** - Kenneth Reitz
+made 99 commits and shipped two releases in July 2026.
+
+## Framework-agnostic libraries
+
+Most of the concerns below are solved by libraries that do not care which framework you picked. That is why
+the framework choice is smaller than it looks - and why the more consequential risk is which *library* you
+bet on.
+
+**The substrate.** ASGI is settled - the specification is effectively frozen. Servers: `uvicorn`,
+`gunicorn`, `hypercorn`, `granian`. Granian has real but small adoption. **The encode organisation is
+hollowed out**: `encode/uvicorn` and `encode/starlette` now redirect to `Kludex/*` and are very active,
+while what stayed behind - `httpx`, `httpcore` - stalled, and `databases`, `orm`, `typesystem` and
+`broadcaster` are archived.
+
+**Validation.** Pydantic v2 is the default and v1 support has been removed from FastAPI. `msgspec` is the
+faster, smaller alternative and is what Litestar uses. Pydantic Inc. is a funded company; its business model
+is Logfire, not the library.
+
+**Database.** SQLAlchemy 2.x with async support, Django's ORM, or `psycopg3`/`asyncpg` directly; `alembic`
+for migrations. `SQLModel` shares FastAPI's author and bus factor. See also <Link to="sqlalchemy" /> and
+<Link to="/database" />.
+
+**HTTP client.** This changed in 2026. `httpx` stalled and was superseded by **`pydantic/httpx2`** -
+repository created 2026-05-11, 69M downloads a month within three months - and Starlette's `TestClient` now
+emits a deprecation warning for plain httpx. Contrary to the 2023 narrative, `requests` is **not** in
+maintenance mode.
+
+**Auth.** `PyJWT` and `Authlib` are the healthy options, both hammered by CVEs and both responsive.
+**`python-jose` and `passlib` are dead**, and `fastapi-users` is frozen - all three are still recommended
+by tutorials and should not be used in new work.
+
+**Background jobs.** Django 6.0 shipped a Tasks framework that defines the interface and **ships no worker
+and no durable backend** - its own documentation says production systems need an external worker process
+and a durable queue. FastAPI's docs point at Celery for anything real. Celery is healthy (281 commits, but
+two people carry it) with no 6.x before 2027 at the earliest. `RQ`, `dramatiq`, `huey` and `taskiq` are all
+maintained. **`arq` is formally maintenance-only** by its author's own statement, **`rq-scheduler` is dead**
+(zero commits), and **APScheduler 4.0 has been in alpha for four years** while 3.x carries 52M downloads a
+month on two maintainers. Postgres-as-a-queue (`procrastinate`, `pgqueuer`, `pgmq`) is real and growing fast
+but still an order of magnitude smaller than Celery.
+
+**Observability.** OpenTelemetry Python has **stable traces and metrics, but logs are still marked
+Development** - the API lives under `opentelemetry._logs`, where the underscore is a formal instability
+marker, and breaking changes were still landing in July 2026. Every `opentelemetry-instrumentation-*`
+package remains beta while being downloaded hundreds of millions of times a month. `sentry-sdk` is **MIT** -
+Sentry's FSL relicensing covered the server products, not the SDK. `structlog` carries 112.9M downloads a
+month on one maintainer writing ~92% of commits; `loguru` has 80.9M downloads and no release in 20 months.
+
+**Templating.** `Jinja2` has had **zero commits in a year** - stable rather than abandoned, but worth
+knowing. See <Link to="jinja2" />.
+
+**Packaging and tooling.** `uv` and `ruff` from Astral, which **was acquired by OpenAI on 2026-03-19** and
+joined the Codex team. That is now a dependency on a single vendor's continued interest for a large part of
+the Python toolchain.
+
+The pattern worth noticing: the shared libraries are also shared *concentration*. APScheduler carries 52M
+downloads a month on two maintainers, `structlog` 112.9M on one, Flask 207M on one. Choosing Django over
+FastAPI costs an afternoon; betting on a frozen library costs a migration.

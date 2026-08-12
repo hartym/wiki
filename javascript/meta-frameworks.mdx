@@ -1,0 +1,207 @@
+---
+title: JavaScript Meta-Frameworks
+description: "Comparison of JavaScript and TypeScript meta-frameworks as of August 2026: Next.js, Astro, Nuxt, SvelteKit, React Router, TanStack Start, and the state of React Server Components outside Next."
+checkedOn: 2026-08-06
+---
+
+A **meta-framework** is, in [State of JS](https://2025.stateofjs.com/en-US/libraries/meta-frameworks/)'s
+definition, a framework *"focused on rendering and serving your application"* - routing, SSR, SSG and
+deployment on top of a UI library. The term is the ecosystem's, not the projects': none of them calls
+itself one. Next.js says "a React framework", Nuxt says "full-stack framework", SvelteKit just "framework".
+
+Figures come from the npm registry and GitHub on 2026-08-06. npm counts roughly **doubled registry-wide
+between January and April 2026**, so compare packages against each other in the same week, never against
+their own past.
+
+## Summary
+
+**Next.js** `16.3.0` is the only one shipping React Server Components as a stable default, has annual
+majors on a published schedule, and is the deepest Vercel commitment on this page.
+
+**Astro** `7.1.6` is content-first with islands, has the **most contributors of any project here** (228),
+and has been backed by **Cloudflare since January 2026**. No RSC, deliberately.
+
+**Nuxt** `4.5.2` and **SvelteKit** `2.70.2` are the Vue and Svelte answers; both are Vercel-backed, and
+neither implements RSC - SvelteKit has ruled it out on the record.
+
+**React Router** `8.3.0` absorbed Remix in 2024 and is now three products under two names. Remix 3 is a
+beta that **contains no React at all**.
+
+**TanStack Start** `1.168.37` reached real distribution, sponsor-funded and independent.
+
+## Comparison
+
+| | Version | Released | npm/week | Stars | Contributors | Backing | RSC |
+|---|---|---|---:|---:|---:|---|---|
+| **Next.js** | 16.3.0 | 2026-08-03 | 54,035,511 | 141,635 | 196 | Vercel | **stable, default** |
+| **React Router** | 8.3.0 | 2026-07-22 | 51,516,259 | 56,544 | 103 | Shopify | `unstable_` only |
+| **TanStack Start** | 1.168.37 | 2026-08-05 | 16,780,323 | 14,898 | 215 | sponsors | experimental, off |
+| **Astro** | 7.1.6 | 2026-07-29 | 4,327,531 | 61,576 | **228** | **Cloudflare** | no |
+| **SvelteKit** | 2.70.2 | 2026-07-29 | 2,450,323 | 20,719 | 137 | Vercel | no, on the record |
+| **Nuxt** | 4.5.2 | 2026-08-05 | 1,954,409 | 60,726 | 170 | Vercel | no |
+| **Docusaurus** | 3.10.2 | 2026-07-10 | 1,452,338 | 65,838 | 99 | Meta | no |
+| **Gatsby** | 5.16.1 | 2026-02-10 | 294,343 | 55,936 | **13** | Netlify | no |
+
+## Next.js
+
+`16.3.0` (2026-08-03). 54.0M weekly downloads, 141,635 stars, 196 contributors.
+
+**The release policy is now documented.** Majors ship annually, targeting around 26 October: 14.x
+(2023-10-26), 15.0 (2024-10-21), 16.0 (2025-10-21). The current major is Active LTS; **Maintenance LTS runs
+two years from a major's release**, so 15.x support ends 2026-10-21 and 14.x is already unsupported.
+
+**Next.js 16** made Turbopack stable and default for both `next dev` and `next build` (opt out with
+`--webpack`), introduced **Cache Components** folding `use cache`, PPR and dynamicIO into one flag, renamed
+`middleware.ts` to `proxy.ts` on the Node runtime while deprecating Edge middleware, and removed
+`next lint` along with synchronous `params`/`cookies()`/`headers()`. At the announcement Vercel reported
+that *">50% of development sessions and 20% of production builds on Next.js 15.3+"* were already on
+Turbopack - the one real telemetry number available.
+
+**16.3** cut Turbopack dev memory by 90%, turned on a filesystem build cache by default, added TypeScript 7
+support for `next build` type checking, and switched App Router SSR from Web Streams to native Node
+streams for a claimed +22% under load.
+
+**The Pages Router is not deprecated, but it is frozen.** It still receives security patches. Its docs
+carry `lastUpdated` values from 2024-11 to 2025-05 against 2026-06/07 for the App Router, and every new
+capability - Cache Components, `use cache`, PPR, Instant Navigations - is App-Router-only. The
+often-quoted Vercel commitment to support it "for many years" is from a **2023** discussion and was not
+restated in 2026. No first-party adoption telemetry exists for App versus Pages; percentages in circulation
+are unsourced.
+
+Next ships and uses a **bundled React Canary** rather than the published stable, which is how App Router
+features land ahead of React releases.
+
+<Opinion ring="hold" date="2026-08-11" />
+
+## Astro
+
+`7.1.6` (2026-07-29). 4.3M weekly downloads, 61,576 stars, and **228 contributors - the broadest base of
+any project on this page**. Node 22.12+.
+
+**Backed by Cloudflare since 2026-01-16.** Note the pattern: Cloudflare now backs Astro and, through the
+VoidZero acquisition, Vite - while Vercel backs Next, Nuxt and Svelte.
+
+Two majors landed unusually close together: 6.0 on 2026-03-10 and **7.0 on 2026-06-22**, only 3.5 months
+apart, because 7 is largely the stabilisation of what 6.x shipped experimentally.
+
+* **Astro 6** rebuilt the dev server on Vite's Environment API so the *production* runtime runs in dev,
+  which kills the "works in dev, breaks on Workers" class of bug. Plus a built-in Fonts API, stable Live
+  Content Collections and stable CSP.
+* **Astro 7** replaced the Go `.astro` compiler with a **Rust** one, moved to **Vite 8 + Rolldown**, and
+  introduced Sätteri, a Rust Markdown/MDX pipeline that is now the default. Claimed 15-61% faster builds,
+  on Astro's own benchmarks. It also added `astro dev --background` with **automatic coding-agent
+  detection** and `astro dev --json` structured logs - no other major framework ships agent detection in
+  its dev server.
+
+**Islands are the architecture:** all client JavaScript is stripped unless a `client:*` directive applies,
+and server islands (stable since Astro 5) let dynamic fragments stream into a cached shell. It is
+UI-library-agnostic - React, Vue, Svelte, Solid and Preact all mount as islands - which is the main
+structural difference from everything else here.
+
+**Astro DB was removed in 7.0**, with the team stating they no longer had the bandwidth and were *"not as
+interested as we once were"*. Astro Studio was shut down in 2025. Use Drizzle, Kysely, Prisma or
+`node:sqlite`.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## Nuxt and SvelteKit
+
+**Nuxt** `4.5.2` (2026-08-05). 1.95M weekly downloads, 60,726 stars, 170 contributors. **NuxtLabs was
+acquired by Vercel on 2025-07-08.** Supports SSG, SSR, ISR and per-route hybrid rendering; Vue server
+components remain experimental. Built on Nitro, which is itself mid-migration (see
+<Link to="web-frameworks" />).
+
+**SvelteKit** `2.70.2` (2026-07-29), with `3.0.0-next.14` in preview. 2.45M weekly downloads, 20,719 stars,
+137 contributors. Vercel employs the core maintainers. Supports SSG, SSR, SPA and streaming, with remote
+functions experimental. **It has ruled out React Server Components on the record** - which for a Svelte
+framework is less a rejection than a statement that the RSC model is React-specific.
+
+<Opinion ring="hold" date="2026-08-11">
+  Both.
+</Opinion>
+
+## React Router, and the Remix confusion
+
+There are **three products under two names**, and most write-ups get this wrong.
+
+* **2024-05-15** - the merge is announced: *"What we planned to release as Remix v3 is now going to be
+  released as React Router v7."* Remix packages take *"a little nap."*
+* **2024-11-22** - React Router **v7.0.0** ships.
+* **2025-05-28** - *"Wake up, Remix!"* The Remix **name is revived for a new framework that is not React
+  at all** - its own runtime, Fetch-API routes, no RSC.
+* **2026-06-17** - React Router **v8.0.0**, a cleanup major: drops the `react-router-dom` package, ESM-only,
+  ES2022, Node 22.22+, React 19.2.7+, Vite 7+.
+
+**End of life:** v8 declared React Router v6 and Remix v2 EOL as of 2026-06-17, so neither receives
+security updates. React Router **v7 is still supported** - `7.18.2` shipped 2026-07-28, after v8.3.0. The
+`@remix-run/*` packages are frozen at 2.17.5 and still depend internally on `react-router@6.30.4`; they
+carry **no npm `deprecated` flag**, so tooling will not warn you.
+
+**Remix 3** is at `3.0.0-beta.5` with 24,519 weekly downloads and its own blog stating *"not production
+ready yet."*
+
+React Router moved to open governance in June 2025, with a steering committee and a five-stage RFC process
+- the only project on this page to do so.
+
+<Opinion ring="adopt" date="2026-08-11" />
+
+## Other meta-frameworks
+
+* **[TanStack Start](https://tanstack.com/start)** `1.168.37` - 16.8M weekly downloads and 215
+  contributors, independent and sponsor-funded. SSR, SSG, SPA, streaming and server functions; RSC is
+  experimental and off by default. A `@tanstack/solid-start` exists too.
+* **[SolidStart](https://start.solidjs.com/)** `2.0.0` (2026-08-04) - 97,264 weekly downloads, 19
+  contributors. The old `solid-start` package from 2024 is dead; `@solidjs/start` is the live one.
+* **[Analog](https://analogjs.org/)** `2.6.4` - Vite plus Nitro for Angular. Community-run; any official
+  Angular-team endorsement is unverified.
+* **[Qwik Router](https://qwik.dev/)** - `@qwik.dev/router` has been at `2.0.0-beta.38` and **Qwik 2.0 has
+  been in beta for roughly 2.5 years**. Builder.io is a sponsor, not the owner, since March 2024.
+* **[Docusaurus](https://docusaurus.io/)** `3.10.2` - Meta-backed, 99 contributors, the default for
+  documentation sites.
+* **[VitePress](https://vitepress.dev/)** `1.6.4` - **no release in 12 months**, with `2.0.0-alpha.19` in
+  preview.
+* **[Eleventy](https://www.11ty.dev/)** `3.1.6` - SSG only, no UI framework, and **four contributors**.
+  Zach Leatherman joined Font Awesome in 2024.
+* **[Waku](https://waku.gg/)** `1.0.0-beta.8` - RSC-first with `'use client'` as the opt-out. Never reached
+  1.0.
+* **[RedwoodSDK](https://rwsdk.com/)** `1.6.0` - RSC by default, but locked to Cloudflare Workers.
+
+**Wound down:** **Redwood GraphQL** - `@redwoodjs/core@8.9.0` (2025-10-21) announced the wind-down, and the
+project managed 33 commits from 8 contributors in the last year. The community fork CedarJS has 142 stars,
+which is a high-risk successor. **Gatsby** is not archived but managed **127 commits from 13 contributors**,
+most of them dependabot in `/starters`. **Aleph.js** was archived 2025-07-06. **Create React App** was
+sunset 2025-02-14.
+
+<Opinion ring="assess" date="2026-08-11">
+  TanStack Start.
+</Opinion>
+
+## React Server Components outside Next.js
+
+Six implementations exist. **Only Next.js ships RSC stable and on by default.** The two others with real
+distribution both ship it off by default and marked unstable.
+
+| | RSC | Stability | Default |
+|---|---|---|---|
+| **Next.js** | yes | **stable** | **yes** (App Router) |
+| **React Router** v7/v8 | yes | `unstable_` | opt-in |
+| **TanStack Start** | yes | experimental | opt-in |
+| **Waku** | yes | beta | yes |
+| **RedwoodSDK** | yes | stable 1.x | yes, Cloudflare-only |
+| **Parcel** | yes | beta, unchanged 17 months | opt-in |
+| **Expo Router** | yes | experimental, 21 months | opt-in, two flags |
+| **Remix 3** | no React at all | - | - |
+| Astro, Nuxt, SvelteKit, Qwik, SolidStart | no | - | - |
+
+**Vite did not ship RSC in core.** It lives in `@vitejs/plugin-rsc` - official by organisation, at
+`0.5.33` after **60 versions without reaching 1.0**. The enabler is Vite's Environment API, which formalises
+separate client/ssr/rsc module graphs, and Vite's own documentation still says *"We don't recommend
+switching to Environment API yet."*
+
+The detail that gets least attention: **Vite's official RSC plugin runs on React's webpack bindings**. It
+peer-depends on `react-server-dom-webpack`; the roadmap items to split out `react-server-dom-vite` and stop
+using the webpack package are both still unchecked, and `react-server-dom-vite` has zero published versions
+on npm.
+
+RSC also had a bad security year - two advisories in nine days in December 2025, one of them covering
+**source code exposure** through the server rendering boundary.
