@@ -1,37 +1,15 @@
 ---
 title: Amazon Web Services (AWS)
-description: Amazon EC2
+description: "AWS notes: an IAM policy for scoped S3 bucket access, and what happened to the old Lambda tooling."
+checkedOn: 2026-08-11
 ---
 
-## Amazon EC2
-
-## Amazon S3
-
-## Amazon Lambda
-
-List of tools to review about writing/versionning/testing/releasing/deploying code on AWS Lambda. For now, only a rude list of links. 
-
-* [Kappa - Serverless deployment tool](https://github.com/garnaat/kappa)
-* [Amazon Lambda Best Practices - Development and Deployment](http://www.mot.la/2014-12-07-amazon-lambda-best-practices-development-and-deployment.html)
-* [Node Lambda - Deploy Node.js projects to AWS Lambda](https://github.com/rebelmail/node-lambda)
-* [Node Lambda Template](https://github.com/rebelmail/node-lambda-template)
-* [AWS Lambda: Event-driven Code in the Cloud - SlideShare](http://fr.slideshare.net/AmazonWebServices/aws-lambda-eventdriven-code-in-the-cloud-50364719)
-* [New Deployment Options for AWS Lambda - AWS Blog](https://aws.amazon.com/fr/blogs/compute/new-deployment-options-for-aws-lambda/)
-* [AWS Lambda Blog Posts](https://aws.amazon.com/fr/blogs/compute/category/aws-lambda/)
-
-## Amazon Cloudfront
-
-You can configure ngx_pagespeed to work with cloudfront:
-
-```nginx
-pagespeed on;
-pagespeed FileCachePath /var/ngx_pagespeed_cache;
-pagespeed Domain http://romain.dorgueil.net/;
-pagespeed MapRewriteDomain d3nxtp0ub5fopc.cloudfront.net romain.dorgueil.net;
-```
 ## Identity and Access Management (IAM)
 
-Policy to access an S3 bucket (or many buckets).
+Read and write access to a set of buckets matching a pattern, and nothing else. The two statements
+are deliberate: `ListBucket` acts on the **bucket** ARN, `GetObject`/`PutObject` act on the
+**object** ARNs under it. Putting them together in one statement is the usual reason a policy looks
+right and denies everything.
 
 ```json
 {
@@ -59,3 +37,18 @@ Policy to access an S3 bucket (or many buckets).
     ]
 }
 ```
+
+`"Version": "2012-10-17"` is not a date to update - it is the
+[policy language version](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_version.html),
+and it is still the current one.
+
+## Lambda
+
+The deployment tooling this page used to list has aged out. `kappa` has not moved since 2021, and
+the rest of it predated AWS shipping its own answers: SAM, CDK and container image support cover
+what those tools were for.
+
+* [AWS Lambda blog posts](https://aws.amazon.com/blogs/compute/category/compute/aws-lambda/) - the
+  release feed, and the only link here that stays current on its own.
+* [node-lambda](https://github.com/motdotla/node-lambda) - still maintained, if you want a small
+  deploy tool rather than a framework. Note it moved from the `rebelmail` org.
