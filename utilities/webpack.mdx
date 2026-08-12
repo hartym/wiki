@@ -1,19 +1,128 @@
 ---
 title: Webpack (Archive)
-description: Archived content about Webpack 1. For current documentation, see the official Webpack site.
+description: "Archived Webpack 1 notes: the Django integration with hot module replacement, and config examples from that era."
+checkedOn: 2026-08-10
 ---
 
-> **Note**: This page contains archived information about Webpack 1. Webpack has evolved significantly since this was written (now at version 5+). For current documentation, please visit the [official Webpack documentation](https://webpack.js.org/).
+> **Note**: everything on this page targets Webpack 1. Webpack is at version 5, and the v1
+> documentation is gone: `webpack.github.io/docs/` answers 404 and there is no `v1.webpack.js.org`.
+> For current documentation, see the [official Webpack site](https://webpack.js.org/).
 
-## Configuration
+## Webpack 1 with Django
 
-* Reference (Webpack 1): [Configuration - Webpack 1 Docs](https://webpack.github.io/docs/configuration.html)
+Config used inside a Django project, with the hot module replacement plugin set up.
+`webpack-bundle-tracker` writes the built bundle names into `webpack-stats.json`, which the Django
+side reads to resolve the hashed filenames.
 
-## Examples (old)
+```javascript
+var path = require("path")
+var webpack = require('webpack')
+var BundleTracker = require('webpack-bundle-tracker')
 
-* [LeanJS Webpack Config Example](https://github.com/hartym/LeanJS/tree/master/config/webpack)
-* [Mozilla Neo Config Example](https://github.com/mozilla/neo/tree/master/config)
+module.exports = {
+        context: __dirname,
+        entry: {
+            package1: [
+                'webpack-dev-server/client?http://localhost:3000',
+                'webpack/hot/only-dev-server',
+                './my_assets_path/package1'
+            ],
+            package2: [
+                'webpack-dev-server/client?http://localhost:3000',
+                'webpack/hot/only-dev-server',
+                './my_assets_path/package2'
+            ]
+        },
+        output: {
+            path: path.resolve('./static/'),
+            filename: '[name]-[hash].js',
+            publicPath: 'http://localhost:3000/'
+        },
+        plugins: [
+            new webpack.HotModuleReplacementPlugin(),
+            new webpack.NoErrorsPlugin(),
+            new BundleTracker({filename: './webpack-stats.json'})
+        ],
+        module: {
+            loaders: [
+                {test: /\.s[ac]ss$/, loaders: ["style", "css", "sass?sourceMap"]},
+                {test: /\.jsx?$/, exclude: /node_modules/, loaders: ['react-hot', 'babel']},
+            ]
+        },
+        resolve: {
+            modulesDirectories: ['node_modules', 'bower_components'],
+            extensions: ['', '.js', '.jsx']
+        },
+        externals: {
+            'jquery': 'jQuery',
+        }
+    }
+```
 
-## Related tools
+Instead of `webpack --watch`, a `server.js` that runs the dev server with hot reload:
 
-* Webpack Dev Server (v1): [Webpack Dev Server - Webpack 1 Docs](https://webpack.github.io/docs/webpack-dev-server.html)
+```javascript
+var webpack = require('webpack')
+var WebpackDevServer = require('webpack-dev-server')
+var config = require('./webpack.config')
+
+new WebpackDevServer(webpack(config), {
+      publicPath: config.output.publicPath,
+      hot: true,
+      inline: true,
+      historyApiFallback: true
+    }).listen(3000, '0.0.0.0', function (err, result) {
+      if (err) {
+        console.log(err)
+      }
+
+      console.log('Listening at 0.0.0.0:3000')
+    })
+```
+
+Matching `package.json`:
+
+```json
+{
+  "name": "acme",
+  "version": "...",
+  "description": "Boilerplate",
+  "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@...acme.git"
+  },
+  "author": "",
+  "license": "GFYL",
+  "homepage": "https://.../...#readme",
+  "devDependencies": {
+    "babel": "^6.3.26",
+    "babel-core": "^6.3.26",
+    "babel-loader": "^6.2.0",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-react": "^6.3.13",
+    "babel-preset-stage-0": "^6.3.13",
+    "babel-preset-stage-1": "^6.3.13",
+    "babel-preset-stage-2": "^6.3.13",
+    "css-loader": "^0.23.1",
+    "node-sass": "^3.4.2",
+    "react": "^0.14.3",
+    "react-hot-loader": "^1.3.0",
+    "sass-loader": "^3.1.2",
+    "style-loader": "^0.13.0",
+    "webpack": "^1.12.9",
+    "webpack-bundle-tracker": "0.0.9",
+    "webpack-dev-server": "^1.14.0"
+  },
+  "dependencies": {
+    "bootstrap": "^4.0.0-alpha.2"
+  }
+}
+```
+
+## Config examples from that era
+
+* [LeanJS](https://github.com/hartym/LeanJS/tree/master/config/webpack), my own starter.
+* [Mozilla Neo](https://github.com/mozilla/neo/tree/master/config), archived by Mozilla in 2019.
+
+See also [JavaScript](/wiki/javascript/).

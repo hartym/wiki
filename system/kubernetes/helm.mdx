@@ -1,10 +1,10 @@
 ---
 title: Helm
 description: Helm, the Kubernetes package manager - chart structure, rendering and linting locally, and the release lifecycle (install, upgrade, rollback).
-checkedOn: 2026-07-20
+checkedOn: 2026-08-11
 ---
 
-[Helm](https://helm.sh/) is the package manager for Kubernetes. A **chart** is a templated bundle of manifests, an **install** of a chart into a cluster is a **release**, and each change produces a numbered **revision** you can roll back to. Helm 3 talks to the cluster directly (no more Tiller). Commands below checked with helm v3.15.2.
+[Helm](https://helm.sh/) is the package manager for Kubernetes. A **chart** is a templated bundle of manifests, an **install** of a chart into a cluster is a **release**, and each change produces a numbered **revision** you can roll back to. Helm 3 talks to the cluster directly (no more Tiller). Commands below checked with helm v3.21.3.
 
 ## A chart's structure
 
@@ -19,17 +19,28 @@ mychart/
   Chart.yaml          # name, version, appVersion
   values.yaml         # default values, overridable at install time
   .helmignore
+  charts/             # vendored subcharts, empty at first
   templates/
     deployment.yaml
     service.yaml
     serviceaccount.yaml
     ingress.yaml
+    httproute.yaml    # Gateway API route, disabled by default
     hpa.yaml
     NOTES.txt         # message printed after install
     _helpers.tpl      # reusable template snippets
+    tests/
+      test-connection.yaml   # a pod run by: helm test <release>
 ```
 
 Templates are Go templates; `{{ .Values.foo }}` pulls from `values.yaml` (or from overrides at install time).
+
+Two files in that scaffold are opt-in rather than always applied, in two different ways.
+`httproute.yaml` is the Gateway API counterpart of the ingress and stays behind
+`httpRoute.enabled: false` in `values.yaml`, so a plain render omits it entirely.
+`templates/tests/` holds manifests annotated `"helm.sh/hook": test`: `helm template` still prints
+them, but being hooks they are not created on install, only when you call `helm test <release>`
+against a live cluster.
 
 ## Render and lint locally (no cluster needed)
 

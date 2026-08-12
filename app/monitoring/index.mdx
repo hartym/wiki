@@ -1,75 +1,63 @@
 ---
-description: "Monitoring and status-page tools: SaaS and self-hosted options for metrics, alerting and incident pages."
 title: Monitoring
+description: "Monitoring notes: metrics and alerting stacks, error tracking, status pages, and the current command to run the Datadog Agent in a container."
+checkedOn: 2026-08-12
 ---
 
-## Generic / multipurpose
+Three different jobs, often confused: collecting metrics and alerting on them, catching
+application errors, and telling users what is broken. Most setups end up with one tool for each.
 
-* <Link to="prometheus" /> - the open-source Prometheus + Alertmanager + Grafana stack (pull-based, self-hosted).
-* Datadog: https://www.datadoghq.com/ (SaaS, ~15 $ / month / host)
+## Metrics and alerting
 
-## Status page applications
+* <Link to="prometheus" /> - Prometheus, Alertmanager and Grafana, pull-based, self-hosted.
+* [Datadog](https://www.datadoghq.com/) - SaaS, agent on every host. Container command below.
+* [New Relic](https://newrelic.com/) - SaaS, the historical application performance monitoring one.
 
-* Statuspage: https://www.statuspage.io/ (SaaS, 30 to 400 $ / month)
-* Cachet: https://github.com/cachethq/Cachet (PHP)
-* Stashboard: https://github.com/twilio/stashboard (Python on GAE)
+On Kubernetes these are installed as charts, see <Link to="/system/kubernetes/helm/" />.
 
-## Software
+## Error tracking
 
-* New relic: http://newrelic.com/ (SaaS, 50 to 150 $ / month, free lite version available too)
-* Sentry: https://github.com/getsentry/sentry (Python/Django)
-* Hosted Sentry: https://getsentry.com/welcome/ (SaaS, 20 to 200 $ / month)
+* [Sentry](https://sentry.io/) - hosted, and the same product is self-hostable from
+  [getsentry/self-hosted](https://github.com/getsentry/self-hosted) (Docker Compose).
 
-## Datadog
+## Status pages
 
-Pretty standard monitoring app, run as a service. Possible to run the agent in a privileged container.
+A status page is what users read when your infrastructure is down, so it is hosted somewhere
+else than the infrastructure it reports on. That constraint is most of the choice.
 
-### CoreOS unit to run agent
+* [Statuspage](https://www.statuspage.io/) - SaaS, the default answer.
+* [Cachet](https://github.com/cachethq/Cachet) - self-hosted, PHP.
+* Stashboard - Python on App Engine, [archived in 2019](https://github.com/twilio/stashboard),
+  do not start here.
 
-```ini
-[Unit]
-Description=Monitoring Service
+## Running the Datadog Agent in a container
 
-[Service]
-TimeoutStartSec=0
-ExecStartPre=-/usr/bin/docker kill dd-agent
-ExecStartPre=-/usr/bin/docker rm dd-agent
-ExecStartPre=/usr/bin/docker pull datadog/docker-dd-agent
-ExecStart=/usr/bin/bash -c \
-  "/usr/bin/docker run --privileged --name dd-agent -h `hostname` \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /proc/mounts:/host/proc/mounts:ro \
+One agent container per host, with the Docker socket and the host `/proc` and cgroups mounted
+read only:
+
+```shell
+docker run -d --cgroupns host --pid host --name dd-agent \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v /proc/:/host/proc/:ro \
   -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
-  -v /home/core/dd-agent:/etc/dd-agent:ro \
-  -e API_KEY=XXX_API_KEY_HERE_XXX \
-  datadog/docker-dd-agent"
-
-[X-Fleet]
-Global=true
+  -e DD_SITE=datadoghq.com \
+  -e DD_API_KEY=<your api key> \
+  registry.datadoghq.com/agent:7
 ```
 
-### Add etcd watcher
+`DD_SITE` has to match the region your account lives in (it defaults to `datadoghq.com`); point
+it at the wrong one and the agent runs happily while nothing shows up in the interface.
 
-Grab default config to host (needed to mount the volume above anyway):
+What the agent actually sees, checks included:
 
-```
-docker cp dd-agent:/etc/dd-agent .
-```
-
-dd-agent/conf.d/etcd.yaml:
-
-```yaml
-init_config:
-
-instances:
-  - url: "http://10.1.65.1:2379"
-    timeout: 5
+```shell
+docker exec -it dd-agent agent status
 ```
 
-To find the host IP address usable in the agent container, exec a bash and run `ip route`, the default gateway is the host.
+Both come from the [Docker Agent documentation](https://docs.datadoghq.com/containers/docker/)
+and its Agent commands guide, checked in August 2026.
 
-To check if we're good:
-
-```
-docker exec dd-agent service datadog-agent info
-```
+The image and the variable names changed with Agent 6: `datadog/docker-dd-agent` was the Agent 5
+image, it took `API_KEY` rather than `DD_API_KEY` and ran privileged, and its status command was
+`service datadog-agent info`. Recipes older than that, mine included, are worth nothing today.
+The CoreOS unit I used to run it with is kept in <Link to="/system/coreos/" />.

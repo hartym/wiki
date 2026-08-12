@@ -1,6 +1,6 @@
 ---
 title: CoreOS
-description: "CoreOS notes: fleet/fleetctl unit registry errors, the reboot workaround, and local cluster tooling links."
+description: "CoreOS notes: fleet/fleetctl unit registry errors, the reboot workaround, a global fleet unit running the Datadog agent, and local cluster tooling links."
 ---
 
 > **Note**: kept for the archives. CoreOS Container Linux reached end of life on May 26, 2020
@@ -37,6 +37,62 @@ Only solution found (https://github.com/coreos/fleet/issues/969) is to reboot fa
 ```shell
 docker run -it --link postgres.1:postgres --rm postgres sh -c 'exec psql -h "$POSTGRES_PORT_5432_TCP_ADDR" -p "$POSTGRES_PORT_5432_TCP_PORT" -U postgres'
 ```
+## A global unit: the Datadog agent on every node
+
+`Global=true` in the `X-Fleet` section tells fleet to schedule the unit on every machine of the
+cluster, which is what a monitoring agent wants. The `ExecStartPre` lines prefixed with `-` may
+fail without failing the unit, so the same file works on first start and on restart.
+
+```ini
+[Unit]
+Description=Monitoring Service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill dd-agent
+ExecStartPre=-/usr/bin/docker rm dd-agent
+ExecStartPre=/usr/bin/docker pull datadog/docker-dd-agent
+ExecStart=/usr/bin/bash -c \
+  "/usr/bin/docker run --privileged --name dd-agent -h `hostname` \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /proc/mounts:/host/proc/mounts:ro \
+  -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
+  -v /home/core/dd-agent:/etc/dd-agent:ro \
+  -e API_KEY=XXX_API_KEY_HERE_XXX \
+  datadog/docker-dd-agent"
+
+[X-Fleet]
+Global=true
+```
+
+The agent configuration is mounted from the host, so the directory has to exist first. Copying it
+out of the image is the quickest way to get a valid one:
+
+```shell
+docker cp dd-agent:/etc/dd-agent .
+```
+
+Adding a check is then a file in `conf.d`, here `dd-agent/conf.d/etcd.yaml` watching the local
+etcd:
+
+```yaml
+init_config:
+
+instances:
+  - url: "http://10.1.65.1:2379"
+    timeout: 5
+```
+
+The address is the host as seen from inside the container: run `ip route` in the container, the
+default gateway is the host. To check the agent picked the check up:
+
+```shell
+docker exec dd-agent service datadog-agent info
+```
+
+That image (Agent 5), the `API_KEY` variable and the `info` command are all gone from current
+Datadog agents. The command that works today is in <Link to="/app/monitoring/" />.
+
 ## Local cluster tools
 
 * https://github.com/coreos/coreos-vagrant
