@@ -6,7 +6,7 @@ checkedOn: 2026-07-13
 
 [tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
 windows and split panes inside a single terminal. The snippets below are verified on **tmux
-3.2a**. The prefix key is assumed to be the default `C-b` unless stated otherwise.
+3.2a**. Shortcuts are written with <kbd>Ctrl-A</kbd> as the prefix; see the note at the end of the page.
 
 ## Cookbook
 
@@ -42,9 +42,9 @@ tmux ls                 # list running sessions
 tmux attach -t projet   # re-attach (short: tmux a -t projet)
 ```
 
-Press `prefix d` to detach: the session keeps running in the background. `tmux ls` shows what is
-alive, and `tmux attach -t name` jumps back in. `prefix s` runs `choose-tree -Zs`, an interactive
-session picker zoomed to full screen.
+Press <kbd>Ctrl-A</kbd> <kbd>d</kbd> to detach: the session keeps running in the background.
+`tmux ls` shows what is alive, and `tmux attach -t name` jumps back in. <kbd>Ctrl-A</kbd>
+<kbd>s</kbd> runs `choose-tree -Zs`, an interactive session picker zoomed to full screen.
 
 Tip article: [How to detach, list, and re-attach a tmux session?](/blog/en/tips/2026/06/08/detach-list-attach-tmux-session/)
 
@@ -55,9 +55,9 @@ tmux rename-session -t old new   # rename a session
 tmux rename-window new           # rename the current window
 ```
 
-From the keyboard, `prefix $` renames the current session and `prefix ,` renames the current
-window, both through a prompt. Renaming a window by hand also turns off its automatic rename, so
-the name you typed sticks.
+From the keyboard, <kbd>Ctrl-A</kbd> <kbd>$</kbd> renames the current session and
+<kbd>Ctrl-A</kbd> <kbd>,</kbd> renames the current window, both through a prompt. Renaming a
+window by hand also turns off its automatic rename, so the name you typed sticks.
 
 Tip article: [How to rename a tmux session or window?](/blog/en/tips/2026/06/09/rename-tmux-session-window/)
 
@@ -71,9 +71,9 @@ tmux detach-client -t <client>  # detach one specific client
 ```
 
 When several terminals are attached to the same session, `attach -d` grabs it back to where you
-are and kicks the others off. `prefix D` runs `choose-client -Z`, an interactive client picker.
-`attach -x` also sends SIGHUP to the parent process of the client it detaches, which closes, for
-example, the SSH session that started it.
+are and kicks the others off. <kbd>Ctrl-A</kbd> <kbd>D</kbd> runs `choose-client -Z`, an
+interactive client picker. `attach -x` also sends SIGHUP to the parent process of the client it
+detaches, which closes, for example, the SSH session that started it.
 
 Tip article: [How to manage tmux clients (list, kick out, disconnect)?](/blog/en/tips/2026/06/10/manage-tmux-clients/)
 
@@ -84,8 +84,9 @@ tmux switch-client -t other   # move the attached client to session 'other'
 ```
 
 No need to detach and re-attach: `switch-client` moves the current client straight to another
-session, staying inside tmux. From the keyboard, `prefix (` and `prefix )` walk to the previous and
-next session, and `prefix L` toggles back to the last used session. `prefix s` opens
+session, staying inside tmux. From the keyboard, <kbd>Ctrl-A</kbd> <kbd>(</kbd> and
+<kbd>Ctrl-A</kbd> <kbd>)</kbd> walk to the previous and next session, and <kbd>Ctrl-A</kbd>
+<kbd>L</kbd> toggles back to the last used session. <kbd>Ctrl-A</kbd> <kbd>s</kbd> opens
 `choose-tree -Zs` for an interactive picker.
 
 Tip article: [How to switch between tmux sessions without detaching?](/blog/en/tips/2026/06/11/switch-tmux-session-without-detaching/)
@@ -130,9 +131,10 @@ tmux split-window -v   # panes stacked (top / bottom)
 `split-window` cuts the active pane in two and starts a new shell in the freed half. The flag
 names are the usual tmux trap: `-h` ("horizontal") gives a vertical divider, so the panes sit
 side by side, while `-v` stacks them top and bottom. The flag describes the axis of the cut, not
-the visual layout. From the keyboard, `prefix %` does `split-window -h` and `prefix "` does the
-vertical split. Add `-c "#{pane_current_path}"` to open in the current directory, `-b` to insert
-before instead of after, and `-l 30%` to set the new pane's size.
+the visual layout. From the keyboard, <kbd>Ctrl-A</kbd> <kbd>%</kbd> does `split-window -h` and
+<kbd>Ctrl-A</kbd> <kbd>"</kbd> does the vertical split. Add `-c "#{pane_current_path}"` to open in
+the current directory, `-b` to insert before instead of after, and `-l 30%` to set the new pane's
+size.
 
 The `-h`/`-v` names are easy to forget, so it is worth rebinding the splits to keys that match the
 result, `|` for side by side and `-` for stacked (see the sample config below).
@@ -147,10 +149,11 @@ tmux previous-window   # go to the previous window
 tmux last-window       # toggle with the previously active window
 ```
 
-From the keyboard, `prefix n` and `prefix p` step to the next and previous window, and they wrap
-around the ends. `prefix l` (lowercase L) is the useful one: it toggles back and forth between the
-current window and the one you were on before, so jumping to a window and back is two keystrokes.
-It is the window-level twin of `prefix ;`, which toggles the last active pane.
+From the keyboard, <kbd>Ctrl-A</kbd> <kbd>n</kbd> and <kbd>Ctrl-A</kbd> <kbd>p</kbd> step to the
+next and previous window, and they wrap around the ends. <kbd>Ctrl-A</kbd> <kbd>l</kbd>
+(lowercase L) is the useful one: it toggles back and forth between the current window and the one
+you were on before, so jumping to a window and back is two keystrokes. It is the window-level twin
+of <kbd>Ctrl-A</kbd> <kbd>;</kbd>, which toggles the last active pane.
 
 Tip article: [How to navigate between tmux windows?](/blog/en/tips/2026/06/17/navigate-tmux-windows/)
 
@@ -166,8 +169,8 @@ free. On 3.2a the focus stays on the current index (you end up on the swapped-in
 to make it follow the moved window instead, and beware that `-d` has flipped meaning between tmux
 versions. `move-window` slides one window to a new index, but
 that index must be empty, otherwise tmux refuses with `index in use` and changes nothing. From the
-keyboard, `prefix .` opens a prompt running `move-window -t` on the current window. To repack the
-list and remove the gaps left behind, use `renumber-windows`.
+keyboard, <kbd>Ctrl-A</kbd> <kbd>.</kbd> opens a prompt running `move-window -t` on the current
+window. To repack the list and remove the gaps left behind, use `renumber-windows`.
 
 Tip article: [How to reorder tmux windows?](/blog/en/tips/2026/06/18/reorder-tmux-windows/)
 
@@ -182,7 +185,7 @@ Closing a window in the middle of the list leaves its index empty, so the window
 something like `0 3 7`. `move-window -r` renumbers every window in the current session at once
 to a contiguous range starting at `base-index`. Setting `renumber-windows on` in `~/.tmux.conf`
 does the same thing automatically each time a window closes, so the list never grows gaps and
-`prefix 1`, `prefix 2`, ... keep landing where you expect.
+<kbd>Ctrl-A</kbd> <kbd>1</kbd>, <kbd>Ctrl-A</kbd> <kbd>2</kbd>, ... keep landing where you expect.
 
 Tip article: [How to renumber tmux windows and close the gaps?](/blog/en/tips/2026/06/19/renumber-tmux-windows/)
 
@@ -226,12 +229,13 @@ tmux select-pane -L     # focus the pane to the left (-R right, -U up, -D down)
 tmux select-pane -t :.+ # focus the next pane in order, wrapping around
 ```
 
-From the keyboard, `prefix` then an arrow key moves the focus in that direction. The arrow binds
-are repeatable, so within the repeat timeout you can keep tapping arrows without pressing the
-prefix again. `prefix o` cycles to the next pane in order and wraps back to the first. `prefix q`
-runs `display-panes`, which overlays a large number on each pane; type that number to jump
-straight to it. The overlay stays up for `display-panes-time`, 1000 ms by default. To bounce back
-to where you were, `prefix ;` toggles the last active pane.
+From the keyboard, <kbd>Ctrl-A</kbd> then an arrow key moves the focus in that direction. The
+arrow binds are repeatable, so within the repeat timeout you can keep tapping arrows without
+pressing the prefix again. <kbd>Ctrl-A</kbd> <kbd>o</kbd> cycles to the next pane in order and
+wraps back to the first. <kbd>Ctrl-A</kbd> <kbd>q</kbd> runs `display-panes`, which overlays a
+large number on each pane; type that number to jump straight to it. The overlay stays up for
+`display-panes-time`, 1000 ms by default. To bounce back to where you were, <kbd>Ctrl-A</kbd>
+<kbd>;</kbd> toggles the last active pane.
 
 Tip article: [How to move between tmux panes?](/blog/en/tips/2026/06/24/move-between-tmux-panes/)
 
@@ -242,10 +246,11 @@ tmux last-pane     # toggle focus back to the previously active pane
 tmux select-pane -l   # same toggle from the CLI
 ```
 
-`prefix ;` runs `last-pane`: it toggles focus between the current pane and the one you were on
-just before, so bouncing to a pane and back costs one `prefix ;` each way. It is the pane-level
-twin of `prefix l` for windows. `select-pane -l` (lowercase L) does the same thing, and
-`last-pane -Z` keeps a zoomed pane zoomed across the toggle.
+<kbd>Ctrl-A</kbd> <kbd>;</kbd> runs `last-pane`: it toggles focus between the current pane and the
+one you were on just before, so bouncing to a pane and back costs one <kbd>Ctrl-A</kbd>
+<kbd>;</kbd> each way. It is the pane-level twin of <kbd>Ctrl-A</kbd> <kbd>l</kbd> for windows.
+`select-pane -l` (lowercase L) does the same thing, and `last-pane -Z` keeps a zoomed pane zoomed
+across the toggle.
 
 Tip article: [How to jump back to the last active tmux pane?](/blog/en/tips/2026/06/25/return-to-last-active-tmux-pane/)
 
@@ -255,9 +260,10 @@ Tip article: [How to jump back to the last active tmux pane?](/blog/en/tips/2026
 tmux resize-pane -Z   # toggle the active pane to fullscreen and back
 ```
 
-`prefix z` runs `resize-pane -Z`: the active pane expands to fill the whole window, and `prefix z`
-again restores the previous layout. The other panes are only hidden, not closed, and every process
-keeps running, so this is a temporary "give me room to read this" toggle, not a rearrangement.
+<kbd>Ctrl-A</kbd> <kbd>z</kbd> runs `resize-pane -Z`: the active pane expands to fill the whole
+window, and <kbd>Ctrl-A</kbd> <kbd>z</kbd> again restores the previous layout. The other panes are
+only hidden, not closed, and every process keeps running, so this is a temporary "give me room to
+read this" toggle, not a rearrangement.
 While a pane is zoomed, `window_zoomed_flag` is `1` and the status line shows a `Z` next to the
 window name. Splitting, swapping panes, or anything that changes the layout unzooms it
 automatically; switching windows does not, the pane is still zoomed when you come back.
@@ -299,12 +305,13 @@ set -g mouse on   # ~/.tmux.conf: off by default
 ```
 
 The mouse is `off` by default. With `mouse on`, a left-drag enters copy mode and copies the
-selection into the tmux paste buffer on release; paste it back with `prefix ]`. That buffer is
-tmux's own, not the system clipboard, so another application sees nothing unless you pipe copy mode
-to a clipboard tool (`pbcopy`, `xclip`, `wl-copy`). To use the terminal's native selection and
-clipboard instead, hold `Shift` while dragging, which bypasses tmux entirely. Turning the mouse on
-also enables click-to-focus a pane, click a window name to switch, scroll into the scrollback, and
-drag a border to resize; a right-click on a pane opens a context menu.
+selection into the tmux paste buffer on release; paste it back with <kbd>Ctrl-A</kbd>
+<kbd>]</kbd>. That buffer is tmux's own, not the system clipboard, so another application sees
+nothing unless you pipe copy mode to a clipboard tool (`pbcopy`, `xclip`, `wl-copy`). To use the
+terminal's native selection and clipboard instead, hold `Shift` while dragging,
+which bypasses tmux entirely. Turning the mouse on also enables click-to-focus a pane, click a
+window name to switch, scroll into the scrollback, and drag a border to resize; a right-click on a
+pane opens a context menu.
 
 {/* Verification notes (3.2a): mouse off by default, and the copy path is MouseDrag1Pane then
 MouseDragEnd1Pane (copy-pipe-and-cancel). */}
@@ -319,10 +326,11 @@ setw -g pane-base-index 1   # panes start at 1
 set  -g renumber-windows on # keep the list contiguous on close
 ```
 
-By default tmux numbers windows and panes from `0`, so the first window is `prefix 0`, at the far
-end of the number row. `base-index` (a session option) and `pane-base-index` (a window option, hence
-`setw`) shift the first index to `1`, so `prefix 1` selects the first window. Both apply only to
-windows and panes created afterwards, which is why they belong in `~/.tmux.conf`. Pair them with
+By default tmux numbers windows and panes from `0`, so the first window is <kbd>Ctrl-A</kbd>
+<kbd>0</kbd>, at the far end of the number row. `base-index` (a session option) and
+`pane-base-index` (a window option, hence `setw`) shift the first index to `1`, so
+<kbd>Ctrl-A</kbd> <kbd>1</kbd> selects the first window. Both apply only to windows and panes
+created afterwards, which is why they belong in `~/.tmux.conf`. Pair them with
 `renumber-windows on` so closing a window repacks the list instead of leaving a gap. One side effect:
 the first pane becoming `1` changes how a bare number reads as a pane target, so prefer a pane id
 (`%3`) or a `window.pane` form when a target must be unambiguous.
@@ -384,12 +392,13 @@ tmux swap-pane -s '{marked}'   # swap the active pane with the marked one
 tmux join-pane -s '{marked}'   # bring the marked pane into this window
 ```
 
-`prefix m` marks the active pane, and the target `{marked}` then resolves to it from any window
-or session. That removes the index juggling from join and swap: mark the pane where it lives, go
-where you want it, run the command. The marked pane is also the default source for `join-pane`,
-`move-pane`, `swap-pane` and `swap-window`, so once something is marked a bare `tmux swap-pane`
-swaps it with the active pane. `prefix M` clears the mark, marking another pane moves it, and
-moving the marked pane with swap or join clears it too, so mark again before the next move. With
+<kbd>Ctrl-A</kbd> <kbd>m</kbd> marks the active pane, and the target `{marked}` then resolves to it
+from any window or session. That removes the index juggling from join and swap: mark the pane
+where it lives, go where you want it, run the command. The marked pane is also the default source
+for `join-pane`, `move-pane`, `swap-pane` and `swap-window`, so once something is marked a bare
+`tmux swap-pane` swaps it with the active pane. <kbd>Ctrl-A</kbd> <kbd>M</kbd> clears the mark,
+marking another pane moves it, and moving the marked pane with swap or join clears it too, so
+mark again before the next move. With
 no mark set, `{marked}` fails with `no marked target` instead of silently picking a pane, which
 is exactly what a bare-number target does not give you (see the N vs N.M trap above).
 
@@ -424,8 +433,8 @@ tmux select-layout tiled       # clean up the layout afterwards
 ```
 
 The processes keep running through the move: `join-pane` re-parents the pane, it does not restart
-anything. The exact opposite is `break-pane` (`prefix !`), which sends the active pane off to a
-new window of its own.
+anything. The exact opposite is `break-pane` (<kbd>Ctrl-A</kbd> <kbd>!</kbd>), which sends the
+active pane off to a new window of its own.
 
 {/* Verification notes (3.2a): join-pane -h -s 3.1 puts %2 at left=101 beside %0; -v -b -s 3.0
 inserts %1 above and window 3 closes itself once emptied; a sleep started in window 7 keeps its
@@ -491,11 +500,12 @@ tmux swap-pane -D                         # ... with the next one (prefix })
 
 `swap-pane` exchanges two panes without touching the layout: the cells keep their position and
 size, the panes trade places. `join-pane` breaks a pane out and recreates a split; `swap-pane`
-leaves the grid alone, which makes it the right tool to flip an uneven split. `prefix {` and
-`prefix }` walk the active pane through the panes in index order, so the visual effect depends
-on the layout. Focus: without `-d` the destination pane ends up focused, which is why `prefix {`
-carries your pane and your focus together, but also why a scripted swap between two other panes
-steals the focus; add `-d` to leave a third-party focus untouched.
+leaves the grid alone, which makes it the right tool to flip an uneven split. <kbd>Ctrl-A</kbd>
+<kbd>&#123;</kbd> and <kbd>Ctrl-A</kbd> <kbd>&#125;</kbd> walk the active pane through the panes in
+index order, so the visual effect depends on the layout. Focus: without `-d` the destination pane
+ends up focused, which is why <kbd>Ctrl-A</kbd> <kbd>&#123;</kbd> carries your pane and your focus
+together, but also why a scripted swap between two other panes steals the focus; add `-d` to leave
+a third-party focus untouched.
 
 {/* Verification notes (3.2a): uneven 130/69 split keeps widths after the swap. Focus with
 -s %0 -t %1: no -d always ends on %1 (dst), even from a bystander %2; -d keeps a bystander's
@@ -511,14 +521,16 @@ tmux select-layout tiled            # apply the tiled (grid) layout now
 tmux select-layout main-vertical    # one large pane left, the rest stacked right
 ```
 
-tmux ships five preset layouts. `prefix Space` (`next-layout`) cycles through them in order:
-`even-horizontal` (equal columns), `even-vertical` (equal rows), `main-horizontal` (one large
-pane on top, the rest in a row below), `main-vertical` (one large pane on the left, the rest in
-a column on the right), and `tiled` (an even grid). `select-layout <name>` jumps straight to one
-without cycling, which is the tool you want after pulling several panes into a window (see "Pull
-a pane from another window") and ending up with a lopsided split: `select-layout tiled` re-tiles
-everything evenly. Each layout also has a direct key: `prefix M-1` even-horizontal, `M-2`
-even-vertical, `M-3` main-horizontal, `M-4` main-vertical, `M-5` tiled.
+tmux ships five preset layouts. <kbd>Ctrl-A</kbd> <kbd>Space</kbd> (`next-layout`) cycles through
+them in order: `even-horizontal` (equal columns), `even-vertical` (equal rows), `main-horizontal`
+(one large pane on top, the rest in a row below), `main-vertical` (one large pane on the left,
+the rest in a column on the right), and `tiled` (an even grid). `select-layout <name>` jumps
+straight to one without cycling, which is the tool you want after pulling several panes into a
+window (see "Pull a pane from another window") and ending up with a lopsided split:
+`select-layout tiled` re-tiles
+everything evenly. Each layout also has a direct key: <kbd>Ctrl-A</kbd> <kbd>M-1</kbd>
+even-horizontal, <kbd>M-2</kbd> even-vertical, <kbd>M-3</kbd> main-horizontal, <kbd>M-4</kbd>
+main-vertical, <kbd>M-5</kbd> tiled.
 
 {/* Verification notes (tmux 3.2a): 4 panes, next-layout observed order even-horizontal ->
 even-vertical -> main-horizontal -> main-vertical -> tiled -> (wraps). select-layout tiled gives a
@@ -536,9 +548,10 @@ resize-pane -D 10
 source-file ~/.tmux.conf
 ```
 
-`prefix :` opens the command prompt (`command-prompt`), a one-line input at the bottom of the
-screen where you type any tmux command without the leading `tmux` word. It is the interactive twin
-of the shell CLI: same commands, same flags, run against the server you are attached to. Reach for
+<kbd>Ctrl-A</kbd> <kbd>:</kbd> opens the command prompt (`command-prompt`), a one-line input at the
+bottom of the screen where you type any tmux command without the leading `tmux` word. It is the
+interactive twin of the shell CLI: same commands, same flags, run against the server you are
+attached to. Reach for
 it to try a command once before committing it to `~/.tmux.conf` or binding it to a key, or to run a
 command that has no default binding. A template can even prompt for input first:
 `command-prompt -p "new name:" "rename-window '%%'"` shows the prompt, then substitutes what you
@@ -559,13 +572,13 @@ tmux list-keys -T copy-mode-vi    # one specific key table
 tmux list-commands                # syntax and flags of every tmux command
 ```
 
-`prefix ?` runs `list-keys -N`, a scrollable list of every key binding with a one-line note. It
-is the fastest way to answer "what does this key do?" without leaving tmux. From the shell,
-`list-keys` prints the same table, and `-T <table>` limits it to one key table (`prefix`,
-`root`, `copy-mode-vi`, `copy-mode`), which is how you inspect copy-mode keys or your own binds.
-`list-commands` is the companion for the CLI: it prints the full syntax and flags of every
-command, so it is the reference to reach for when you forget whether resize is `-L` or `-x`. These
-three commands are how every other snippet on this page was checked.
+<kbd>Ctrl-A</kbd> <kbd>?</kbd> runs `list-keys -N`, a scrollable list of every key binding with a
+one-line note. It is the fastest way to answer "what does this key do?" without leaving tmux.
+From the shell, `list-keys` prints the same table, and `-T <table>` limits it to one key table
+(`prefix`, `root`, `copy-mode-vi`, `copy-mode`), which is how you inspect copy-mode keys or your
+own binds. `list-commands` is the companion for the CLI: it prints the full syntax and flags of
+every command, so it is the reference to reach for when you forget whether resize is `-L` or `-x`.
+These three commands are how every other snippet on this page was checked.
 
 {/* Verification notes (tmux 3.2a): list-keys -T prefix shows '?' bound to 'list-keys -N'.
 list-keys -N returns 83 noted bindings; list-keys -T copy-mode-vi returns its own table. list-commands
@@ -576,8 +589,8 @@ Tip article: [How to discover and search tmux key bindings?](/blog/en/tips/2026/
 ## A starter ~/.tmux.conf
 
 Config worth keeping in `~/.tmux.conf`. This grows along with the cookbook. Reload it without
-restarting tmux with `tmux source-file ~/.tmux.conf`, or from inside a session with `prefix :`
-then `source-file ~/.tmux.conf`.
+restarting tmux with `tmux source-file ~/.tmux.conf`, or from inside a session with
+<kbd>Ctrl-A</kbd> <kbd>:</kbd> then `source-file ~/.tmux.conf`.
 
 ### Use C-a as the prefix
 
@@ -598,9 +611,9 @@ bind | split-window -h   # | is the vertical divider: panes side by side
 bind - split-window -v   # - is the horizontal divider: panes stacked
 ```
 
-The default `prefix %` and `prefix "` still work; these just add keys that match the resulting
-layout. Append `-c "#{pane_current_path}"` to either bind to open the new pane in the current
-pane's directory.
+The default <kbd>Ctrl-A</kbd> <kbd>%</kbd> and <kbd>Ctrl-A</kbd> <kbd>"</kbd> still work; these
+just add keys that match the resulting layout. Append `-c "#{pane_current_path}"` to either bind
+to open the new pane in the current pane's directory.
 
 ### Reload the config with a key
 
@@ -609,12 +622,13 @@ bind r source-file ~/.tmux.conf \; display-message "config reloaded"
 ```
 
 `source-file` re-reads a config file into the running server, so a changed setting takes effect
-without killing and restarting tmux. Binding it to a key gives you `prefix r` after every edit;
-the `\;` chains a second command on the same key, here `display-message` to confirm the reload in
-the status line. The two commands are separate: `\;` is a tmux command separator, not shell
-syntax, so it works the same from the CLI (`tmux source-file ~/.tmux.conf \; display-message ok`)
-as inside the config. Without a binding you can always reload by hand with `tmux source-file
-~/.tmux.conf`, or from inside a session with `prefix :` then `source-file ~/.tmux.conf`.
+without killing and restarting tmux. Binding it to a key gives you <kbd>Ctrl-A</kbd> <kbd>r</kbd>
+after every edit; the `\;` chains a second command on the same key, here `display-message` to
+confirm the reload in the status line. The two commands are separate: `\;` is a tmux command
+separator, not shell syntax, so it works the same from the CLI (`tmux source-file ~/.tmux.conf \;
+display-message ok`) as inside the config. Without a binding you can always reload by hand with
+`tmux source-file ~/.tmux.conf`, or from inside a session with <kbd>Ctrl-A</kbd> <kbd>:</kbd> then
+`source-file ~/.tmux.conf`.
 
 Reloading only adds or overrides what the file sets; it does not reset options a removed line used
 to set, and it re-runs commands like `new-window`, so keep a config file idempotent (settings and
@@ -627,3 +641,9 @@ Verified on tmux 3.2a.
 source-file, show -g status-left -> V2 without restarting the server. */}
 
 Tip article: [How to reload your tmux config without restarting?](/blog/en/tips/2026/07/14/reload-tmux-config/)
+
+## A note on the prefix
+
+Shortcuts on this page use <kbd>Ctrl-A</kbd> as the tmux prefix, which is what I bind it to (an old
+habit from GNU screen). tmux ships with <kbd>Ctrl-B</kbd>: if you kept that, or bound something
+else, substitute your own prefix wherever you see <kbd>Ctrl-A</kbd>.
