@@ -1,7 +1,7 @@
 ---
 title: Descriptors
 description: "Python descriptors - the __get__/__set__ protocol, data vs non-data precedence, what Django's model fields actually do on assignment, and when the magic costs more than it buys."
-checkedOn: 2026-08-11
+checkedOn: 2026-10-20
 ---
 
 A descriptor is a class that implements `__get__`, `__set__` or `__delete__`, and is used as a **class attribute**.
@@ -38,6 +38,8 @@ class Guard:
 
 class Basket:
     tag = Guard()
+    def __init__(self, items):
+        self.items = items
     def __len__(self):
         return len(self.items)
 ```

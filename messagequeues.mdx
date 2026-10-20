@@ -1,7 +1,7 @@
 ---
 title: Message Queues
-description: "Message queues notes: AMQP and RabbitMQ concepts, configuration, clients, and topology."
-checkedOn: 2026-07-13
+description: "RabbitMQ notes: users and permissions, exporting and importing schema definitions, seeding a broker at boot, exchange to exchange bindings."
+checkedOn: 2026-08-21
 ---
 
 ## AMQP
@@ -15,7 +15,7 @@ Concepts: [RabbitMQ Connection vs Channel](https://medium.com/faun/rabbitmq-conn
 * Channels: [RabbitMQ Channels](https://www.rabbitmq.com/docs/channels)
 * Queues: [RabbitMQ Queues](https://www.rabbitmq.com/docs/queues)
 
-[RabbitMQ for Beginners - Exchanges, Routing Keys, Bindings](https://www.cloudamqp.com/blog/2015-09-03-part4-rabbitmq-for-beginners-exchanges-routing-keys-bindings.html)
+[RabbitMQ for Beginners - Exchanges, Routing Keys, Bindings](https://www.cloudamqp.com/blog/part4-rabbitmq-for-beginners-exchanges-routing-keys-bindings.html)
 
 ## Configuration and authentication
 
@@ -30,16 +30,36 @@ rabbitmqctl add_vhost $RMQ_VHOST
 rabbitmqctl set_permissions -p $RMQ_VHOST $RMQ_USERNAME ".*" ".*" ".*"
 ```
 
+The three permission patterns are **configure, write, read**, in that order, not the read/write
+order most people expect. Configure covers creating and deleting queues and exchanges, write
+covers publishing, read covers consuming. A consumer that only needs to drain an existing queue
+gets `"" "" ".*"`.
+
 These changes are written to RabbitMQ's internal database under the node data directory
 (`/var/lib/rabbitmq`). In a container they only survive as long as that directory does: mount a
 volume there to keep users and vhosts across restarts and rebuilds.
 
 The official docker image ([RabbitMQ on Docker Hub](https://hub.docker.com/_/rabbitmq/)) can import a
 definitions file on boot, but it is not automatic: dropping the file at `/etc/rabbitmq/definitions.json`
-is not enough, the config has to point to it. On 3.x set `load_definitions = /etc/rabbitmq/definitions.json`
-in `rabbitmq.conf`; on 4.x use `definitions.import_backend = local_filesystem` together with
-`definitions.local.path = /etc/rabbitmq/definitions.json`. Bake both the config and the definitions file
-into a derived image and the entities are created at startup.
+is not enough, the config has to point to it. In `rabbitmq.conf`:
+
+```ini
+definitions.import_backend = local_filesystem
+definitions.local.path = /etc/rabbitmq/definitions.json
+```
+
+Bake both the config and the definitions file into a derived image and the entities are created
+at startup. The path can also be a directory, in which case every file in it is imported.
+
+Two things worth knowing about those keys. `definitions.local.path` is the newer spelling of the
+older `load_definitions`; both are still accepted by the server schema, and this is old versus new
+syntax, not 3.x versus 4.x (the 3.13 and 4.x docs both document the `definitions.*` form). And
+`definitions.import_backend` already defaults to `local_filesystem`, so pointing
+`definitions.local.path` at a file is enough on its own. The other backend is `https`, with
+`definitions.https.url`.
+
+Import never overwrites what is already in the broker, and it runs on every node at every boot.
+Set `definitions.skip_if_unchanged = true` to only import when the file contents actually change.
 
 Definitions file (`/etc/rabbitmq/definitions.json`):
 
@@ -73,17 +93,43 @@ Definitions file (`/etc/rabbitmq/definitions.json`):
 
 ### Generate a definitions file from a running broker
 
-To dump the current configuration into a `definitions.json`, use the `rabbitmqadmin` script, which
-talks to the RabbitMQ management plugin. The official Docker image ships the plugin when the
-`management` tag is used.
+Rather than writing that JSON by hand, export it from a broker you already configured. Three ways,
+and the first one is the one to reach for:
 
-Reach the management UI through a port-forward:
+```bash
+# on the node itself, no management plugin needed
+rabbitmqctl export_definitions /path/to/definitions.json
+
+# over the HTTP API, needs the management plugin
+rabbitmqadmin definitions export /path/to/definitions.json
+
+# same thing by hand
+curl -u user:password http://localhost:15672/api/definitions | jq
+```
+
+`rabbitmqctl export_definitions` is the only option that does not require the management plugin.
+The reverse operations are `rabbitmqctl import_definitions` and `rabbitmqadmin definitions import`.
+
+The exported file contains **password hashes**: treat it as a secret, or strip the sensitive parts
+on the way out. `rabbitmqadmin` v2 can do that during the export:
+
+```bash
+rabbitmqadmin definitions export --stdout --transformations exclude_users,exclude_permissions
+```
+
+Note that `rabbitmqadmin` v2 is not the old Python script: it is a separate project shipped as a
+native binary ([rabbitmqadmin-ng](https://github.com/rabbitmq/rabbitmqadmin-ng)), with its own
+release cycle, and recent versions still talk to 3.12.x nodes. The v1 Python script is the one you download
+from a node running the management plugin, and its command syntax differs.
+
+To reach the HTTP API of a broker running in Kubernetes, port-forward the management port first:
 
 ```bash
 kubectl port-forward rabbitmq-54644f7685-gf8hw 15672:15672
 ```
 
-Then open [http://localhost:15672/](http://localhost:15672/) (default login `guest:guest`).
+Then open [http://localhost:15672/](http://localhost:15672/) (default login `guest:guest`). The
+official Docker image only ships the management plugin under the `management` tags.
 
 ## Clients
 
@@ -94,8 +140,15 @@ Then open [http://localhost:15672/](http://localhost:15672/) (default login `gue
 
 ### Exchange to exchange bindings
 
+Binding an exchange to another exchange, rather than to a queue, lets you fan out to several
+topologies without the publisher knowing about them.
+
 * [Exchange to Exchange Bindings - RabbitMQ](https://www.rabbitmq.com/docs/e2e)
-* [Exchange to Exchange Bindings - RabbitMQ Blog](https://www.rabbitmq.com/blog/2010/10/19/exchange-to-exchange-bindings/)
+* [Exchange to Exchange Bindings - RabbitMQ Blog](https://www.rabbitmq.com/blog/2010/10/19/exchange-to-exchange-bindings)
+* [Exchange to exchange bindings in RabbitMQ - CloudAMQP](https://www.cloudamqp.com/blog/exchange-to-exchange-binding-in-rabbitmq.html)
 * [RabbitMQ Exchange to Exchange Bindings AMQP](https://skillachie.com/2014/06/27/rabbitmq-exchange-to-exchange-bindings-ampq/)
 
-* (not convinced about the following ...) [Cottontail Release - Security Tool](https://quentinkaiser.be/security/tool/2017/08/28/cottontail-release/)
+## Links & references
+
+* [Extract Transform Load](/wiki/data/extracttransformload/), where a broker usually sits in a pipeline
+* [Kubernetes](/wiki/system/kubernetes/), for running a broker on a cluster

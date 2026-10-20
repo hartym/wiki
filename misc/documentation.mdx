@@ -1,24 +1,33 @@
 ---
 title: Documentation
-description: "> Good documentation makes good software, not the other way round."
+description: "Old notes on documentation tooling: mind mapping, documentation generators, diagram tools."
+checkedOn: 2026-10-20
 ---
 
 > Good documentation makes good software, not the other way round.
 
 ## Mind-mapping
 
-* [FreeMind ](http://freemind.sourceforge.net/wiki/index.php/Main_Page) 
+* [FreeMind](https://freemind.sourceforge.io/wiki/index.php/Main_Page), last stable 1.0.1 in April
+  2014 and a beta in 2016, so do not expect fixes.
+* [Freeplane](https://docs.freeplane.org/), the fork that kept going: 1.13.3 is the current
+  stable and 1.13.4 is in pre-release.
 
 ## Building documentation
 
 * Simplest thing : GitHub wiki & pages
 * As a service (installable version exists too) : Confluence
-* API doc as a service : [ReadMe.io](http://readme.io/)
-* Tool : [Sphinx ](http://sphinx-doc.org/)
+* API doc as a service : [ReadMe](https://readme.com/), the old `readme.io` now redirects there
+* Tool : [Sphinx](https://www.sphinx-doc.org/)
 
 ## Make it visual
 
-* Graphviz
+* [Graphviz](https://graphviz.org/), diagrams described in a text file and laid out by the tool,
+  released regularly (16.1.0 in the stable list).
 * Visio (well, I would avoid this one, but it's still widely used)
-* ArgoUML
-* Dia
+* [ArgoUML](https://github.com/argouml-tigris-org/argouml), UML modelling. Last release 0.35.1,
+  still the one built by the old Tigris infrastructure; the code moved to GitHub in 2019 and no
+  release followed.
+* [Dia](https://gitlab.gnome.org/GNOME/dia), last tagged release 0.97.2 in 2011, plus an untagged
+  0.97.3 pushed in 2014. The main branch is partway through a GTK3 port, so distributions ship
+  snapshots rather than a stable release. The old GNOME wiki page for it is retired.

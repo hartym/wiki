@@ -1,67 +1,475 @@
 ---
 title: PostgreSQL
-description: "PostgreSQL notes: relation sizes, filesystem tuning, JSONB, backup and restore."
-checkedOn: 2026-07-24
+description: "PostgreSQL cookbook: real table sizes, running and blocking queries, timeouts, indexing without locking, JSONB, pg_stat_statements, range partitioning, backup and restore."
+checkedOn: 2026-10-09
 ---
 
-[PostgreSQL](https://github.com/postgres/postgres) - The world's most advanced open source relational database
+[PostgreSQL](https://github.com/postgres/postgres) is the default relational database, and the one
+that keeps absorbing the workloads you would otherwise hand to a second engine. See
+<Link to="relational" /> for where it sits among the others.
 
-## Measuring
+Everything in the cookbook below was replayed in a throwaway cluster, first on PostgreSQL 14.23 and
+re-checked end to end on 16.15. Version differences are called out where they exist.
 
-### How much disk space is some relation (table, index, ...) taking ?
+## Cookbook
 
-You can use `pg_relation_size()`:
+### How big is that table, really?
+
+`pg_relation_size()` is the function everyone reaches for, and it is almost never the number you
+want. It measures the main fork of one relation: no indexes, and no TOAST table, which is where
+PostgreSQL stores values too large to fit in a page.
 
 ```sql
-select pg_relation_size('some_table_or_idx');
+select pg_size_pretty(pg_relation_size('t'))       as relation,  -- main fork only
+       pg_size_pretty(pg_table_size('t'))          as tbl,       -- + TOAST + free space map
+       pg_size_pretty(pg_indexes_size('t'))        as idx,
+       pg_size_pretty(pg_total_relation_size('t')) as total;     -- table + indexes
 ```
-It's way better to be able to actually read the result:
+
+On a 2000-row table whose rows each hold 6 kB of incompressible text:
+
+```text
+ relation |  tbl  |  idx  | total
+----------+-------+-------+-------
+ 104 kB   | 16 MB | 80 kB | 16 MB
+```
+
+104 kB against 16 MB. The rows in the main fork are little more than pointers, the payload lives in
+TOAST. `pg_total_relation_size()` is the honest answer to "what does this cost me on disk".
+
+Biggest tables first:
 
 ```sql
-select pg_size_pretty(pg_relation_size('some_table_or_idx'));
+select relname, pg_size_pretty(pg_total_relation_size(c.oid)) as total
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where c.relkind = 'r' and n.nspname not in ('pg_catalog', 'information_schema')
+order by pg_total_relation_size(c.oid) desc
+limit 20;
 ```
-More info and scripts: [PostgreSQL Wiki - Disk Usage](https://wiki.postgresql.org/wiki/Disk_Usage)
+
+More ready-made queries: [PostgreSQL Wiki - Disk Usage](https://wiki.postgresql.org/wiki/Disk_Usage).
+
+### What is running right now, and how do I stop it?
+
+```sql
+select pid, state, wait_event_type, now() - query_start as duration, query
+from pg_stat_activity
+where backend_type = 'client backend' and pid <> pg_backend_pid()
+order by duration desc;
+```
+
+Two ways to stop one of those, and they are not interchangeable:
+
+```sql
+select pg_cancel_backend(pid);     -- cancels the current query, keeps the connection
+select pg_terminate_backend(pid);  -- kills the whole session
+```
+
+Always try `pg_cancel_backend()` first. It leaves the client connected, so an open transaction gets
+rolled back cleanly instead of the application discovering a dead socket. A non-superuser only sees
+its own queries in `pg_stat_activity`; granting the `pg_monitor` or `pg_read_all_stats` role is
+enough to see everyone's, without handing out superuser.
+
+### Which query is blocking mine?
+
+```sql
+select pid, pg_blocking_pids(pid) as blocked_by, wait_event_type, query
+from pg_stat_activity
+where cardinality(pg_blocking_pids(pid)) > 0;
+```
+
+```text
+ pid | blocked_by | wait_event_type |               query
+-----+------------+-----------------+------------------------------------
+  28 | {25}       | Lock            | update t2 set blob='y' where id=1;
+```
+
+`pg_blocking_pids()` gives the whole chain of holders, so you can walk back to the session that is
+actually at fault rather than killing the first victim you find.
+
+### Why is my query slow?
+
+```sql
+explain (analyze, buffers) select ...;
+```
+
+`analyze` is the part that makes this useful: it reports actual rows and actual time next to the
+planner's estimates, and a large gap between the two is usually the bug. `buffers` adds how many
+pages were read and how many came from cache.
+
+The trap is that `EXPLAIN ANALYZE` **runs the statement**. On a `DELETE` it deletes. Verified:
+`explain (analyze) delete from t2 where id = 1` took the table from 2001 rows to 1999. Wrap
+anything that writes:
+
+```sql
+begin;
+explain (analyze, buffers) delete from t2 where id = 2;
+rollback;
+```
+
+Paste the output into [Explain Depesz](https://explain.depesz.com/) when the plan gets wide.
+
+### Adding an index without locking the table
+
+A plain `CREATE INDEX` holds a lock that blocks writes for the whole build. `CONCURRENTLY` does two
+passes and lets writes through:
+
+```sql
+create index concurrently t_id_idx on t (id);
+```
+
+Two things bite, both verified:
+
+```text
+ERROR:  CREATE INDEX CONCURRENTLY cannot run inside a transaction block
+```
+
+It cannot run in a transaction, which means most migration tools need to be told explicitly to run
+it outside their wrapping transaction.
+
+And when it fails, it leaves a broken index behind rather than cleaning up:
+
+```sql
+create unique index concurrently t2_uniq on t2 (id);
+-- ERROR:  could not create unique index "t2_uniq"
+-- DETAIL:  Key (id)=(1) is duplicated.
+```
+
+```sql
+select indexrelid::regclass as index, indisvalid from pg_index where not indisvalid;
+```
+
+```text
+  index  | indisvalid
+---------+------------
+ t2_uniq | f
+```
+
+An invalid index is dead weight: it is not used for queries but it is still maintained on every
+write. `psql`'s `\d t2` flags it as `INVALID`. Drop it (with `DROP INDEX CONCURRENTLY`) and retry.
+Full detail in
+[the manual](https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY).
+
+### Timeouts, so one bad query cannot take the server down
+
+Set these per session or per role, not globally in `postgresql.conf`:
+
+```sql
+set statement_timeout = '30s';                      -- any single statement
+set lock_timeout = '2s';                            -- waiting for a lock
+set idle_in_transaction_session_timeout = '60s';    -- transaction left open and idle
+```
+
+All three verified on 14.23:
+
+```text
+ERROR:  canceling statement due to statement timeout
+ERROR:  canceling statement due to lock timeout
+FATAL:  terminating connection due to idle-in-transaction timeout
+```
+
+Note the third one is `FATAL`: the connection is dropped, not just the statement. `lock_timeout` is
+the one people forget, and it is what keeps a schema migration from queuing behind a long report and
+in turn blocking everything that arrives after it.
+
+PostgreSQL 17 added `transaction_timeout`, which caps a whole transaction rather than one statement
+or one idle period. It does not exist before 17 (`pg_settings` confirms its absence on both 14 and
+16).
+
+### Dead tuples and bloat
+
+An `UPDATE` writes a new row version and leaves the old one behind; autovacuum reclaims it later.
+When it cannot keep up, the table grows without holding more data.
+
+```sql
+select relname, n_live_tup, n_dead_tup,
+       round(100 * n_dead_tup::numeric / nullif(n_live_tup + n_dead_tup, 0), 1) as pct_dead,
+       last_autovacuum, last_autoanalyze
+from pg_stat_user_tables
+order by n_dead_tup desc;
+```
+
+These counters are updated asynchronously, so a table you just churned can read as clean for a few
+seconds. For the real bloat estimate (which needs to compare actual size against expected size), use
+the query from
+[Monitoring Your Bloat in Postgres](https://www.citusdata.com/blog/2017/10/20/monitoring-your-bloat-in-postgres/).
+
+### JSONB: the two arrows, and indexing it
+
+```sql
+select doc -> 'name'  as as_jsonb,   -- "n1"  (still jsonb, quotes included)
+       doc ->> 'name' as as_text     -- n1    (text)
+from t limit 1;
+```
+
+One arrow returns `jsonb`, two arrows return `text`. Comparing the result of a single arrow against a
+string literal is the usual cause of "the query matches nothing and I do not see why".
+
+Containment is what GIN indexes accelerate:
+
+```sql
+create index t_doc_gin on t using gin (doc);
+analyze t;
+explain (costs off) select * from t where doc @> '{"name": "n42"}';
+```
+
+```text
+ Bitmap Heap Scan on t
+   Recheck Cond: (doc @> '{"name": "n42"}'::jsonb)
+   ->  Bitmap Index Scan on t_doc_gin
+         Index Cond: (doc @> '{"name": "n42"}'::jsonb)
+```
+
+An index on an extracted key, `create index on t ((doc ->> 'name'))`, is the other option: smaller
+and faster for equality on one known key, useless for anything else. Before leaning on JSONB, read
+[When to Avoid JSONB in a PostgreSQL Schema](https://www.heap.io/blog/when-to-avoid-jsonb-in-a-postgresql-schema):
+PostgreSQL keeps no statistics on values inside a JSONB column, so the planner falls back to a
+hardcoded selectivity guess and can pick a plan orders of magnitude off. See also
+[When to use unstructured datatypes in Postgres](https://www.citusdata.com/blog/2016/07/14/choosing-nosql-hstore-json-jsonb/)
+for hstore against json against jsonb.
+
+### Backup and restore
+
+```shell
+pg_dump --format=c <dbname> -f dump.pgc      # custom archive format
+pg_restore --role=<role> -d <dbname> dump.pgc
+```
+
+`--format=c` writes the custom archive format, which `pg_restore` reads. `--role` is ignored by
+`pg_dump` when the output is an archive format (`-Fc`, `-Ft`, `-Fd`): set the role at restore time
+instead. It only takes effect on `pg_dump` for plain SQL output (`-Fp`).
+
+Parallelism is asymmetric, which surprises people:
+
+```shell
+pg_dump -Fc -j 4 <dbname> -f dump.pgc   # ERROR: parallel backup only supported by the directory format
+pg_dump -Fd -j 4 <dbname> -f dumpdir    # works
+pg_restore -j 4 -d <dbname> dump.pgc    # works, custom format included
+```
+
+So `-j` on the dump side forces the directory format (`-Fd`, one compressed file per table plus a
+`toc.dat`), while `-j` on the restore side works with both.
+
+### Which queries actually cost me?
+
+`pg_stat_statements` is the only honest answer to "what is this database spending its time on". It
+takes two steps and a restart, because the module allocates shared memory at startup:
+
+```shell
+# postgresql.conf
+shared_preload_libraries = 'pg_stat_statements'
+```
+
+```sql
+create extension pg_stat_statements;
+```
+
+Then the query that pays for the whole setup:
+
+```sql
+select round(total_exec_time::numeric, 1) as total_ms,
+       calls,
+       round(mean_exec_time::numeric, 2) as mean_ms,
+       rows,
+       query
+from pg_stat_statements
+order by total_exec_time desc
+limit 20;
+```
+
+Sort by `total_exec_time`, not by `mean_exec_time`. The statement that takes 3 ms and runs a million
+times a day is the one worth fixing, and it never appears in a slow-query log.
+
+Statements are stored normalized: literals are replaced by placeholders, so a million
+`where id = 1`, `where id = 2`, ... collapse into one row.
+
+```text
+ calls |                 query
+-------+----------------------------------------
+     3 | select id from t where id = $1
+     2 | SELECT   $1
+     1 | select id from t2 where id in ($1,$2)
+     1 | select id from t2 where id in ($1,$2,$3)
+```
+
+Four things in that output are worth knowing:
+
+* Three calls with three different literals became one row with `calls = 3`.
+* `SELECT   1` and `select 1` also became one row: normalization works on the parsed statement, so
+  keyword case and whitespace do not split it. The text kept is whichever spelling arrived first,
+  which is why the table shows an upper-case `SELECT`.
+* An `IN` list of two literals and one of three literals are **two different rows**. A query built
+  by concatenating a variable number of placeholders fragments its own statistics.
+* `alter table` and other utility commands are counted too (`track_utility` is `on` by default).
+
+Three traps, all verified:
+
+```sql
+select count(*) from pg_stat_statements;
+-- ERROR:  pg_stat_statements must be loaded via shared_preload_libraries
+```
+
+`CREATE EXTENSION` **succeeds** without the preload. Only reading the view fails, long after the
+migration that created the extension looked fine.
+
+```sql
+set compute_query_id = off;   -- the view goes empty, and nothing says so
+```
+
+`compute_query_id` defaults to `auto`, which is what makes the module work at all. Turned off, the
+view collects nothing and reports no error.
+
+```sql
+show pg_stat_statements.track;   -- top
+```
+
+With the default `top`, only statements sent by a client are counted: a slow query inside a function
+or a trigger is invisible, its cost folded into the `select f()` that called it. Set
+`pg_stat_statements.track = 'all'` and the inner statement gets its own row, flagged
+`toplevel = false`.
+
+`pg_stat_statements.max` defaults to 5000 statements. Past that, the least-executed rows are
+evicted and `pg_stat_statements_info.dealloc` counts how often it happened; a non-zero `dealloc`
+means the numbers you are reading are already incomplete. `pg_stat_statements_reset()` zeroes
+everything, which is how you measure one deployment instead of the whole uptime.
+
+Reference: [pg_stat_statements](https://www.postgresql.org/docs/current/pgstatstatements.html).
+
+### Partitioning a table by range
+
+```sql
+create table events (id bigserial, at timestamptz not null, body text)
+  partition by range (at);
+create table events_2026_09 partition of events for values from ('2026-09-01') to ('2026-10-01');
+create table events_2026_10 partition of events for values from ('2026-10-01') to ('2026-11-01');
+```
+
+Bounds are inclusive on the left and exclusive on the right, so consecutive months chain without
+overlapping. The parent holds no rows of its own. `tableoid` says where a row actually lives, and
+`pg_partition_tree()` lists the set:
+
+```sql
+select tableoid::regclass as part, count(*) from events group by 1 order by 1;
+select relid::regclass, level, isleaf from pg_partition_tree('events');
+```
+
+Pruning is the whole point, and it only happens when the partition key is in the predicate:
+
+```sql
+explain (costs off) select count(*) from events where at >= '2026-10-01';
+```
+
+```text
+ Aggregate
+   ->  Seq Scan on events_2026_10 events
+         Filter: (at >= '2026-10-01 00:00:00+00'::timestamp with time zone)
+```
+
+Filter on anything else and every partition is scanned:
+
+```text
+ Aggregate
+   ->  Append
+         ->  Seq Scan on events_2026_09 events_1
+               Filter: (body = 'y'::text)
+         ->  Seq Scan on events_2026_10 events_2
+               Filter: (body = 'y'::text)
+```
+
+So a partitioned table is faster for the queries that mention the key, and slower for the rest, by
+roughly the number of partitions. Partition on the column your reads filter on, not on the one that
+looks tidiest.
+
+A unique constraint has to contain the partition key, which rules out a plain surrogate primary key:
+
+```text
+ERROR:  unique constraint on partitioned table must include all partitioning columns
+DETAIL:  PRIMARY KEY constraint on table "events" lacks column "at" which is part of the partition key.
+```
+
+The primary key becomes `(id, at)`. There is no global unique index across partitions, and no way
+to fake one.
+
+An insert that matches no partition is an error, not a silent drop:
+
+```text
+ERROR:  no partition of relation "events" found for row
+DETAIL:  Partition key of the failing row contains (at) = (2026-12-01 00:00:00+00).
+```
+
+A `DEFAULT` partition catches those, then becomes its own problem: creating the partition that
+should have held those rows fails while they are still sitting in the default.
+
+```text
+ERROR:  updated partition constraint for default partition "events_default" would be violated by some row
+```
+
+The way out is to detach the default, move the rows, attach both back. A default partition also
+rules out concurrent detach entirely:
+
+```text
+ERROR:  cannot detach partitions concurrently when a default partition exists
+```
+
+`CREATE INDEX CONCURRENTLY` does not work on a partitioned table at all:
+
+```text
+ERROR:  cannot create index on partitioned table "events" concurrently
+```
+
+A plain `create index on events (at)` works and cascades, one index per partition, but it locks
+everything for the whole build. The pattern that lets writes through is three steps: an `ONLY`
+index on the parent, one concurrent index per partition, then attach each one.
+
+```sql
+create index events_body_idx on only events (body);                    -- invalid, no children yet
+create index concurrently events_2026_09_body on events_2026_09 (body);
+create index concurrently events_2026_10_body on events_2026_10 (body);
+alter index events_body_idx attach partition events_2026_09_body;
+alter index events_body_idx attach partition events_2026_10_body;      -- parent flips to valid here
+```
+
+The parent index reads `indisvalid = false` until the last partition is attached, then flips on its
+own, which also means a half-finished job leaves an index that looks broken and is simply not
+done yet.
+
+`ATTACH PARTITION` validates the data by scanning the table, holding a lock that blocks the parent.
+An equivalent `CHECK` constraint already present on the table lets it skip that scan:
+
+```sql
+alter table events_2027_07 add constraint c check (at >= '2027-07-01' and at < '2027-08-01');
+alter table events attach partition events_2027_07 for values from ('2027-07-01') to ('2027-08-01');
+```
+
+Counted on `pg_stat_user_tables.seq_scan` with a 50k-row table: the bare attach scans, adding the
+`CHECK` scans once, and the attach that follows scans nothing. The scan does not disappear, it moves
+to a moment when the parent is not locked.
+
+Concurrent detach is the mirror image, and like `CREATE INDEX CONCURRENTLY` it refuses to run inside
+a transaction:
+
+```sql
+alter table events detach partition events_2027_07 concurrently;
+-- ERROR:  ALTER TABLE ... DETACH CONCURRENTLY cannot run inside a transaction block
+```
+
+An `UPDATE` that changes the partition key moves the row to another partition, silently, and parks
+it in the default partition when no range matches.
+
+Reference: [Table Partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html).
 
 ## Tuning
 
-### Tuning the filesystem
+* Filesystems, benchmarked:
+  [PostgreSQL on EXT4, XFS, BTRFS and ZFS](https://www.slideshare.net/fuzzycz/postgresql-on-ext4-xfs-btrfs-and-zfs)
+  (Tomas Vondra).
+* [PostgreSQL: Speeding up GROUP BY and joins](https://www.cybertec-postgresql.com/en/postgresql-speeding-up-group-by-and-joins/)
+  shows how to aggregate before joining by hand. Still worth doing through PostgreSQL 18: the
+  planner does not do it for you. Eager aggregation is committed for 19, behind
+  `enable_eager_aggregate`.
 
-* [PostgreSQL on EXT4, XFS, Btrfs and ZFS](https://fr.slideshare.net/fuzzycz/postgresql-on-ext4-xfs-btrfs-and-zfs)
+## Related
 
-### Wasted space & vacuuming
-
-* [Monitoring Your Bloat in Postgres](https://www.citusdata.com/blog/2017/10/20/monitoring-your-bloat-in-postgres/)
-
-## About JSONB
-
-* [When to Avoid JSONB in a PostgreSQL Schema](https://www.heap.io/blog/when-to-avoid-jsonb-in-a-postgresql-schema)
-* [Choosing NoSQL: HStore vs JSON vs JSONB](https://www.citusdata.com/blog/2016/07/14/choosing-nosql-hstore-json-jsonb/)
-
-## Backup & Restore
-
-Simple backup command:
-
-```shell
-pg_dump --format=c <dbname>
-```
-Simple restore command:
-
-```shell
-pg_restore --role=<role> -d <dbname> <filename>
-```
-
-`--format=c` writes the custom archive format, which `pg_restore` reads. Note that `--role`
-is ignored by `pg_dump` when the output is an archive format (`-Fc`, `-Ft`, `-Fd`): for those,
-set the role at restore time on `pg_restore`, as shown above. `--role` only takes effect on
-`pg_dump` for plain SQL output (`-Fp`).
-
-## Tools
-
-Visualize explain analyze results: [Explain Depesz](https://explain.depesz.com/)
-
-## Misc.
-
-A few links ...
-
-* [PostgreSQL: Speeding up GROUP BY and Joins](https://www.cybertec-postgresql.com/en/postgresql-speeding-up-group-by-and-joins/)
-* Creating indexes without locking the table: [PostgreSQL CREATE INDEX CONCURRENTLY](https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY)
+* <Link to="/database" /> - the families, and which engine belongs to which.
+* <Link to="/python/sqlalchemy" /> - talking to it from Python.
+* <Link to="/database/gis" /> - PostGIS, when the data has coordinates.

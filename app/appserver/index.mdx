@@ -1,8 +1,190 @@
 ---
 title: Application Servers
-description: "Reference links for application servers, including uWSGI."
+description: "Gunicorn and uvicorn in practice: sizing the worker pool, choosing a worker class, reloading without dropping the socket, running behind a reverse proxy, plus the defaults that serialise traffic or serve stale code."
+checkedOn: 2026-09-28
 ---
 
-## uWSGI
+The application server is the process that runs your Python code. The web server in front of it
+(see <Link to="/app/webserver/" />) terminates TLS, serves static files and buffers slow clients.
+This page is about the process behind it.
 
-* [Things to know (best practices) - uWSGI documentation](https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html)
+It is also the layer where the defaults are least like what you want in production. Out of the box
+gunicorn serves one request at a time, and `--timeout` means two different things depending on the
+worker class.
+
+Everything below was run against gunicorn 26.2.0, uvicorn 0.54.0 and uvicorn-worker 0.4.0 on
+Python 3.11, on a 2 core box. Wall times come from `curl -w '%{time_total}'`.
+
+## Cookbook
+
+### Run a WSGI app
+
+```shell
+gunicorn -b 127.0.0.1:8000 -w 5 myproject.wsgi:application
+```
+
+`-b` is the socket to listen on, `-w` the number of worker processes, and the last argument is
+`module:callable`. Django generates that callable in `myproject/wsgi.py`, a single file Flask app is
+usually `app:app`.
+
+### Size the worker pool
+
+The gunicorn docs give `(2 x $num_cores) + 1` as a starting point, and add that 4 to 12 workers are
+enough for hundreds or thousands of requests per second. Do not derive the number from how many
+clients you expect: past a point more workers means more context switching and less throughput.
+
+On the 2 core box used here that is 5.
+
+### Choose the worker class
+
+```shell
+gunicorn -k sync -w 5 app:app                       # default: one request per process, at a time
+gunicorn -k gthread -w 5 --threads 4 app:app        # thread pool per process, for blocking I/O
+gunicorn -k uvicorn_worker.UvicornWorker -w 5 app:app   # ASGI
+```
+
+`sync` assumes your handlers are CPU bound and short. If they spend their time waiting on a
+database, an HTTP call or a queue, `gthread` gets far more out of the same process count, without
+touching the application code.
+
+### Run an ASGI app
+
+Uvicorn alone is enough:
+
+```shell
+uvicorn --host 127.0.0.1 --port 8000 myapp:app
+```
+
+For several processes with a supervisor that restarts them, put gunicorn in front as the process
+manager and let uvicorn handle the protocol:
+
+```shell
+pip install uvicorn-worker
+gunicorn -b 127.0.0.1:8000 -w 5 -k uvicorn_worker.UvicornWorker myapp:app
+```
+
+### Reload workers without closing the socket
+
+```shell
+kill -HUP <master-pid>
+```
+
+The master keeps the listening socket, starts new workers and retires the old ones, so nothing in
+flight is dropped and no connection is refused. Measured: worker pids went from 634 and 635 to 644
+and 646 while the master pid never changed. In a container, where the app server is PID 1 and there
+is nothing to signal, you replace the container instead.
+
+### Trust the proxy in front of you
+
+Both servers reconstruct the client IP and the scheme from `X-Forwarded-For` and
+`X-Forwarded-Proto`, but only when the connection comes from an address they trust. The default is
+loopback only: `[127.0.0.1,::1]` for gunicorn, `127.0.0.1` for uvicorn. If the proxy is another
+container or another host, name it:
+
+```shell
+gunicorn --forwarded-allow-ips 10.0.0.0/8 ...
+uvicorn --forwarded-allow-ips 10.0.0.0/8 ...
+```
+
+### Bind where the traffic can reach you
+
+In a container, `127.0.0.1` is reachable only from inside that container. Listen on all interfaces
+and let the network layer do the restricting:
+
+```shell
+uvicorn --host 0.0.0.0 --port 8000 myapp:app
+```
+
+## Gotchas
+
+### The default is a single worker, so one slow request blocks the site
+
+`gunicorn app:app` with no flags boots exactly one sync worker. Six requests all came back with the
+same pid. Then, with one request sleeping in a handler, an unrelated request to `/` waited
+**28.2 s**: it was not served by a busy worker, it was served by the *replacement* worker once the
+first one had been killed for timing out.
+
+Always pass `-w`. One worker is a development default that looks fine until two people use the site
+at once.
+
+### --timeout is a watchdog, not a request deadline, and it does not mean the same thing twice
+
+The same flag, the same handler sleeping 12 seconds:
+
+```
+gunicorn -t 5 -k sync                  -> 500 after 5.24 s, "WORKER TIMEOUT" in the log
+gunicorn -t 5 -k gthread --threads 4   -> 200 after 12.00 s, nothing in the log
+```
+
+With sync workers the master kills a worker that has not checked in, and the request dies with it,
+as a 500. With `gthread` the worker keeps answering the master from another thread, so the request
+runs to completion and the timeout never fires. Neither is a per request limit: for that you need
+the proxy in front, or a timeout inside the handler.
+
+### --preload plus SIGHUP serves stale code, silently
+
+`--preload` imports the application once in the master and forks the workers from it. That saves
+memory and catches an import error before any worker starts. It also means a reload forks from the
+module already in memory:
+
+```
+no --preload : v1, edit the source, HUP -> v2
+--preload    : v1, edit the source, HUP -> v1
+```
+
+Same signal, same edit, and the second one keeps serving the old code with nothing in the log to say
+so. If your deploy is "write the files, send HUP", `--preload` breaks it. Anything opened at import
+time is also inherited by every worker, so a connection pool or a socket created at module level is
+shared across processes after the fork.
+
+### Forwarded headers are a trust setting, in both directions
+
+The default trusts loopback, which cuts both ways.
+
+Behind a proxy that is not on loopback, the headers are ignored: the same request arrived as
+`scheme=http` with the proxy's address as the client, while from loopback it arrived as
+`scheme=https` with the spoofed `203.0.113.7`. An app that builds absolute URLs then emits `http://`
+links and redirect loops, and anything keyed on the client IP keys on the proxy.
+
+The other direction is why `--forwarded-allow-ips '*'` is not the fix: it lets whoever can reach the
+port set their own IP and scheme. Name the proxy's address or network.
+
+### uvicorn.workers is deprecated, the worker moved to its own package
+
+`gunicorn -k uvicorn.workers.UvicornWorker` still runs, and warns:
+
+```
+DeprecationWarning: The `uvicorn.workers` module is deprecated.
+Please use `uvicorn-worker` package instead.
+```
+
+Install `uvicorn-worker` and use `uvicorn_worker.UvicornWorker`.
+
+### uWSGI: SIGTERM reloads, and the project is in maintenance mode
+
+Two things to know before reaching for uWSGI on a new project.
+
+Before 2.1 it treats `SIGTERM` as *reload*, not shutdown, so the usual way to stop a process brings
+it back. Use `SIGINT` or `SIGQUIT`. That is straight from the project's own best practices page,
+linked below.
+
+And the [README](https://github.com/unbit/uwsgi) states: "The project is in maintenance mode (only
+bugfixes and updates for new languages apis)". Existing deployments are fine. For something new,
+gunicorn or uvicorn is the shorter path.
+
+## Links and references
+
+* [Gunicorn design](https://docs.gunicorn.org/en/stable/design.html), worker classes and the worker
+  count formula.
+* [Gunicorn settings](https://docs.gunicorn.org/en/stable/settings.html), every flag with its
+  default.
+* [Uvicorn deployment](https://www.uvicorn.org/deployment/), and
+  [uvicorn-worker](https://github.com/Kludex/uvicorn-worker).
+* [Things to know (best practices) - uWSGI documentation](https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html),
+  worth reading in full if you maintain a uWSGI deployment.
+
+## See also
+
+* <Link to="/app/webserver/" />
+* <Link to="/python/web-frameworks/" />
+* <Link to="/containers/docker/" />

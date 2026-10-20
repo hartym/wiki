@@ -1,51 +1,246 @@
 ---
 title: SQLAlchemy
-description: "SQLAlchemy notes: turn on engine SQL logging, and the Core / ORM split."
-checkedOn: 2026-07-30
+description: "SQLAlchemy 2.0 cookbook: engine and session, select, eager loading, RETURNING, and the gotchas (silent no-commit, expiry, detached instances, NULL comparisons)."
+checkedOn: 2026-09-03
 ---
 
-This page is a work in progress.
+SQLAlchemy is two libraries stacked. **Core** builds and runs SQL: an engine, connections, and
+expressions that render to statements. The **ORM** maps rows to objects and adds a session that
+tracks what changed. You can use Core alone, but you cannot use the ORM without Core showing
+through, and most of the surprises below come from that seam.
 
-Reference: [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/)
+Everything here is replayed on **SQLAlchemy 2.0.52** (Python 3.10), in the 2.0 style: one
+`select()` construct for both layers, no `Query` object.
 
-## Database Abstraction Layer
+## Cookbook
+
+### Connect, and see the SQL
+
+```python
+from sqlalchemy import create_engine
+
+engine = create_engine("sqlite:///basics.sqlite", echo=True)
+```
+
+`echo=True` prints every statement to stderr. For real applications, route it through logging
+instead, which lets you keep it on in development and turn the level down in production:
 
 ```python
 import logging
 
-from sqlalchemy import create_engine
-
 logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-engine = create_engine('sqlite:///basics.sqlite')
+logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 ```
 
-## Object Relational Mapper
+`INFO` gives the statements, `DEBUG` adds the result rows.
 
-Declarative model, engine and a query (SQLAlchemy 2.0 style):
+### Declare a model
 
 ```python
-from sqlalchemy import create_engine, select, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
     pass
 
 class Knight(Base):
     __tablename__ = "knights"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50))
     quest: Mapped[str | None]
+    items: Mapped[list["Item"]] = relationship(back_populates="knight")
 
-engine = create_engine("sqlite://")
+class Item(Base):
+    __tablename__ = "items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    label: Mapped[str]
+    knight_id: Mapped[int] = mapped_column(ForeignKey("knights.id"))
+    knight: Mapped["Knight"] = relationship(back_populates="items")
+```
+
+The annotation carries the type and the nullability: `Mapped[str]` is `NOT NULL`,
+`Mapped[str | None]` is nullable. `mapped_column()` is only needed when you have something extra
+to say (primary key, length, index, default).
+
+### Write and read
+
+```python
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 Base.metadata.create_all(engine)
 
 with Session(engine) as session:
-    session.add(Knight(name="Arthur", quest="grail"))
+    session.add(Knight(name="Arthur", quest="grail", items=[Item(label="coconut")]))
     session.commit()
 
 with Session(engine) as session:
-    knight = session.scalars(
-        select(Knight).where(Knight.quest == "grail")
-    ).one()
+    arthur = session.scalars(select(Knight).where(Knight.name == "Arthur")).one()
 ```
+
+`Session` as a context manager closes the session on exit, but does **not** commit. `session.commit()`
+is yours to call, or use `with Session(engine) as s, s.begin():` to commit on a clean exit.
+
+### `scalars()` or `execute()`
+
+This is the distinction to get right, because both work and they return different shapes:
+
+```python
+session.scalars(select(Knight)).all()               # [Knight, Knight]
+session.execute(select(Knight)).all()               # [(Knight,), (Knight,)]
+session.execute(select(Knight.name, Knight.quest))  # [('Arthur', 'grail'), ...]
+```
+
+`scalars()` unwraps the first column of every row, which is what you want when you select whole
+entities. `execute()` keeps the tuples, which is what you want when you select individual columns.
+
+The terminators are the same in both cases: `.all()`, `.first()`, `.one()`, `.one_or_none()`.
+`one()` raises `NoResultFound` on zero rows and `MultipleResultsFound` on more than one.
+`one_or_none()` accepts zero, and still raises `MultipleResultsFound` on two, so it is not the
+lenient version of `one()`, only the nullable one. If you want "give me anything", that is
+`first()`.
+
+### Fetch by primary key
+
+```python
+knight = session.get(Knight, 1)     # None if there is no such row
+```
+
+`get()` looks in the identity map first, so a second call in the same session issues no statement
+at all. A `select()` for the same row does run the query, but still hands back the same object:
+one row is one Python object per session, always.
+
+### Load related rows in one query
+
+Walking `knight.items` over a list of knights issues one query per knight: the classic N+1.
+
+```python
+from sqlalchemy.orm import selectinload
+
+for knight in session.scalars(select(Knight).options(selectinload(Knight.items))):
+    print(knight.name, [item.label for item in knight.items])
+```
+
+Measured on four knights: 5 statements with lazy loading (1 + 4), 2 with `selectinload` (one for
+the knights, one `IN` query for their items).
+
+### Raw SQL
+
+```python
+from sqlalchemy import text
+
+session.execute(text("select :n + 1"), {"n": 1}).scalar()
+```
+
+A bare string raises `ArgumentError: Textual SQL expression 'select 1' should be explicitly
+declared as text('select 1')`. Pass parameters as a dict with `:name` placeholders rather than
+formatting them into the string.
+
+### Insert many rows, get the keys back
+
+```python
+from sqlalchemy import insert
+
+rows = session.execute(
+    insert(Knight).returning(Knight.id, Knight.name),
+    [{"name": "Galahad", "quest": "grail"}, {"name": "Robin", "quest": "flee"}],
+)
+session.commit()
+```
+
+This is one statement, not one per row, and it skips building ORM objects. Use it for imports;
+use `session.add()` when you need the objects afterwards.
+
+### Update or delete in bulk
+
+```python
+from sqlalchemy import update
+
+session.execute(update(Knight).where(Knight.quest.is_(None)).values(quest="unknown"))
+session.commit()
+```
+
+Bulk statements run in the database, so objects already loaded in the session hold stale values
+until they expire or you refresh them.
+
+## Gotchas
+
+### `engine.connect()` does not commit
+
+```python
+with engine.connect() as conn:
+    conn.execute(insert(Knight), {"name": "Bedevere"})
+# nothing was written
+```
+
+Verified: the row is gone on the next connection. SQLAlchemy 2.0 removed autocommit, so a
+connection opens a transaction and rolls it back when the block exits. Either call
+`conn.commit()` (commit as you go) or open the block with `engine.begin()`, which commits on a
+clean exit and rolls back on an exception. The `Session` behaves the same way, which is why
+`session.commit()` is everywhere above.
+
+### Objects expire on commit
+
+By default `Session` uses `expire_on_commit=True`: after a commit, every attribute of every loaded
+object is marked stale, and the next attribute access issues a `SELECT`. Measured: 1 extra
+statement for `knight.name` after a commit, 0 with `expire_on_commit=False`.
+
+That refresh is a feature while the session is open (you never read a value the transaction no
+longer guarantees), and a trap once it is closed:
+
+```python
+session.commit()
+session.close()
+knight.name     # DetachedInstanceError: instance is not bound to a Session
+```
+
+The object is not broken, it just has nothing to refresh from. Read what you need before closing,
+or hand the caller a plain dict, or set `expire_on_commit=False` and accept that the values are a
+snapshot.
+
+### `joinedload` on a collection needs `.unique()`
+
+```python
+from sqlalchemy.orm import joinedload
+
+session.scalars(select(Knight).options(joinedload(Knight.items))).unique().all()
+```
+
+Without `.unique()`, this raises `InvalidRequestError: The unique() method must be invoked on this
+Result`. A join against a collection repeats the parent row once per child, and SQLAlchemy refuses
+to guess whether you want those duplicates. `selectinload` has no such problem, which is one more
+reason to reach for it first; `joinedload` earns its place on many-to-one relations.
+
+### `!=` does not match NULL
+
+```python
+select(Knight.name).where(Knight.quest != "grail")   # skips knights with no quest
+select(Knight.name).where(Knight.quest.is_(None))    # the NULL ones
+```
+
+Verified: a knight with `quest = NULL` is absent from the first result. This is SQL three-valued
+logic, not a SQLAlchemy quirk, but the Python operator makes it easy to forget. `== None` does
+render as `IS NULL`, so it works, and `is_(None)` says it out loud (and survives linters that
+rewrite `== None`).
+
+### In-memory SQLite is not shared
+
+`create_engine("sqlite://")` gives you a database that lives in one connection. SQLAlchemy papers
+over this with a `SingletonThreadPool`, so a single-threaded script sees a stable database, but
+another thread gets an empty one. For tests that share an in-memory database across threads, pass
+`poolclass=StaticPool` with `connect_args={"check_same_thread": False}`.
+
+## References
+
+- [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/)
+- [ORM quick start](https://docs.sqlalchemy.org/en/20/orm/quickstart.html)
+- [Relationship loading techniques](https://docs.sqlalchemy.org/en/20/orm/queryguide/relationships.html)
+- [What's new in SQLAlchemy 2.0](https://docs.sqlalchemy.org/en/20/changelog/migration_20.html)
+
+## See also
+
+* <Link to="/database/postgresql" /> - the engine most of this ends up talking to.
+* <Link to="/database/relational" /> - where SQL sits among the database families.
+* <Link to="testing" /> - pytest, including fixtures for throwaway databases.

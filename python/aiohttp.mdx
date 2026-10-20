@@ -1,6 +1,241 @@
 ---
-description: "Reference links for aiohttp, the asyncio HTTP client and server for Python."
 title: aiohttp
+description: "aiohttp cookbook: sharing a client session, timeouts, concurrent requests, streaming, a minimal server, and the defaults that bite (silent 500s, dead response bodies, dropped cookies)."
+checkedOn: 2026-09-10
 ---
 
-* [aiohttp documentation](https://aiohttp.readthedocs.io/)
+aiohttp is both an asyncio HTTP client and an asyncio HTTP server. The client half is the one
+most projects use, usually to call other services. Its defaults are not the ones you would guess
+coming from `requests`: errors do not raise, the body of a response stops existing when you leave
+the `async with`, and the timeout is five minutes.
+
+Everything below is verified on **aiohttp 3.14.3** (Python 3.10).
+
+## Cookbook
+
+### Fetch JSON
+
+```python
+import asyncio
+import aiohttp
+
+async def main():
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://example.org/api/knights") as response:
+            response.raise_for_status()
+            data = await response.json()
+    print(data)
+
+asyncio.run(main())
+```
+
+One session for the whole program, not one per request. The session holds the connection pool,
+the cookie jar and the default headers. Opening one per call throws all of that away, see the
+gotcha below.
+
+### Query string, path, POST body
+
+```python
+async with session.get("/knights/lancelot", params={"quest": "grail"}) as response:
+    ...
+
+async with session.post("/knights", json={"name": "robin"}) as response:
+    ...             # json= serializes and sets Content-Type: application/json
+
+async with session.post("/login", data={"user": "arthur"}) as response:
+    ...             # data= with a dict sends a urlencoded form
+```
+
+Passing `base_url="https://example.org"` to `ClientSession` lets every call use a path only.
+
+### Timeouts
+
+```python
+timeout = aiohttp.ClientTimeout(total=10, connect=2, sock_read=5)
+
+async with aiohttp.ClientSession(timeout=timeout) as session:      # for every request
+    async with session.get(url, timeout=aiohttp.ClientTimeout(total=1)) as response:
+        ...                                                        # override, this call only
+```
+
+`total` covers the whole exchange, connection included. `connect` covers getting a connection
+from the pool or opening one, `sock_read` the gap between two chunks of the answer. A timeout
+raises `TimeoutError`, and its message is empty, so log the URL yourself.
+
+### Run requests concurrently
+
+```python
+async def fetch(session, url):
+    async with session.get(url) as response:
+        return await response.text()
+
+async with aiohttp.ClientSession() as session:
+    pages = await asyncio.gather(*(fetch(session, url) for url in urls))
+```
+
+Measured on five requests to a handler that sleeps 300 ms: 1.81 s in a `for` loop, 0.51 s with
+`gather`. Use `return_exceptions=True` if one failure must not cancel the batch, and a
+`asyncio.Semaphore` to cap how many run at once.
+
+### Stream a large response
+
+```python
+async with session.get(url) as response:
+    with open("big.tar", "wb") as f:
+        async for chunk in response.content.iter_chunked(64 * 1024):
+            f.write(chunk)
+```
+
+`await response.read()` loads the whole body in memory. `iter_chunked` never holds more than one
+chunk.
+
+### A minimal server
+
+```python
+from aiohttp import web
+
+routes = web.RouteTableDef()
+
+@routes.get("/knights/{name}")
+async def knight(request):
+    return web.json_response({
+        "name": request.match_info["name"],
+        "quest": request.query.get("quest", "unknown"),
+    })
+
+@routes.post("/knights")
+async def create(request):
+    try:
+        body = await request.json()
+    except Exception:
+        raise web.HTTPBadRequest(text="invalid json")
+    return web.json_response(body, status=201)
+
+app = web.Application()
+app.add_routes(routes)
+web.run_app(app, host="127.0.0.1", port=8080)
+```
+
+Path parameters land in `request.match_info`, the query string in `request.query`. HTTP errors
+are exceptions: `raise web.HTTPBadRequest(...)` from anywhere in the handler.
+
+### Share a client session across the server's lifetime
+
+```python
+async def client_session(app):
+    app["http"] = aiohttp.ClientSession()
+    yield                                  # the server runs here
+    await app["http"].close()
+
+app.cleanup_ctx.append(client_session)
+```
+
+Everything before the `yield` runs at startup, everything after at shutdown, in reverse order of
+registration. This is where a client session, a database pool or a broker connection belongs: it
+gets created once the loop exists, and closed even if startup of a later context fails.
+
+### Middlewares
+
+```python
+import time
+
+@web.middleware
+async def timing(request, handler):
+    started = time.perf_counter()
+    response = await handler(request)
+    response.headers["X-Elapsed"] = f"{time.perf_counter() - started:.3f}"
+    return response
+
+app = web.Application(middlewares=[timing, auth])
+```
+
+The first middleware of the list is the outermost: it runs first on the way in, last on the way
+out. Verified with two middlewares logging both sides.
+
+## Gotchas
+
+### The session is the connection pool
+
+Five sequential requests through one `ClientSession` open **one** TCP connection server side. The
+same five requests, each with its own session, open **five**. Keep-alive lives in the session, so
+a session per request also pays a handshake per request (TLS included) and loses cookies between
+calls.
+
+```python
+app["http"] = aiohttp.ClientSession()   # once, at startup
+```
+
+Forgetting to close it prints `Unclosed client session` at exit, which is the warning to watch
+for in tests.
+
+### The response body dies with the context manager
+
+```python
+async with session.get(url) as response:
+    pass
+await response.read()      # ClientConnectionError: Connection closed
+```
+
+Leaving the block releases the connection back to the pool, and an unread body is dropped with
+it. Read what you need inside the block. `response.status` and `response.headers` stay readable
+after, the body does not.
+
+### Nothing raises on a 500
+
+`session.get()` returns normally for any status code. Either check `response.status`, or ask for
+the exception:
+
+```python
+async with session.get(url, raise_for_status=True) as response:   # this call
+    ...
+
+session = aiohttp.ClientSession(raise_for_status=True)            # or every call
+```
+
+`response.raise_for_status()` does the same on demand and raises `ClientResponseError`.
+
+### `json()` validates the content type first
+
+A server answering valid JSON with `Content-Type: text/plain` gets you a `ContentTypeError`, not
+a parse error. Pass `content_type=None` to decode anyway:
+
+```python
+data = await response.json(content_type=None)
+```
+
+### The default timeout is five minutes
+
+`ClientTimeout(total=300, connect=None, sock_read=None, sock_connect=30)`. A hung service will
+therefore block a request for five minutes, which is far too long for a call made while serving
+another request. Set a `total` you can live with, on the session.
+
+### Cookies are dropped for IP addresses
+
+The default cookie jar follows the spec and ignores cookies coming from a host that is a bare IP
+address. Against `http://127.0.0.1:8080` the jar stays empty, which is confusing when the same
+code works in production against a hostname. For local testing:
+
+```python
+session = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True))
+```
+
+### `run_app` owns the loop
+
+`web.run_app()` creates and runs the event loop itself, so calling it from inside a running loop
+raises `RuntimeError: Cannot run the event loop while another loop is running`. To start a server
+from code that is already async (tests, an embedded server), use the runner API:
+
+```python
+runner = web.AppRunner(app)
+await runner.setup()
+await web.TCPSite(runner, "127.0.0.1", 8080).start()
+...
+await runner.cleanup()
+```
+
+## Links and references
+
+* [aiohttp documentation](https://docs.aiohttp.org/)
+* <Link to="fastapi" /> and <Link to="starlette" /> - the other async stack, ASGI based.
+* <Link to="web-frameworks" /> - where aiohttp sits among the alternatives.
+* <Link to="testing" /> - pytest, and `pytest-aiohttp` for the server side.

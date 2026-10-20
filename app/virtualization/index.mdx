@@ -1,16 +1,25 @@
 ---
 title: Virtualization
-description: Quick troubleshooting notes
+description: "VirtualBox notes: fixing very slow DNS inside a NAT guest."
 ---
 
 * <Link to="/containers/docker" />
 
-## Quick troubleshooting notes
+## VirtualBox: very slow DNS in a NAT guest
 
-On some networks, I had really slow DNS requests, making a real hell to use package managers like npm or gem (especially when building docker images). 
+On some networks, DNS lookups inside a VirtualBox guest were slow enough to make package managers
+like npm or gem painful, especially while building Docker images.
 
 ```shell
 VBoxManage modifyvm <vm-name> --natdnsproxy1 on
 VBoxManage modifyvm <vm-name> --natdnshostresolver1 on
 ```
-cf https://github.com/docker/docker/pull/1813/files
+
+By default the NAT engine's DHCP server hands the host's DNS servers straight to the guest, so the
+guest keeps using them after the host has moved to another network. Both settings stop that, in
+different ways: proxy mode intercepts the queries and forwards them to whichever servers the host
+currently uses, while host resolver mode decodes the queries and answers them through the host's
+resolver API, so the host's own `hosts` file applies too.
+
+This is a boot2docker-era note. Docker on macOS and Windows no longer runs through VirtualBox, so
+it only applies if you still drive VirtualBox guests directly.

@@ -1,26 +1,231 @@
 ---
 title: Docker
-description: "Docker notes: install and drop Alpine build dependencies in a single layer with a virtual package."
-checkedOn: 2026-06-25
+description: "Docker cookbook: layer order and the build cache, multi-stage builds, build context, build secrets, plus the defaults that silently bloat an image or swallow a failed build."
+checkedOn: 2026-09-25
 ---
 
-## Alpine images: build deps in one layer
+Docker rarely fails loudly. It ships an image that is ten times too big, or one that is missing the
+dependency the build was supposed to install, and says nothing. Almost none of that is a bug: it
+follows from two rules. A layer only ever adds, and the cache keys on the instruction plus what it
+copied.
 
-Install the build toolchain under a named virtual package, build, then remove that group, all in
-one `RUN` so the build deps never reach the final image layer.
+Everything below was run against Docker Engine 29.4.3 (buildx v0.33.0, BuildKit is the default
+builder) on `alpine:3.22` and `python:3.12-alpine`. Sizes are the `DISK USAGE` column of
+`docker images` unless stated otherwise.
+
+## Cookbook
+
+### Order the file so the slow step stays cached
+
+Copy the dependency manifest, install, then copy the source. Source changes every hour, the
+manifest changes every few weeks.
 
 ```docker
-RUN apk add --no-cache --virtual .builddeps build-base ... build deps ... \
-    && ... build steps that need those deps ... \
-    && apk del .builddeps
+FROM python:3.12-alpine
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ src/
+```
+
+The wrong order is `COPY . .` before the install: any edit to any file busts the cache for
+everything that follows. Measured on a 5 second install step, changing one source file and
+rebuilding:
+
+```
+COPY . . before the install : 5.60 s
+manifest first              : 0.36 s
+```
+
+### Keep the build toolchain out of the final image
+
+Build in one stage, copy the artifact into a clean one.
+
+```docker
+FROM alpine:3.22 AS build
+RUN apk add --no-cache build-base
+COPY hello.c .
+RUN gcc -static -o /hello hello.c
+
+FROM alpine:3.22
+COPY --from=build /hello /hello
+CMD ["/hello"]
+```
+
+Same program, 353 MB as a single stage against 12.9 MB multi-stage, and `command -v gcc` finds
+nothing in the final image. Use `docker build --target build` to stop at an intermediate stage and
+open a shell in it when something goes wrong.
+
+### Alpine: build deps in one layer
+
+When a second stage is overkill, install the toolchain under a named virtual package and drop the
+group in the same `RUN`.
+
+```docker
+RUN apk add --no-cache --virtual .builddeps build-base \
+ && ... build steps that need those deps ... \
+ && apk del .builddeps
 ```
 
 `--virtual .builddeps` tags everything installed in that call under one name, so `apk del
-.builddeps` drops the whole group afterwards. `--no-cache` fetches a fresh package index on the
-fly and keeps nothing in `/var/cache/apk`, which replaces the old `--update` plus
-`rm -rf /var/cache/apk/*` dance; passing `--update` as well is redundant. Keep it a single `RUN`:
-removing the deps in a later layer would not shrink the image, since each layer only adds.
+.builddeps` drops the whole group. `--no-cache` fetches a fresh package index on the fly and keeps
+nothing in `/var/cache/apk`, which replaces the old `--update` plus `rm -rf /var/cache/apk/*`
+dance; passing `--update` as well is redundant. The single `RUN` is the whole point: the same three
+commands split into three `RUN` instructions give 353 MB, against 12.8 MB in one, which is the
+size of the base image itself.
 
-## Misc
+### Keep the build context small
 
-Container ecosystem map: https://www.mindmeister.com/fr/389671722/open-container-ecosystem-formerly-docker-ecosystem
+```
+# .dockerignore
+node_modules
+.git
+```
+
+BuildKit is lazy: with a targeted `COPY app/ /app/` it transferred 74 bytes whether or not
+`.dockerignore` existed, because that is all the build asked for. With `COPY . /app/` the
+difference is the whole repository:
+
+```
+without .dockerignore : 62.93 MB of context, 139 MB image, .git and node_modules inside it
+with .dockerignore    :    173 B of context, 12.8 MB image
+```
+
+### Pass a secret to the build without baking it in
+
+```docker
+RUN --mount=type=secret,id=api_token \
+    pip install --extra-index-url "https://$(cat /run/secrets/api_token)@pypi.example.com/simple" -r requirements.txt
+```
+
+```shell
+docker build --secret id=api_token,src=token.txt -t app .
+```
+
+The file exists only while that `RUN` executes. Grepping the whole exported image for the value
+(`docker save app | grep -c 'the-value'`) returns 0, `docker history --no-trunc` does not carry it,
+and `/run/secrets/` does not exist at runtime.
+
+### See what is actually inside an image
+
+```shell
+docker history --no-trunc app          # what each layer added, and the command that added it
+docker image inspect app --format '{{json .Config.Env}}'
+docker save app | wc -c                # the real byte count, no accounting subtleties
+docker run --rm -it app sh             # or: --entrypoint sh, when the image sets one
+```
+
+`docker history` is the first place to look when an image is bigger than it should be: the layer
+that added the weight is right there with the instruction responsible.
+
+## Gotchas
+
+Each of these was reproduced on the versions above.
+
+### Removing a file in a later layer does not shrink the image
+
+A layer only adds. Deleting a file in a later instruction records a whiteout entry, the bytes stay
+in the layer below, and anyone who pulls the image pulls them.
+
+```docker
+RUN dd if=/dev/urandom of=/blob bs=1M count=50
+RUN rm /blob
+```
+
+```
+two RUN instructions : 56.2 MB of content   (docker save: 56 254 464 bytes)
+one RUN, dd && rm    :  3.8 MB              (docker save:  3 808 256 bytes)
+```
+
+The base image is 3.88 MB, so the second form adds nothing at all. `docker history` shows the `rm`
+layer weighing 4.1 kB next to the 52.4 MB it was supposed to remove, and `ls /blob` inside the
+container says the file does not exist. Deleted, invisible, still shipped.
+
+### A pipe in RUN swallows the failure
+
+`RUN` runs `/bin/sh -c`, and a shell pipeline exits with the status of its *last* command.
+
+```docker
+RUN pip install -r requirements.txt | tail -2
+```
+
+With the install failing, the build succeeded, the image was tagged, and `import requests` inside
+it raised `ModuleNotFoundError`. Set the option once at the top of the Dockerfile:
+
+```docker
+SHELL ["/bin/sh", "-o", "pipefail", "-c"]
+```
+
+`RUN false | tail -1` builds with return code 0 without it, and fails the build with it.
+
+### Build args and ENV end up in the image
+
+`--build-arg SECRET=...` is visible in `docker history --no-trunc` forever, on every machine that
+pulls the image. `ENV SECRET=...` is worse: it sits in `.Config.Env` and every process in the
+container inherits it, so a crash reporter or a subprocess dump carries it out. Both were read back
+from a freshly built image. Use `--mount=type=secret` for build-time secrets and a runtime
+mechanism for runtime ones.
+
+### Signals, PID 1, and the ten second wait
+
+The kernel gives PID 1 no default signal handlers, so a process that does not explicitly handle
+SIGTERM ignores it when it runs as PID 1. This has nothing to do with `CMD` form:
+
+```
+CMD ["sleep", "600"]            docker stop -> 10.17 s, then SIGKILL
+same sleep, docker run --init   docker stop ->  0.15 s
+```
+
+With an application that does handle SIGTERM, what matters is whether the shell got out of the way.
+BusyBox `ash` execs the final command of a simple `CMD`, so the shell form is often fine, and it
+breaks as soon as the shell has to survive the process:
+
+```
+CMD ["python", "/app.py"]        PID 1 = python   stop =  0.13 s   handler ran
+CMD python /app.py               PID 1 = python   stop =  0.15 s   handler ran
+CMD python /app.py ; echo bye    PID 1 = sh       stop = 10.15 s   handler never ran
+CMD python /app.py | cat         PID 1 = sh       stop = 10.16 s   handler never ran
+```
+
+Use the exec form, handle SIGTERM in the application, and add `--init` when the entrypoint really
+has to be a script. Ten seconds is the default `docker stop` grace period, after which the
+container is killed and whatever it was flushing is lost.
+
+### EXPOSE publishes nothing
+
+`EXPOSE 8080` is documentation. `docker ps` dutifully prints `8080/tcp` in the PORTS column and
+nothing on the host answers. Only `-p 8080:8080` (PORTS becomes `0.0.0.0:8080->8080/tcp`) makes the
+port reachable, and `-P` publishes every exposed port on random host ports.
+
+### A bind mount replaces a directory, it does not merge
+
+An image with `/app/config.txt` and `/app/other.txt`, mounted with `-v ./host:/app` where the host
+directory holds only `config.txt`, shows exactly one file: `other.txt` is gone for as long as the
+mount is there. The image content is intact, it is just covered. This is how a container works
+locally and fails in production, where nothing is mounted.
+
+### docker images reports two sizes
+
+The single `SIZE` column is gone in the 29.x line. `DISK USAGE` is what the image occupies on this
+machine (content blobs plus the unpacked snapshot), `CONTENT SIZE` is what gets pushed and pulled.
+They differ by roughly a factor of three on small images: `alpine:3.22` is 12.8 MB of disk usage
+for 3.88 MB of content. Quote the one you mean.
+
+### The build cache grows where you are not looking
+
+```shell
+docker system df          # images, containers, volumes and build cache, separately
+docker builder prune      # the build cache only
+docker system prune -a    # everything unused, including tagged images with no container
+```
+
+`docker system df` reported 948.7 MB of build cache of which 698.4 kB was reclaimable, because the
+rest was still referenced by tagged images. `docker system prune` will not touch it; `docker
+builder prune` is the one that clears the cache, and `--filter until=168h` keeps it bounded without
+throwing away this week's work.
+
+## See also
+
+* <Link to="/system/kubernetes/" /> - running containers in production.
+* <Link to="/system/alpine" /> - the distribution the Alpine recipe builds on.
+* <Link to="/shell" /> - the shell habits the `RUN` gotchas above depend on.

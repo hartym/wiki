@@ -1,15 +1,20 @@
 ---
 title: Kubernetes
-description: Kubernetes cookbook - deployment rollouts and rollbacks, environment from ConfigMaps, liveness/readiness/startup probes, capacity planning, and the GKE checklist.
-checkedOn: 2026-08-07
+description: Kubernetes cookbook - deployment rollouts and rollbacks, environment from ConfigMaps, liveness/readiness/startup probes, requests and limits, triaging a pod that will not start, RBAC and who can do what, capacity planning, and the GKE checklist.
+checkedOn: 2026-10-08
 ---
 
 [Kubernetes](https://kubernetes.io/) automates the deployment, scaling and operation of containerized
 applications. This page is the section hub and a cookbook of things I actually run.
 
+Commands and manifests below are checked against a Kubernetes v1.37.1 API server with kubectl
+v1.37.1. The page was first written against v1.37.0 and re-run end to end on v1.37.1 with no
+behaviour change.
+
 ## Pages in this section
 
-* <Link to="tooling" /> - the CLI toolbox around kubectl (kubectx, kubens, k9s, stern).
+* <Link to="tooling" /> - the CLI toolbox around kubectl (kubectx, kubens, k9s, stern, kustomize,
+  krew).
 * <Link to="helm" /> - the package manager (charts, releases, rollbacks).
 * <Link to="/app/monitoring/prometheus" /> - Prometheus, Alertmanager and Grafana, usually deployed
   on the cluster with the kube-prometheus-stack chart.
@@ -65,8 +70,12 @@ envFrom:
     name: eat-at-joe
 ```
 
-At two spaces, `name` would become a sibling of `configMapRef` and the API server rejects the pod
-(`envFrom` entries only accept `prefix`, `configMapRef` and `secretRef`).
+At two spaces, `name` would become a sibling of `configMapRef`, and since an `envFrom` entry only
+accepts `prefix`, `configMapRef` and `secretRef`, the API server rejects the pod:
+
+```
+strict decoding error: unknown field "spec.containers[0].envFrom[0].name"
+```
 
 ## Probes
 
@@ -119,6 +128,383 @@ probe a generous budget, keep the liveness probe tight.
 With a startup probe in place you rarely need `initialDelaySeconds` on the other two: their delays
 only start counting once the startup probe has succeeded.
 
+Everything you leave out is defaulted by the API server, so a probe reduced to its `httpGet` comes
+back as:
+
+```yaml
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /healthz
+    port: 8080
+    scheme: HTTP
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+```
+
+`timeoutSeconds: 1` is the one to keep in mind: a health endpoint that touches the database answers
+in more than a second the day the database is slow, and the probe starts failing exactly when you
+least want it to.
+
+## Requests, limits, and what the scheduler actually reads
+
+Two numbers that look like a pair but do different jobs.
+
+* **Requests** are what the scheduler reserves. It sums the requests of the pods already assigned to
+  a node and refuses to place one more if the node has nothing left. Nothing else about the pod
+  enters that decision.
+* **Limits** are what the node enforces once the container runs. The scheduler never compares them
+  to the node's capacity.
+
+The consequence is easy to reproduce. On a node with 2 CPUs, a pod asking for `1500m` with a limit
+of `1900m` is placed, a second pod asking for `1500m` stays `Pending`:
+
+```
+0/1 nodes are available: 1 Insufficient cpu. preemption: 0/1 nodes are available:
+1 No preemption victims found for incoming pod.
+```
+
+while a pod requesting `100m` with a limit of `8` (four times the whole node) is placed without a
+word. `kubectl describe node` puts both columns side by side on that same node, once a few more
+small pods have landed on it, and says it itself:
+
+```
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests     Limits
+  --------           --------     ------
+  cpu                1900m (95%)  10300m (515%)
+  memory             192Mi (4%)   192Mi (4%)
+```
+
+The Requests column is the one that fills up. The Limits column is what you have promised the node
+it might have to serve, and it is routinely above 100%.
+
+At runtime the two resources behave differently: a container over its CPU limit is
+[throttled](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/), it
+keeps running slower, while a container over its memory limit may be killed by the kernel (the
+`OOMKilled` you read in `kubectl describe pod`). Hence the usual rule of thumb: set a memory limit
+close to what you measured, and think twice before setting a tight CPU limit.
+
+Set limits and no requests, and the API server copies the limits into the requests:
+
+```yaml
+# what you wrote
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# what the API server stores
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 500m
+    memory: 256Mi
+```
+
+The reverse is not true: requests without limits stay requests, and the container runs uncapped.
+
+### QoS classes
+
+The API server computes `status.qosClass` from the resources you wrote. You do not set it, and it
+decides who gets evicted first when a node runs out of memory.
+
+| Class | Condition | Under node pressure |
+|---|---|---|
+| `Guaranteed` | every container has limits equal to requests, for cpu **and** memory | evicted last |
+| `Burstable` | at least one request somewhere, but not the above | evicted in between |
+| `BestEffort` | no request and no limit anywhere | evicted first |
+
+"Every container" is literal. A pod with one container carrying equal requests and limits and a
+second container carrying nothing at all comes out `Burstable`, not `Guaranteed`:
+
+```shell
+kubectl get pod -o custom-columns='NAME:.metadata.name,QOS:.status.qosClass'
+```
+
+## Triage a pod that will not start
+
+The order I walk, from cheapest to most intrusive.
+
+```shell
+kubectl get pod $POD -o wide                 # phase, restarts, and which node (or none)
+kubectl describe pod $POD                    # spec as stored, plus the events at the bottom
+kubectl events --for pod/$POD                # same events, chronological, without the rest
+kubectl logs $POD -c $CONTAINER --previous   # the run that crashed, not the one restarting now
+```
+
+`--previous` is the one people forget: without it you read the logs of the container that just
+started, which is usually empty, while the stack trace you want belongs to the instance that died.
+
+`Pending` with no node assigned is a scheduling problem, and `describe` or `events` names it
+(`Insufficient cpu`, an unmatched `nodeSelector`, a taint with no toleration, a PVC waiting to be
+bound). `CrashLoopBackOff` is the opposite: the pod was placed, the container ran and exited, so
+logs are where the answer is.
+
+When the image has no shell, attach one rather than rebuilding a debug image:
+
+```shell
+kubectl debug $POD -it --image=busybox                        # ephemeral container, same pod
+kubectl debug $POD -it --image=busybox --target=$CONTAINER    # ... and see its processes
+kubectl debug $POD -it --image=busybox --copy-to=$POD-debug   # a copy, leaves the original alone
+kubectl debug node/$NODE -it --image=busybox                  # host namespaces, host fs under /host
+```
+
+The ephemeral container joins the pod's network, so it reaches the same ports on `localhost`. It
+does **not** see the other containers' processes unless you pass `--target`, which asks for that
+container's process namespace, and that in turn has to be supported by the container runtime.
+
+An ephemeral container cannot be removed once added, it goes away with the pod. That is why
+`--copy-to` exists: it debugs a copy and leaves the pod serving traffic alone.
+
+## Who can do what (RBAC)
+
+Four objects, and the only thing they ever do is add. A **Role** or **ClusterRole** is a list of
+rules; a **RoleBinding** or **ClusterRoleBinding** attaches one to subjects. There is no deny rule,
+so nothing ever subtracts: two bindings on the same user union their verbs, and the only way to take
+a permission away is to remove the binding that grants it.
+
+Three combinations are useful, and the fourth does not exist.
+
+| Binding | Points at | Grants |
+|---|---|---|
+| `RoleBinding` in a namespace | `Role` in the same namespace | that namespace |
+| `RoleBinding` in a namespace | `ClusterRole` | that namespace only, with one role definition reused everywhere |
+| `ClusterRoleBinding` | `ClusterRole` | every namespace, plus the cluster-scoped resources |
+
+```
+The ClusterRoleBinding "bad" is invalid: roleRef.kind: Unsupported value: "Role":
+supported values: "ClusterRole"
+```
+
+The middle row is the one worth remembering: write the role once as a `ClusterRole`, bind it per
+namespace, and you get per-namespace grants without copying rules around.
+
+### Who am I, and what can I do
+
+```shell
+kubectl auth whoami                   # username and groups, as the API server sees them
+kubectl auth can-i get pods -n dev    # yes / no
+kubectl auth can-i --list -n dev      # everything, as a table
+```
+
+Add `--as` (and `--as-group`) to ask the same question about somebody else. It needs impersonation
+rights, and it answers without that user's credentials, which makes it the way to test a binding
+before handing it over:
+
+```shell
+kubectl auth can-i get pods -n dev --as=jane
+kubectl auth can-i --list -n dev --as=system:serviceaccount:dev:runner
+kubectl auth whoami --as=jane --as-group=dev-team
+```
+
+### Grant something
+
+```shell
+kubectl -n dev create role pod-reader --verb=get,list,watch --resource=pods
+kubectl -n dev create rolebinding jane-pod-reader --role=pod-reader --user=jane
+kubectl -n dev create rolebinding runner-reader --role=pod-reader --serviceaccount=dev:runner
+kubectl create clusterrolebinding carol-nodes --clusterrole=node-reader --user=carol
+```
+
+Nothing in a binding is checked against reality. Users and groups come from the authenticator, not
+from the API, so a binding to a misspelled user is created without a word and grants nothing. A
+binding to a `ServiceAccount` that does not exist is accepted too, and so is a binding to a role
+that does not exist. The last one is the loud failure: the dangling reference shows up in the
+`can-i` answer for unrelated questions in the same namespace.
+
+```
+no - rbac: RBAC: role.rbac.authorization.k8s.io "no-such-role" not found
+```
+
+### Read the bindings you already have
+
+Every binding with its subjects, one line each:
+
+```shell
+kubectl get rolebinding,clusterrolebinding -A -o json | jq -r '
+  .items[] | . as $b | ($b.subjects // [])[]
+  | [$b.kind, ($b.metadata.namespace // "-"), $b.metadata.name,
+     $b.roleRef.kind + "/" + $b.roleRef.name, .kind + ":" + .name] | @tsv'
+```
+
+Then the other half of the question, which roles grant a given verb on a given resource, wildcards
+included:
+
+```shell
+kubectl get role,clusterrole -A -o json | jq -r --arg res secrets --arg verb get '
+  .items[]
+  | select([(.rules // [])[]
+            | select((.resources // []) | index($res) or index("*"))
+            | select((.verbs // []) | index($verb) or index("*"))] | length > 0)
+  | [.kind, (.metadata.namespace // "-"), .metadata.name] | @tsv'
+```
+
+On a cluster with nothing but the built-ins, that second one already answers `admin`, `edit`,
+`cluster-admin` and a handful of `system:` roles. Which is the short way to the next point.
+
+### Apply RBAC manifests with `auth reconcile`, not `apply`
+
+`roleRef` is immutable, so pointing an existing binding at another role fails:
+
+```
+The RoleBinding "carol-view" is invalid: roleRef: Invalid value: ...: field is immutable
+```
+
+`kubectl auth reconcile` is the command written for these objects. It deletes and recreates the
+binding when the `roleRef` moved, and for everything else it merges rather than replaces:
+
+```shell
+kubectl auth reconcile -f rbac.yaml
+kubectl auth reconcile -f rbac.yaml --remove-extra-subjects   # make the file authoritative
+```
+
+```
+rolebinding.rbac.authorization.k8s.io/carol-view reconciled
+	reconciliation required recreate
+```
+
+The merge cuts both ways: by default a reconcile **adds** the subjects in the file and keeps the
+ones already on the binding, so a file that lists one user does not reduce a binding that lists
+four. `--remove-extra-subjects` is what makes the file the source of truth.
+
+### RBAC gotchas
+
+All reproduced against a v1.37.1 API server with `--authorization-mode=Node,RBAC`.
+
+**`kubectl auth can-i get pods/log` answers about a pod named `log`.** In that form the part after
+the slash is a resource *name*, not a subresource. So on a role granting `get pods` with no
+`resourceNames`, the question comes back `yes` while the actual permission to read logs is absent:
+
+```shell
+kubectl auth can-i get pods/log -n dev --as=jane            # yes
+kubectl auth can-i get pods --subresource=log -n dev --as=jane   # no, and this is the truth
+```
+
+The API server agrees with the second one. A `SubjectAccessReview` with `subresource: log` for the
+same user answers:
+
+```json
+{"allowed":false}
+```
+
+`--subresource` is the only form that asks the question you meant. Subresources are separate
+resources in a rule: `pods/log`, `pods/exec`, `pods/portforward` each need their own line, and
+`resources: ["pods"]` grants none of them.
+
+**`can-i` on a cluster-scoped resource takes `-n` seriously.** Ask about nodes inside a namespace
+and the answer describes a request that cannot exist:
+
+```shell
+kubectl auth can-i list nodes -n dev --as=carol
+Warning: resource 'nodes' is not namespace scoped
+
+yes
+```
+
+The real request, which carries no namespace, is refused:
+
+```
+Error from server (Forbidden): nodes is forbidden: User "carol" cannot list resource "nodes"
+in API group "" at the cluster scope
+```
+
+That warning line is the only hint, and it is easy to scroll past. A `ClusterRole` bound by a
+`RoleBinding` grants nothing at all on cluster-scoped resources, whatever `can-i` says with a
+namespace attached.
+
+**`resourceNames` is silently useless on `list`.** Names only work for verbs that address a single
+object. A rule with `resourceNames: ["web-1"]` and `verbs: ["get","list","watch"]` is accepted
+without a warning, and the `list` never authorizes anything:
+
+```
+Error from server (Forbidden): pods is forbidden: User "zoe" cannot list resource "pods"
+in API group "" in the namespace "dev"
+```
+
+Same trap in reverse: `get pods` without a name is a different request from `get pods/web-1`, so a
+`resourceNames` rule gives `yes` on the second and `no` on the first.
+
+**`delete` is not `deletecollection`.** They are two verbs, granted separately, and the one that
+bites is the direction you do not expect. `kubectl delete pods --all` lists and then deletes one
+object at a time, so `delete` alone is enough to empty a namespace. `deletecollection` is the
+single call on the collection endpoint, which is what controllers and clients use:
+
+```shell
+kubectl delete --raw "/api/v1/namespaces/dev/pods"
+```
+
+```
+Error from server (Forbidden): pods is forbidden: User "jane" cannot deletecollection
+resource "pods" in API group "" in the namespace "dev"
+```
+
+The built-in `edit` and `admin` carry `deletecollection` on everything they can delete, `view`
+nowhere.
+
+**`edit` in a namespace reads and writes every Secret in it.** The built-in `edit` ClusterRole
+carries `secrets` in both its read rule and its write rule, and `pods/exec` as well, so it also
+means a shell in any pod of that namespace. The built-in `view` mentions `secrets` nowhere, which
+is the real difference between the two. Neither can touch roles or bindings; `admin` can.
+
+**You cannot grant what you do not hold.** Someone allowed to create roles still cannot write a
+rule beyond their own permissions:
+
+```
+roles.rbac.authorization.k8s.io "secret-grab" is forbidden: user "dave"
+(groups=["system:authenticated"]) is attempting to grant RBAC permissions not currently held:
+{APIGroups:[""], Resources:["secrets"], Verbs:["get" "list"]}
+```
+
+Same answer when they try to bind themselves to a role that holds more than they do, listing every
+rule they are missing. Two verbs open that door, and both are real escalation paths worth grepping
+for in your own manifests: `escalate` on roles lifts the check entirely, and `bind` on a named role
+allows a binding to that role without holding its rules.
+
+```yaml
+rules:
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles"]
+  resourceNames: ["admin"]
+  verbs: ["bind"]
+```
+
+With that rule and nothing else, the user binds the whole `admin` ClusterRole to themselves and the
+API server accepts it.
+
+**Do not edit `view`, `edit` or `admin`.** They carry an `aggregationRule`, and the controller
+rewrites their `rules` from the ClusterRoles matching its selector. A rule added by hand is gone a
+second later, with nothing to say it was dropped. The supported way is a new ClusterRole wearing the
+label:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: view-crontabs
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups: ["stable.example.com"]
+  resources: ["crontabs"]
+  verbs: ["get", "list", "watch"]
+```
+
+Its rules show up in `kubectl get clusterrole view -o yaml` within a couple of seconds, and
+everyone already bound to `view` gets them.
+
+**`can-i` needs the resource to be served.** Ask about a custom resource whose CRD is not installed
+and kubectl cannot resolve it through discovery, so it sends the string it was given as the resource
+name and gets a `no` that says nothing about RBAC. Install the CRD and the same command answers
+`yes`.
+
+Reference: [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/),
+which is also where the full list of default roles lives.
+
 ## Capacity planning
 
 Poor man's swiss army knife: one line per container, with its requests and whether the workload
@@ -151,6 +537,65 @@ When traffic does not reach the pods, walk the chain in order rather than guessi
 * Google Cloud side: the L7 load balancer is wired correctly (backend, routes, frontend).
 * Google Cloud side: health checks are green. They are separate from the Kubernetes probes, and a
   readiness probe on a path the load balancer does not check will not save you.
+
+## Gotchas
+
+All reproduced against a v1.37.1 API server.
+
+**`1G` is not `1Gi`.** The suffixes without an `i` are powers of ten, the ones with an `i` are powers
+of two. Asking for `1024Mi` under a limit of `1G` is asking for more than the limit, and the API
+server says so:
+
+```
+The Pod "g" is invalid: spec.containers[0].resources.requests: Invalid value: "1Gi":
+must be less than or equal to memory limit of 1G
+```
+
+A request above its limit is rejected outright, which is the good case: you find out immediately.
+The bad case is the mistake that stays under the limit, where writing `1G` instead of `1Gi` just
+hands the container about 7% less memory than you meant, silently.
+
+**Quantities come back normalized.** Write `1000m` and `1024Mi`, read back `"1"` and `1Gi`. The
+stored object is equivalent but not textually what you sent, so a manifest written one way and a
+cluster state written the other produce a permanent diff in any tool that compares them.
+
+**`--record` is gone, and the annotation that replaced it is sticky.** Change causes now come from a
+`kubernetes.io/change-cause` annotation on the deployment:
+
+```shell
+kubectl annotate deployment/$DEPLOYMENT kubernetes.io/change-cause="security bump"
+```
+
+Set it once and every later revision inherits it. A `rollout restart` after that one bump shows up
+in `rollout history` as `security bump` too, because nobody updated the annotation. Either set it on
+every change or do not trust the column.
+
+**`kubectl get events` is not chronological.** It returns events in the API's own order, which puts
+an event from nine minutes ago before one from five minutes ago. Either sort it, or use the
+dedicated command, which is chronological and can filter on one object:
+
+```shell
+kubectl get events --sort-by=.lastTimestamp
+kubectl events --for deployment/$DEPLOYMENT
+```
+
+**A deployment's `selector` is immutable.** Relabelling a live deployment fails, and there is no
+flag around it: the fix is a new deployment plus a delete of the old one.
+
+```
+The Deployment "web" is invalid:
+* spec.template.metadata.labels: Invalid value: ...: `selector` does not match template `labels`
+* spec.selector: Invalid value: ...: field is immutable
+```
+
+**`kubectl rollout status` is a real CI gate.** It exits non-zero when the rollout does not converge
+in time, so `kubectl rollout status deployment/$DEPLOYMENT --timeout=5m` is enough to fail a
+pipeline on a bad deploy. Without `--timeout` it waits forever, which in CI means until the job is
+killed.
+
+**`kubectl set image` checks the container name client-side.** A typo gives
+`error: unable to find container named "nope"` and nothing is sent, so it cannot silently add a
+container to the pod template.
 
 ## Reading list
 

@@ -1,42 +1,58 @@
 ---
 title: "ImageMagick (and GraphicsMagick)"
-description: "ImageMagick and GraphicsMagick command-line recipes: inspect, batch-optimise, convert, flatten, trim and tile images for the web."
-checkedOn: 2026-07-31
+description: "ImageMagick command-line cookbook: inspect, batch-optimise, convert, flatten, trim and tile images, plus the options that silently rotate or enlarge your files."
+checkedOn: 2026-09-22
 ---
 
-* https://en.wikipedia.org/wiki/ImageMagick
-* https://imagemagick.org/
-* https://en.wikipedia.org/wiki/GraphicsMagick
-* http://www.graphicsmagick.org/
+* [imagemagick.org](https://imagemagick.org/), the current 7.x line
+* [legacy.imagemagick.org](https://legacy.imagemagick.org/), the 6.x line, end of life announced for
+  2029-04-01, last release 6.9.13-56
+* [GraphicsMagick](http://www.graphicsmagick.org/)
 
 On ImageMagick 7 the single `magick` command replaces the old per-tool binaries, so the recipes
 below use `magick`, `magick identify`, `magick mogrify`, `magick montage`. On ImageMagick 6 drop the
-`magick` prefix and call `convert`, `identify`, `mogrify`, `montage` directly.
+`magick` prefix and call `convert`, `identify`, `mogrify`, `montage` directly. The old names survive
+in 7 as symbolic links to `magick`, but the
+[porting guide](https://imagemagick.org/porting/) asks for `magick identify` and friends and is
+explicit about one form: do not write `magick convert`, which switches the legacy parser back on.
+Debian and Ubuntu still ship the 6.x line, which is what everything below was run against
+(6.9.11-60 on Ubuntu 22.04).
+
+## Cookbook
 
 ### Inspect before you touch anything
 
 ```shell
-magick identify -format "%f: %wx%h %m %b\n" *.jpg
+magick identify -format "%f: %wx%h %m %b q=%Q\n" *.jpg
 ```
 
-Prints one line per file with name, dimensions, format and byte size, without opening a viewer. Quick
-way to spot the oversized outlier before running a batch. Drop the `-format` string to get the full
-verbose dump of a single file.
+One line per file with name, dimensions, format, byte size, and the quality the JPEG was saved at.
+Read it before a batch: re-encoding at a higher quality than the source only adds bytes. Drop the
+`-format` string to get the full verbose dump of a single file.
 
 ### Batch-optimise a folder of JPEGs for the web
 
 ```shell
+mkdir -p output
 for i in *.jpg; do
-    magick "$i" -strip -interlace Plane -gaussian-blur 0.05 -quality 75% -resize 1800x "output/$i"
+    magick "$i" -auto-orient -strip -interlace Plane \
+        -sampling-factor 4:2:0 -quality 75 -resize '1800x>' "output/$i"
 done
 ```
 
-Walks every `.jpg` in the current directory and writes a lighter copy into `output/` (create it
-first with `mkdir -p output`). `-strip` drops EXIF and other metadata, `-interlace Plane` makes the
-JPEG progressive, `-gaussian-blur 0.05` smooths noise so it compresses better, `-quality 75%` sets
-the JPEG quality, and `-resize 1800x` caps the width at 1800px while keeping the aspect ratio.
-Verified on ImageMagick 6.9.11 (with `convert`): a 2400x1600 source comes out at 1800x1200 and about
-half the size.
+`-auto-orient` rotates the pixels according to the EXIF orientation tag before `-strip` throws that
+tag away, which is the whole point of putting it first (see the gotchas). `-strip` drops metadata,
+`-interlace Plane` makes the JPEG progressive (`identify -verbose` then reports `Interlace: JPEG`),
+`-sampling-factor 4:2:0` applies the chroma subsampling every browser expects, `-quality 75` sets
+the JPEG quality, and `-resize '1800x>'` caps the width at 1800px while leaving smaller images
+alone. Quote the geometry, or the shell reads `>` as a redirection.
+
+Measured: a 2400x1600 source of 84kB comes out 1800x1200 and 21kB, and an 800x600 source stays
+800x600 and drops from 18kB to 10kB.
+
+Add `-gaussian-blur 0.05` when the source is grainy: on a deliberately noisy 2000x1400 image the
+same pipeline gave 280kB with it against 327kB without. On a clean gradient the two outputs were
+byte for byte identical, so it buys nothing there.
 
 ### Convert a whole folder without the loop
 
@@ -48,16 +64,28 @@ magick mogrify -format webp -quality 80 -path output *.jpg
 `.webp` copies, `-path output` sends them to `output/` instead of next to the sources. Careful:
 `mogrify` without `-format` or `-path` overwrites the originals in place.
 
+### Decode less to go faster
+
+```shell
+magick -define jpeg:size=800x600 huge.jpg -resize 400x thumb.jpg
+```
+
+The JPEG decoder scales the image while reading it, so the full resolution is never decompressed.
+Keep the hint at twice the target size or so, to leave the resampling something to work with. On a
+6000x4000 source of 7.8MB, the same 400x267 thumbnail took 0.11s instead of 0.29s. This is a
+setting, not an operator, so it goes before the input file.
+
 ### Flatten a transparent PNG onto a JPEG
 
 ```shell
 magick logo.png -background white -flatten logo.jpg
 ```
 
-JPEG has no alpha channel, so transparent pixels would otherwise come out black. `-background white
--flatten` composites the image onto a solid canvas first. Swap `white` for any colour, e.g.
+JPEG has no alpha channel, so transparent pixels come out black: verified, the corner pixel of a
+transparent PNG written straight to JPEG reads `srgb(0,0,0)`. `-background white -flatten`
+composites the image onto a solid canvas first. Swap `white` for any colour, for instance
 `-background '#f5f5f5'`. On ImageMagick 6.7.5 and later, `-background white -alpha remove` does the
-same job without merging layers.
+same job without merging layers (both give a white corner pixel here).
 
 ### Trim surrounding whitespace
 
@@ -66,9 +94,9 @@ magick scan.png -trim +repage cropped.png
 ```
 
 `-trim` removes a uniform border, like the white margin around a scan or the padding around a logo.
-`+repage` resets the virtual canvas afterwards; without it the trimmed-off offset lingers in the
-metadata and trips up later operations. Add `-fuzz 5%` before `-trim` when the border is not
-perfectly uniform.
+`+repage` resets the virtual canvas afterwards. Add `-fuzz 5%` before `-trim` when the border is not
+perfectly uniform: a `#fefefe` block inside a white border does not trim at all without it, and
+trims to 101x41 with it.
 
 ### Build a contact sheet
 
@@ -80,9 +108,86 @@ magick montage *.jpg -tile 4x -geometry 240x+8+8 -title "Shoot 2026" contact.jpg
 thumbnail capped at 240px wide with an 8px gap on every side (`-geometry`). Handy to eyeball a whole
 shoot on a single page.
 
-### GraphicsMagick
+## Gotchas
+
+Everything here was reproduced on 6.9.11-60.
+
+### `-strip` rotates photos, silently
+
+A 400x200 JPEG carrying EXIF orientation 6 (`RightTop`) is displayed 200x400 by every viewer and
+browser. Now:
+
+* `magick in.jpg -strip out.jpg` gives 400x200 with no orientation tag, so the photo is suddenly on
+  its side. No warning, and the pixels are fine, which is why this survives review.
+* `magick in.jpg -auto-orient -strip out.jpg` gives 200x400, upright, no tag. This is the one you
+  want.
+* `-resize` alone keeps the tag (200x100, still `RightTop`), so resizing without stripping is safe.
+* `-thumbnail` is `-resize` plus a strip, so it carries the same trap.
+
+Put `-auto-orient` first in any pipeline that removes metadata.
+
+### `-resize` enlarges unless you stop it
+
+`-resize 1800x` on an 800x600 source produces 1800x1350, and the "optimised" file comes out twice
+the size of the original (18kB to 38kB, measured). `1800x>` only ever shrinks, `1800x<` only ever
+enlarges. Both need quoting in the shell.
+
+### `-quality` on a PNG is not what you think
+
+PNG is lossless. Quality 00 and quality 95 on the same source gave 15766 and 15500 bytes, with zero
+differing pixels (`compare -metric AE` returns 0). The number only picks a zlib level and a row
+filter. On the same image as JPEG, quality 50 against 95 is 23kB against 131kB.
+
+### Blur geometry is radius first, and sigma defaults to 1
+
+In `-gaussian-blur radiusxsigma`, a bare number is the **radius**: `-gaussian-blur 0.05` is exactly
+`-gaussian-blur 0.05x1` (identical bytes), while `-gaussian-blur 0x0.05` is a different, almost
+invisible blur. Any radius below 1 ends up with the same minimal kernel, so `0.05` and `0.5`
+produced byte-identical output. The usual form is `0xsigma`, which lets ImageMagick derive the
+radius from sigma.
+
+### `-trim` leaves the old canvas behind
+
+A 400x300 image trimmed to 101x101 keeps `page=+150+100` and a 400x300 virtual canvas. Add a border
+afterwards and the offset is still there. PNG and GIF carry that offset in the file, so the surprise
+turns up later, in a viewer or in the next command. `+repage` resets it.
+
+### `mogrify` really does overwrite
+
+Same file in, same file out: an 84kB source became 5.8kB in place. There is no undo. `-path` or
+`-format`, or work on a copy.
+
+### The security policy blocks more than you expect
+
+Distributions ship a restrictive `policy.xml` (`/etc/ImageMagick-6/policy.xml` on Ubuntu). Read it
+with `magick identify -list policy` and the limits with `magick identify -list resource`. On Ubuntu
+22.04:
+
+* PDF, PS and EPS coders are off: `attempt to perform an operation not allowed by the security
+  policy 'PDF'`. Note that a 0 byte output file is still created.
+* The `@list.txt` syntax, which reads filenames from a file, is off through a `path` policy on the
+  `@*` pattern, and it fails **silently**: exit code 0, no message, no output file.
+* Width and height are capped at 16KP, area at 128MP, memory at 256MiB. A 20000x100 canvas gives
+  `width or height exceeds limit`, while 12000x12000 gives `cache resources exhausted`, which reads
+  like a machine problem and is a policy line.
+* `-limit` cannot go above the policy: `-limit memory 1GiB` left the memory limit at 256MiB.
+
+### Moving from 6 to 7
+
+From the [porting guide](https://imagemagick.org/porting/): version 7 walks the command line
+strictly left to right, so an operator placed before any input image is an error, where version 6
+accepted it (`convert -resize 50% in.jpg out.jpg` does resize on 6.9.11-60). Version 7 also enables
+HDRI by default, so results can shift slightly (`-clamp` brings pixels back in range), defaults
+`-channel` to RGBA instead of RGB, which makes `-negate` hit the alpha channel too, and represents
+grayscale with a single channel.
+
+## GraphicsMagick
 
 GraphicsMagick is a lighter fork with mostly the same options behind a single `gm` binary: prefix
 each command with `gm`, so `gm convert in.jpg -resize 1800x out.jpg`, `gm identify photo.png`,
-`gm montage ...`. There is no unified `magick` command, and it lags on newer formats (thinner
-WebP and HEIC support), but it stays fast and steady for the classic resize and convert jobs.
+`gm montage ...`. There is no unified `magick` command, and it lags on newer formats (thinner WebP
+and HEIC support), but it stays fast and steady for the classic resize and convert jobs.
+
+## See also
+
+* <Link to="/shell" /> for the loop and quoting habits the batch recipes rely on.

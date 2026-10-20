@@ -1,7 +1,7 @@
 ---
 title: Starlette
 description: "Starlette in practice: middleware ordering, the BaseHTTPMiddleware contextvars trap, and what the 1.x hardening releases changed."
-checkedOn: 2026-08-11
+checkedOn: 2026-09-18
 ---
 
 Starlette is the ASGI toolkit under <Link to="fastapi" />: routing, middleware, websockets,
@@ -11,21 +11,36 @@ those on top.
 Its governance, ownership and the 1.0 milestone are covered on <Link to="web-frameworks" />. This
 page is what bites when you use it.
 
-Checked against Starlette 1.4.x.
+Checked against Starlette 1.6.0.
 
 ## BaseHTTPMiddleware breaks contextvars
 
 The most expensive gotcha here, because the symptom appears somewhere other than the cause.
 
 Middleware is evaluated top to bottom, wrapped by `ServerErrorMiddleware` outermost and
-`ExceptionMiddleware` innermost. That part is predictable. What is not: *"Using
-`BaseHTTPMiddleware` will prevent changes to `contextvars.ContextVar`s from propagating upwards."*
+`ExceptionMiddleware` innermost. Printing the built stack confirms it:
+
+```
+ServerErrorMiddleware -> <your middleware, in declaration order> -> ExceptionMiddleware -> Router
+```
+
+That part is predictable. What is not: *"Using `BaseHTTPMiddleware` will prevent changes to
+`contextvars.ContextVar`s from propagating upwards."*
+
+Reproduced with an endpoint doing `cv.set("set-in-endpoint")` and middleware reading `cv.get()`
+after the call:
+
+| stack | what the outer middleware reads |
+|---|---|
+| one pure ASGI middleware | `set-in-endpoint` |
+| pure ASGI middleware above a `BaseHTTPMiddleware` | `unset` |
 
 So a `ContextVar` set inside an endpoint is not readable from middleware sitting above a
-`BaseHTTPMiddleware`. Worse, the damage is not local - *"if a `BaseHTTPMiddleware` is positioned
-earlier in the middleware stack, it will disrupt `contextvars` propagation for any subsequent Pure
-ASGI Middleware that relies on them."* One convenient middleware silently disables correlation IDs,
-request-scoped tenancy or structured-logging context for everything below it.
+`BaseHTTPMiddleware`. The damage is not local: *"if a `BaseHTTPMiddleware` is positioned earlier in
+the middleware stack, it will disrupt `contextvars` propagation for any subsequent Pure ASGI
+Middleware that relies on them."* One convenient middleware silently disables correlation IDs,
+request-scoped tenancy or structured-logging context for everything above it. Nothing raises, the
+values simply come back at their defaults.
 
 The documented answer is to write pure ASGI middleware instead. `BaseHTTPMiddleware` is the
 comfortable subclass; it is also the one with the caveat.
@@ -42,8 +57,15 @@ bound, so it accepts the 1.x line.
 
 ## TestClient
 
-`TestClient` now emits a deprecation warning for plain `httpx`, which is the visible edge of a
-larger shift - `httpx` stalled and was superseded by `pydantic/httpx2`. See
+Importing the test client with plain `httpx` installed emits, on 1.6.0:
+
+```
+StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated;
+install `httpx2` instead.
+```
+
+That is the visible edge of a larger shift: `httpx` stalled and was superseded by
+`pydantic/httpx2` (2.13.0 at the time of writing). Installing `httpx2` silences the warning. See
 <Link to="web-frameworks" />.
 
 ## Notes
