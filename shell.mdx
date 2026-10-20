@@ -1,7 +1,7 @@
 ---
 title: Shell script
 description: "Bash cookbook: strict mode and what it does not catch, the script's own directory, self-cleaning temporary files, loops that survive spaces in file names."
-checkedOn: 2026-10-14
+checkedOn: 2026-10-20
 ---
 
 ![Bash on Windows](https://turnoff.us/image/en/bash-on-windows.png)
@@ -12,7 +12,7 @@ Shell scripts fail in the same handful of ways: a variable that was never set, a
 space in it, a pipeline that swallows an error, a temporary directory nobody cleaned up. What
 follows is what I put in a script to make those failures impossible, or at least loud.
 
-Everything below is verified on **GNU bash 5.2.21**, and where macOS behaves differently it is
+Everything below is verified on **GNU bash 5.3**, and where macOS behaves differently it is
 called out.
 
 ## Cookbook
@@ -30,8 +30,8 @@ variable into an error instead of an empty string, which is what saves you from 
 fails, not just the last one.
 
 `#!/usr/bin/env bash` rather than `#!/bin/bash` so the script uses the bash found in `PATH`. That
-matters on macOS: `/bin/bash` is still 3.2.57, from 2007, kept at that version because bash went
-GPLv3 in 4.0 and Apple does not ship GPLv3 binaries. A bash 4 or 5 installed by Homebrew lives
+matters on macOS: `/bin/bash` is still 3.2.57, the last patch of a release from 2006, frozen
+there because bash moved to GPLv3 with 4.0, a licence Apple does not ship. A bash 4 or 5 installed by Homebrew lives
 somewhere else in `PATH`.
 
 Without `pipefail`, a pipeline reports only the exit status of its last command:
@@ -84,10 +84,11 @@ __DIR__=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 and `cd ... && pwd` turns it into an absolute path.
 
 Use `${BASH_SOURCE[0]}` rather than `$0`: they agree when the script is executed, but when the
-file is *sourced*, `$0` is the name of the shell, so `dirname "$0"` returns `.` and the
-idiom silently resolves to the caller's current directory instead of the script's. Verified:
-sourcing the same file from `/tmp` gives `/tmp` with `$0` and the script's own directory with
-`${BASH_SOURCE[0]}`.
+file is *sourced*, `$0` belongs to whoever sourced it: the shell's name from an interactive shell,
+so `dirname "$0"` returns `.` and resolves to the caller's current directory, or the calling
+script's path, so it resolves to that script's directory. Either way, not the sourced file's.
+Verified: sourcing the same file from `/tmp` gives `/tmp` with `$0` and the file's own directory
+with `${BASH_SOURCE[0]}`.
 
 Quote the inner command substitution: without the quotes, a path containing spaces is split into
 several arguments and `cd` fails with "too many arguments". The `&&` makes the script stop instead
@@ -167,8 +168,8 @@ while read -r l; do n=$((n+1)); done < <(printf 'a\nb\nc\n')
 echo "$n"        # 3
 ```
 
-Both verified. (`shopt -s lastpipe` also fixes it, but only for non-interactive shells, and it is
-off by default.)
+Both verified. (`shopt -s lastpipe` also fixes it, but only while job control is off, which is
+the case in scripts and not in an ordinary interactive shell; it is off by default.)
 
 ### Check whether a command is available
 
@@ -179,8 +180,9 @@ if ! command -v jq >/dev/null; then
 fi
 ```
 
-`command -v` is a shell builtin and part of POSIX, so it is always there and it also sees
-functions and aliases. `which` is an external program that does not exist on every system and
+`command -v` is a shell builtin and part of POSIX, so it is always there, and it also sees
+functions, plus aliases wherever aliases are enabled (an interactive shell, or a script after
+`shopt -s expand_aliases`). `which` is an external program that does not exist on every system and
 whose exit status is not consistent across implementations.
 
 ### Pass arguments through untouched

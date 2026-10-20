@@ -1,7 +1,7 @@
 ---
 title: SQLAlchemy
 description: "SQLAlchemy 2.0 cookbook: engine and session, select, eager loading, RETURNING, and the gotchas (silent no-commit, expiry, detached instances, NULL comparisons)."
-checkedOn: 2026-09-03
+checkedOn: 2026-10-20
 ---
 
 SQLAlchemy is two libraries stacked. **Core** builds and runs SQL: an engine, connections, and
@@ -9,8 +9,9 @@ expressions that render to statements. The **ORM** maps rows to objects and adds
 tracks what changed. You can use Core alone, but you cannot use the ORM without Core showing
 through, and most of the surprises below come from that seam.
 
-Everything here is replayed on **SQLAlchemy 2.0.52** (Python 3.10), in the 2.0 style: one
-`select()` construct for both layers, no `Query` object.
+Everything here is replayed on **SQLAlchemy 2.1.5** and **2.0.55** (Python 3.15, SQLite 3.46),
+in the 2.0 style: one `select()` construct for both layers, no `Query` object. Nothing below
+differs between the two.
 
 ## Cookbook
 
@@ -22,7 +23,7 @@ from sqlalchemy import create_engine
 engine = create_engine("sqlite:///basics.sqlite", echo=True)
 ```
 
-`echo=True` prints every statement to stderr. For real applications, route it through logging
+`echo=True` prints every statement to stdout. For real applications, route it through logging
 instead, which lets you keep it on in development and turn the level down in production:
 
 ```python
@@ -88,9 +89,9 @@ is yours to call, or use `with Session(engine) as s, s.begin():` to commit on a 
 This is the distinction to get right, because both work and they return different shapes:
 
 ```python
-session.scalars(select(Knight)).all()               # [Knight, Knight]
-session.execute(select(Knight)).all()               # [(Knight,), (Knight,)]
-session.execute(select(Knight.name, Knight.quest))  # [('Arthur', 'grail'), ...]
+session.scalars(select(Knight)).all()                     # [Knight, Knight]
+session.execute(select(Knight)).all()                     # [(Knight,), (Knight,)]
+session.execute(select(Knight.name, Knight.quest)).all()  # [('Arthur', 'grail'), ...]
 ```
 
 `scalars()` unwraps the first column of every row, which is what you want when you select whole
@@ -162,8 +163,10 @@ session.execute(update(Knight).where(Knight.quest.is_(None)).values(quest="unkno
 session.commit()
 ```
 
-Bulk statements run in the database, so objects already loaded in the session hold stale values
-until they expire or you refresh them.
+Bulk statements run in the database, but the session keeps the objects it already loaded in
+step: by default (`synchronize_session="auto"`) it refreshes the attributes it updated, using
+`RETURNING` where the backend has it. Pass `execution_options={"synchronize_session": False}`
+to skip that, and those objects keep their old values until they expire or you refresh them.
 
 ## Gotchas
 
@@ -234,10 +237,11 @@ another thread gets an empty one. For tests that share an in-memory database acr
 
 ## References
 
-- [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/)
-- [ORM quick start](https://docs.sqlalchemy.org/en/20/orm/quickstart.html)
-- [Relationship loading techniques](https://docs.sqlalchemy.org/en/20/orm/queryguide/relationships.html)
+- [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/21/)
+- [ORM quick start](https://docs.sqlalchemy.org/en/21/orm/quickstart.html)
+- [Relationship loading techniques](https://docs.sqlalchemy.org/en/21/orm/queryguide/relationships.html)
 - [What's new in SQLAlchemy 2.0](https://docs.sqlalchemy.org/en/20/changelog/migration_20.html)
+- [What's new in SQLAlchemy 2.1](https://docs.sqlalchemy.org/en/21/changelog/migration_21.html)
 
 ## See also
 

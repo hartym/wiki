@@ -1,7 +1,7 @@
 ---
 title: Web servers
 description: "Nginx notes: the add_header inheritance trap and the directive that fixes it, the responses add_header silently skips, the Cache-Control it writes twice, plus reverse proxy and Kubernetes ingress pointers."
-checkedOn: 2026-10-05
+checkedOn: 2026-10-20
 ---
 
 ## Nginx
@@ -18,7 +18,7 @@ An `if` block inside a location is a configuration level of its own. So as soon 
 outside is dropped for those requests. A header that must apply in both cases has to be repeated
 inside and outside the `if`.
 
-Reproduced on nginx 1.24.0, with one header set at each level. A location that defines no
+Reproduced on nginx 1.31.7, 1.30.6 and 1.24.0, with one header set at each level. A location that defines no
 `add_header` of its own returns the `server` level header and not the `http` one, because the
 `server` level already replaced it: the rule applies at every level, not just the deepest. A
 location that defines one returns only its own. And in a location whose `if` block defines one, a
@@ -47,7 +47,7 @@ Since nginx 1.29.3 the duplication is avoidable: `add_header_inherit` changes th
 for the level it sits on.
 
 ```nginx
-add_header_inherit merge;   # append to the parent level instead of replacing it
+add_header_inherit merge;   # keep the parent level's headers, appended after this level's
 add_header_inherit off;     # inherit nothing from the parent level
 add_header_inherit on;      # default: replace as soon as this level defines one add_header
 ```
@@ -72,7 +72,7 @@ the header. The `always` parameter lifts that condition.
 add_header X-Cache-Note "set" always;
 ```
 
-Verified on 1.24.0: without `always`, the header is on the 200 and absent from the 404 of the same
+Verified on 1.31.7, 1.30.6 and 1.24.0: without `always`, the header is on the 200 and absent from the 404 of the same
 location; with `always`, it is on both. This is the one to remember for security headers, which are
 usually wanted on error pages too.
 
@@ -91,8 +91,9 @@ Two field lines with the same name read as one comma separated list, so `public`
 `max-age` is harmless, and it is what the configuration above means. A contradictory value is not:
 `add_header "Cache-Control" "no-store"` beside the same `expires` sends `max-age=604800` and
 `no-store` side by side, so the caches on the path get two conflicting directives instead of the
-one the config appears to set. Both outputs verified on 1.24.0. To own the whole value, drop
-`expires` and write the single header.
+one the config appears to set; RFC 9111 tells them to honour the most restrictive, so `no-store`
+usually wins, but that is the cache's call, not yours. Both outputs verified on 1.31.7, 1.30.6 and
+1.24.0. To own the whole value, drop `expires` and write the single header.
 
 ### Tuning for production
 
@@ -129,8 +130,8 @@ The two nginx based ingress controllers are not interchangeable, and one of them
 
 See also <Link to="/system/kubernetes/" />.
 
-Checked against the official nginx documentation (stable 1.30.5, mainline 1.31.6), and the
-inheritance and Cache-Control behaviour reproduced locally on nginx 1.24.0.
+Checked against the official nginx documentation (stable 1.30.6, mainline 1.31.7), and the
+inheritance, `always` and Cache-Control behaviour reproduced on nginx 1.31.7, 1.30.6 and 1.24.0.
 
 {/*
   Checked 2026-10-05. nginx-light 1.24.0 installed in the sandbox this time, so the inheritance
@@ -146,7 +147,9 @@ inheritance and Cache-Control behaviour reproduced locally on nginx 1.24.0.
   - add_header applies to 200/201/204/206/301/302/303/304/307/308 by default, always since 1.7.5;
     add_header_inherit (on|off|merge) and add_trailer_inherit both appeared in 1.29.3:
     nginx.org/en/docs/http/ngx_http_headers_module.html
-  - current branches: mainline 1.31.6, stable 1.30.5 (nginx.org/en/download.html)
+  - current branches: mainline 1.31.7, stable 1.30.6 (nginx.org/en/download.html)
+  Rerun 2026-10-20 on nginx 1.31.7, 1.30.6 and 1.24.0: same inheritance, always and Cache-Control
+  results; add_header_inherit merge appends the parent values after the current level's.
   Carried over from the 2026-08-19 pass, not rechecked today:
   - kubernetes/ingress-nginx archived on 2026-03-24, retirement announced 2025-11-11
   - nginx.org now links its ingress controller as github.com/nginx/kubernetes-ingress

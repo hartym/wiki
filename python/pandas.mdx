@@ -1,21 +1,20 @@
 ---
 title: Pandas
 description: "Pandas cookbook: selection, grouping, merging and dates, plus the defaults that quietly change your results - chained assignment, missing values, dtype coercion."
-checkedOn: 2026-09-07
+checkedOn: 2026-10-20
 ---
 
 Pandas is easy to start with and easy to be quietly wrong with. Almost none of the surprises are
 bugs: they are defaults. A filter that keeps the rows you meant to exclude, a column that changes
 type because one value is absent, an assignment that goes nowhere and says nothing.
 
-Everything below is verified on **pandas 2.3.3** (Python 3.10). Where pandas 3.0 changes a
-behaviour, the difference is stated and checked against the official documentation.
+Everything below is verified on **pandas 3.0.6** (Python 3.15) and, where 2.x behaves
+differently, on **pandas 2.3.3** (Python 3.13). The differences are stated where they matter.
 
 {/*
-  Run 2026-09-07, Linux sandbox, Python 3.10.12, pandas 2.3.3, numpy 2.2.6.
-  Every code block in the Cookbook and Gotchas sections was executed.
-  pandas 3.0 (released 2026-01-21) needs Python 3.11+, so it could not be installed here:
-  the 3.0 statements come from the Copy-on-Write user guide and the 3.0.0 release notes.
+  Run 2026-10-20, Docker python:3-slim: Python 3.15.0, pandas 3.0.6, numpy 2.5.4.
+  2.x line on python:3.13-slim: Python 3.13.16, pandas 2.3.3, numpy 2.5.4.
+  Every code block in the Cookbook and Gotchas sections was executed on both.
 */}
 
 ## Cookbook
@@ -61,7 +60,8 @@ with the key as an ordinary column, which is usually what you want before a merg
 joined = df.merge(speeds, on="knight", how="left")
 ```
 
-`how` is one of `left`, `right`, `inner`, `outer`. See the gotcha on repeated keys below.
+`how` is one of `left`, `right`, `inner`, `outer`, `cross`, and since pandas 3.0 also `left_anti`
+and `right_anti`. See the gotcha on repeated keys below.
 
 ### Count occurrences
 
@@ -89,11 +89,12 @@ events = pd.DataFrame({
 recent = events[events["when"] >= "2024-03-01"]
 ```
 
-Pass an explicit `format` so parsing is consistent and fast. The default `datetime64[ns]` type
-only spans about 1677 to 2262 (nanoseconds in a 64-bit integer); a value outside that range
-raises `OutOfBoundsDatetime`. For older or far-future dates, build the column at a coarser
-resolution, for example from a numpy `datetime64[s]` array, which pandas keeps as
-`datetime64[s]`.
+Pass an explicit `format` so parsing is consistent and fast. Since pandas 3.0, parsed strings get
+microsecond resolution (`datetime64[us]`), which covers any date you are likely to meet. In
+pandas 2.x the default is `datetime64[ns]`, which only spans about 1677 to 2262 (nanoseconds in a
+64-bit integer); a value outside that range raises `OutOfBoundsDatetime`, and so does an explicit
+`astype("datetime64[ns]")` in 3.0. For a coarser resolution, build the column from a numpy
+`datetime64[s]` array, which pandas keeps as `datetime64[s]`.
 
 ### Build a frame from a list of dicts
 
@@ -127,8 +128,9 @@ sub["coconuts"] = 0            # df is unchanged
 Two indexing steps in a row means pandas has to modify an intermediate object, and that object is
 a copy. In pandas 2.x this raises `SettingWithCopyWarning`, which is a warning, so it scrolls past
 in a notebook and the original frame keeps its old values. In pandas 3.0 copy-on-write is the
-only mode: the warning is gone, chained assignment consistently never writes back, and a
-`ChainedAssignmentError` warning is raised instead.
+only mode: `sub` is a copy, full stop, and the assignment above raises nothing at all. Written as
+one statement, `df[df["quest"] == "grail"]["coconuts"] = 0`, it raises a `ChainedAssignmentError`
+warning; either way, chained assignment never writes back.
 
 The fix is the same in both versions. One step, through `.loc`:
 
@@ -137,7 +139,8 @@ df.loc[df["quest"] == "grail", "coconuts"] = 0
 ```
 
 The same trap wears a second disguise: `df["foo"].replace(1, 5, inplace=True)` is also chained
-assignment. Write `df["foo"] = df["foo"].replace(1, 5)`.
+assignment. pandas 2.3 still writes it, with a `FutureWarning`; pandas 3.0 leaves `df` unchanged
+and raises `ChainedAssignmentError`. Write `df["foo"] = df["foo"].replace(1, 5)`.
 
 ### Filtering with `!=` keeps the missing values
 

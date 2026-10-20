@@ -1,7 +1,7 @@
 ---
 title: Prometheus, Alertmanager and Grafana
 description: The Prometheus monitoring stack - scrape config, PromQL, recording and alerting rules (tested with promtool), Alertmanager routing, Grafana, and the gotchas that make a query silently wrong.
-checkedOn: 2026-09-09
+checkedOn: 2026-10-20
 ---
 
 The common open-source monitoring stack, three separate components:
@@ -10,7 +10,7 @@ The common open-source monitoring stack, three separate components:
 * **Alertmanager** receives alerts from Prometheus and handles grouping, deduplication, silencing and routing to receivers (email, Slack, PagerDuty, ...).
 * **Grafana** queries Prometheus and draws dashboards.
 
-Everything below was replayed on Prometheus 3.14.0 and Alertmanager 0.34.0: the configs through
+Everything below was replayed on Prometheus 3.15.0 and Alertmanager 0.34.1: the configs through
 `promtool check config` and `amtool check-config`, the queries against a running server or through
 `promtool test rules`.
 
@@ -129,21 +129,22 @@ rate(prometheus_http_requests_total[1m])   # a value
 No error and no warning, just an empty panel or an alert that can never fire. Take a range of at
 least four scrape intervals, so that one missed scrape does not empty it.
 
-### increase() returns fractional counts
+### increase() extrapolates, it does not count
 
 Five consecutive samples of a counter, scraped every 5 seconds:
 
 ```text
-0  1  2  3  4
+12  13  14  15  16
 ```
 
 ```
-increase(prometheus_http_requests_total{handler="/metrics"}[25s])   # 4.112183172524121
+increase(prometheus_http_requests_total{handler="/metrics"}[25s])   # 5
 ```
 
-The counter moved by exactly 4, the function answers 4.11. `rate()` and `increase()` extrapolate to
-the edges of the range, because samples never land exactly on them. It is an estimate of a rate, so
-do not use it to count events and do not round it into a number you then treat as exact.
+The counter moved by exactly 4, the function answers 5. `rate()` and `increase()` extrapolate to
+the edges of the range, because samples never land exactly on them, and the result is often not
+even an integer. It is an estimate of a rate, so do not use it to count events and do not round it
+into a number you then treat as exact.
 
 ### rate() on a gauge is silently wrong
 
@@ -178,15 +179,17 @@ from a classic histogram is capped by the bucket layout chosen when the metric w
 it goes quietly flat the day latency grows past the last bucket. A p95 sitting exactly on a bucket
 boundary is a bucket problem until proven otherwise.
 
-### A deleted target keeps answering for five minutes
+### A removed job keeps answering for five minutes
 
 An instant query returns the most recent sample within the lookback window, five minutes by default.
-Delete a target from the config and reload: the series is still there, with its last value.
-
 Verified on a series whose last sample is at `t=2m`: at `t=6m` it still resolves, at `t=7m`, exactly
-five minutes later, it is gone. Two consequences:
+five minutes later, it is gone.
 
-* An `InstanceDown` alert on a target you just removed keeps firing for up to five minutes, then
+Removing one target from a job is not affected: Prometheus writes a staleness marker and the series
+was gone within 15 seconds of the reload. Removing the whole `scrape_config` job is: its `up` series
+kept its last value for the full five minutes. Two consequences:
+
+* An `InstanceDown` alert on a job you just removed keeps firing for up to five minutes, then
   resolves on its own.
 * The opposite case is worse: `up == 0` never fires for a target that stopped being discovered, or
   that was never discovered, because there is no series at all. `absent(up{job="node"})` is what
@@ -198,7 +201,7 @@ five minutes later, it is gone. Two consequences:
 exists and is visible in Prometheus, but Alertmanager has heard nothing about it:
 
 ```
-ALERTS{alertname="InstanceDown", alertstate="pending", job="node", severity="page"}   1
+ALERTS{alertname="InstanceDown", alertstate="pending", instance="a", job="node", severity="page"}   1
 ```
 
 `alertstate` becomes `firing` once `for` has elapsed. Querying `ALERTS` is the quickest way to find

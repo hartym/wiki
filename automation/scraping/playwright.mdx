@@ -1,7 +1,7 @@
 ---
 title: Playwright (Python)
 description: "Playwright for Python: a scraping cookbook, and the defaults that quietly hand you the page before JavaScript ran."
-checkedOn: 2026-10-06
+checkedOn: 2026-10-20
 ---
 
 A scripted browser is the tool of last resort for scraping: it is slower and heavier than an HTTP
@@ -14,8 +14,8 @@ re-evaluated every time you use it, and every action retries until the element i
 actionable. Most of the sleeps and retry loops you would write by hand become unnecessary. The
 traps are what happens when you step outside that model, usually without noticing.
 
-Everything below was rerun on **Playwright 1.63.0** with its bundled Chromium
-**153.0.8010.12**, against a local page that renders part of its content from a timer and part
+Everything below was rerun on **Playwright 1.64.0** with its bundled Chromium
+**156.0.8078.4**, against a local page that renders part of its content from a timer and part
 from a `fetch`.
 
 ```bash
@@ -213,10 +213,12 @@ but the timer-driven text was *still* missing, because a timer is not network tr
 the element you want is both faster and correct; the Playwright docs discourage `networkidle` for
 exactly this reason.
 
-**`query_selector_all` is a snapshot, locators are not.** Elements returned by `query_selector`
-and `query_selector_all` are resolved once, with no auto-waiting and no re-evaluation. The same
-read that a locator got right returned the stale `loading` text through `query_selector_all`. If
-you came from Selenium, this is the API that feels familiar and is the one to avoid.
+**`query_selector_all` is a snapshot, locators are not.** `query_selector` and
+`query_selector_all` do not auto-wait, and the list they return is fixed when you call them: on a
+page that adds its rows from a timer, `query_selector_all` right after `goto` returned no rows and
+the same list was still empty 1.5 s later, while a locator counted 3. A handle does track its own
+node, so its text updates, but nothing waits for the node to be right before you read it. If you
+came from Selenium, this is the API that feels familiar and is the one to avoid.
 
 **A hidden element still gives you its text.** On a node with `display: none`, both
 `text_content()` and `inner_text()` returned `SECRET TEXT`, while the parent's `inner_text()` did
@@ -235,7 +237,7 @@ does not work.
 
 **The browser announces itself.** In the bundled Chromium, `navigator.webdriver` is `true` and the
 user agent contains `HeadlessChrome`, here
-`Mozilla/5.0 (X11; Linux x86_64) ... HeadlessChrome/153.0.8010.12 Safari/537.36`. Any site that
+`Mozilla/5.0 (X11; Linux x86_64) ... HeadlessChrome/156.0.8078.4 Safari/537.36`. Any site that
 cares can see both. Playwright is an automation tool, not an evasion tool, and treating it as one
 is how you end up blocked.
 

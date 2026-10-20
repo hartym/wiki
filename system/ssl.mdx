@@ -1,7 +1,7 @@
 ---
 title: "TLS certificates with OpenSSL"
 description: "OpenSSL cookbook: read what a server presents, check expiry from a script, generate a certificate with the SAN browsers actually require, sign a CSR with your own CA, convert between PEM, DER and PKCS#12."
-checkedOn: 2026-10-15
+checkedOn: 2026-10-20
 ---
 
 Almost every certificate problem is one of five questions: what is this server sending me, when
@@ -9,8 +9,9 @@ does it expire, does this key match this certificate, how do I make one for loca
 what format does this other tool want. `openssl` answers all five, but its subcommands are old and
 their flags are not obvious.
 
-Everything below is verified on **OpenSSL 3.0.2** and **3.0.13**, and the flags that changed in the
-3.x series are called out.
+Everything below is verified on **OpenSSL 4.0.3**, with Ubuntu's 3.0.x builds cross-checked, and
+the flags that changed in the 3.x series are called out. OpenSSL 3.0 prints names with spaces
+around `=` (`subject=CN = example.com`); 3.5 and later print them packed, as shown here.
 
 ## Reading
 
@@ -22,8 +23,8 @@ openssl s_client -servername example.com -connect example.com:443 </dev/null \
 ```
 
 ```
-subject=CN = example.com
-issuer=C = US, O = SSL Corporation, CN = Cloudflare TLS Issuing ECC CA 3
+subject=CN=example.com
+issuer=C=US, O=SSL Corporation, CN=Cloudflare TLS Issuing ECC CA 3
 notBefore=Sep 26 22:49:11 2026 GMT
 notAfter=Dec 25 22:56:35 2026 GMT
 ```
@@ -47,6 +48,10 @@ New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
 Verify return code: 0 (ok)
 ```
 
+Read the `New,` line with care: it names the cipher and the protocol version that cipher was
+defined for, not the version negotiated. A TLS 1.2 session on `AES256-SHA` prints
+`New, SSLv3, Cipher is AES256-SHA`; the `Protocol` line further down says `TLSv1.2`.
+
 ### Is it about to expire?
 
 ```bash
@@ -69,27 +74,27 @@ kills the script. Put it in an `if` or after `||`.
 
 ```bash
 for v in tls1_1 tls1_2 tls1_3; do
-  echo -n "$v: "
-  openssl s_client -$v -servername example.com -connect example.com:443 </dev/null 2>&1 \
-    | grep -E '^New,'
+  if openssl s_client -$v -servername example.com -connect example.com:443 </dev/null >/dev/null 2>&1
+  then echo "$v: accepted"; else echo "$v: refused"; fi
 done
 ```
 
 ```
-tls1_1: New, (NONE), Cipher is (NONE)
-tls1_2: New, TLSv1.2, Cipher is ECDHE-ECDSA-CHACHA20-POLY1305
-tls1_3: New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+tls1_1: refused
+tls1_2: accepted
+tls1_3: accepted
 ```
 
-`(NONE)` means the handshake never happened. `s_client` also exits 1 in that case, so
-`openssl s_client -tls1_1 ... >/dev/null 2>&1` is enough in a script. One catch: a refusal can come
-from your own client. Debian and Ubuntu ship OpenSSL at **security level 2**, which rules out TLS
-1.0 and 1.1 before a packet leaves the machine, and the setting is not always in a file you can
-grep: it is compiled in, and `openssl version -a` reports it among the compiler options as
-`-DOPENSSL_TLS_SECURITY_LEVEL=2`. Some releases also pin it in `/etc/ssl/openssl.cnf`, as
-`CipherString = DEFAULT:@SECLEVEL=2` under `[system_default_sect]`: Ubuntu 22.04 has that line,
-24.04 dropped it and kept the compiled default. To tell a client refusal from a server refusal,
-lower the level for one call:
+`s_client` exits 1 when the handshake never happens, so the exit code is the whole answer.
+
+One catch: a refusal can come from your own client. OpenSSL disables TLS 1.0 and 1.1 at
+**security level 1** and above, and the default level is 2, so any OpenSSL 3.x or 4.x refuses them
+before a packet leaves the machine. The level is not always in a file you can grep. Ubuntu
+compiles it in, and `openssl version -a` reports it among the compiler options as
+`-DOPENSSL_TLS_SECURITY_LEVEL=2`; Ubuntu 22.04 also pins it in `/etc/ssl/openssl.cnf`, as
+`CipherString = DEFAULT:@SECLEVEL=2` under `[system_default_sect]`, a line 24.04 dropped. Debian
+13 does neither and relies on the upstream default. To tell a client refusal from a server
+refusal, lower the level for one call:
 
 ```bash
 openssl s_client -tls1_1 -cipher 'DEFAULT@SECLEVEL=0' -connect example.com:443 </dev/null
@@ -155,7 +160,7 @@ openssl req -in svc.csr -noout -verify -subject
 
 ```
 Certificate request self-signature verify OK
-subject=CN = svc.internal
+subject=CN=svc.internal
 ```
 
 Same command as above minus `-x509`: with `-x509` you get a finished certificate, without it you

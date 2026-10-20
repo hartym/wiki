@@ -1,12 +1,12 @@
 ---
 title: tmux
 description: "Terminal multiplexer: a verified cookbook for sessions, windows and panes."
-checkedOn: 2026-10-07
+checkedOn: 2026-10-20
 ---
 
 [tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
 windows and split panes inside a single terminal. The snippets below are verified on **tmux
-3.6a**. Shortcuts are written with <kbd>Ctrl-A</kbd> as the prefix; see the note at the end of the
+3.8**, with **3.6a** cross-checked where the two differ. Shortcuts are written with <kbd>Ctrl-A</kbd> as the prefix; see the note at the end of the
 page. For the scripts that end up running inside these panes, see [shell script](/wiki/shell/).
 
 ## Cookbook
@@ -309,10 +309,11 @@ Tip article: [How to resize a tmux pane?](/blog/en/tips/2026/06/29/resize-tmux-p
 ### Select and copy with the mouse
 
 ```shell
-set -g mouse on   # ~/.tmux.conf: off by default
+set -g mouse on   # ~/.tmux.conf: the default since tmux 3.8, off before
 ```
 
-The mouse is `off` by default. With `mouse on`, a left-drag enters copy mode and copies the
+The mouse is `on` by default since tmux 3.8 and `off` in every earlier release, so on an older
+tmux you have to turn it on. With `mouse on`, a left-drag enters copy mode and copies the
 selection into the tmux paste buffer on release; paste it back with <kbd>Ctrl-A</kbd>
 <kbd>]</kbd>. That buffer is tmux's own, not the system clipboard, so another application sees
 nothing unless you pipe copy mode to a clipboard tool (`pbcopy`, `xclip`, `wl-copy`). To use the
@@ -321,9 +322,10 @@ which bypasses tmux entirely. Turning the mouse on also enables click-to-focus a
 window name to switch, scroll into the scrollback, and drag a border to resize; a right-click on a
 pane opens a context menu.
 
-{/* Verification notes (3.6a): mouse off by default. The copy path is MouseDrag1Pane in the root
+{/* Verification notes (3.6a and 3.8): mouse off by default on 3.6a, on by default on 3.8 (CHANGES
+3.7c -> 3.8, "The mouse option now defaults to on"). The copy path is MouseDrag1Pane in the root
 table (if-shell, then copy-mode -M) and MouseDragEnd1Pane in the copy-mode and copy-mode-vi tables
-(send-keys -X copy-pipe-and-cancel), not in root. */}
+(send-keys -X copy-pipe-and-cancel), not in root, on both. */}
 
 Tip article: [How to select and copy text with the mouse in tmux?](/blog/en/tips/2026/06/30/copy-text-with-the-mouse-in-tmux/)
 
@@ -580,8 +582,8 @@ command that has no default binding. A template can even prompt for input first:
 type for `%%` (use `%1`, `%2`... to match several `-p` prompts).
 
 {/* Verification notes (3.2a, re-run unchanged on 3.6a): list-keys -T prefix shows ':' bound to command-prompt; list-commands
-gives, on 3.6a, command-prompt [-1bFkliN] [-I inputs] [-p prompts] [-t target-client]
-[-T prompt-type] [template] (3.2a printed [-1kiNTW] ... [template]). */}
+gives, on 3.8, command-prompt [-1CbeFiklNP] [-I inputs] [-p prompts]
+[-t target-client] [-T prompt-type] [template] (3.6a: [-1bFkliN], 3.2a: [-1kiNTW]). */}
 
 Tip article: [How to run a tmux command from inside a session?](/blog/en/tips/2026/07/15/run-tmux-command-interactively/)
 
@@ -603,10 +605,12 @@ own binds. `list-commands` is the companion for the CLI: it prints the full synt
 every command, so it is the reference to reach for when you forget whether resize is `-L` or `-x`.
 These three commands are how every other snippet on this page was checked.
 
-{/* Verification notes (tmux 3.6a): list-keys -T prefix shows '?' bound to 'list-keys -N'.
-list-keys -N returns 87 noted bindings on 3.6a (83 on 3.2a); list-keys -a shows four tables, root,
-prefix, copy-mode and copy-mode-vi. list-commands prints e.g. "resize-pane (resizep) [-DLMRTUZ]
-[-x width] [-y height] [-t target-pane] [adjustment]", unchanged since 3.2a. */}
+{/* Verification notes (tmux 3.8): list-keys -T prefix shows '?' bound to 'list-keys -N'.
+list-keys -N returns 93 noted bindings on 3.8 (87 on 3.6a, 83 on 3.2a); list-keys shows five
+tables on 3.8, root, prefix, copy-mode, copy-mode-vi and move (no move table on 3.6a). list-commands
+prints "resize-pane (resizep) [-MTZ] [-D lines] [-L columns] [-R columns] [-U lines] [-x width]
+[-y height] [-t target-pane]" on 3.8; 3.2a to 3.6a printed "[-DLMRTUZ] [-x width] [-y height]
+[-t target-pane] [adjustment]". */}
 
 Tip article: [How to discover and search tmux key bindings?](/blog/en/tips/2026/07/16/discover-tmux-key-bindings/)
 
@@ -658,7 +662,7 @@ Reloading only adds or overrides what the file sets; it does not reset options a
 to set, and it re-runs commands like `new-window`, so keep a config file idempotent (settings and
 binds, not one-off actions).
 
-Verified on tmux 3.6a. First pass on 3.2a, every snippet re-run on 3.6a.
+Verified on tmux 3.8 and 3.6a. First pass on 3.2a.
 
 {/* Verification notes (3.2a, re-run unchanged on 3.6a): bind r registers as source-file ... \; display-message; list-keys
 -T prefix shows the two-command bind. Live test: status-left V1 in the file, edit to V2,

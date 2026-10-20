@@ -1,7 +1,7 @@
 ---
 title: Application Servers
 description: "Gunicorn and uvicorn in practice: sizing the worker pool, choosing a worker class, reloading without dropping the socket, running behind a reverse proxy, plus the defaults that serialise traffic or serve stale code."
-checkedOn: 2026-09-28
+checkedOn: 2026-10-20
 ---
 
 The application server is the process that runs your Python code. The web server in front of it
@@ -13,7 +13,7 @@ gunicorn serves one request at a time, and `--timeout` means two different thing
 worker class.
 
 Everything below was run against gunicorn 26.2.0, uvicorn 0.54.0 and uvicorn-worker 0.4.0 on
-Python 3.11, on a 2 core box. Wall times come from `curl -w '%{time_total}'`.
+Python 3.15. Wall times come from `curl -w '%{time_total}'`.
 
 ## Cookbook
 
@@ -29,11 +29,11 @@ usually `app:app`.
 
 ### Size the worker pool
 
-The gunicorn docs give `(2 x $num_cores) + 1` as a starting point, and add that 4 to 12 workers are
-enough for hundreds or thousands of requests per second. Do not derive the number from how many
-clients you expect: past a point more workers means more context switching and less throughput.
+The gunicorn docs give `(2 x $num_cores) + 1` as a starting point, and add that 4 to 12 workers
+are typically enough for heavy traffic. Do not derive the number from how many clients you
+expect: past a point more workers means more context switching and less throughput.
 
-On the 2 core box used here that is 5.
+On a 2 core box that is 5.
 
 ### Choose the worker class
 
@@ -70,16 +70,17 @@ kill -HUP <master-pid>
 ```
 
 The master keeps the listening socket, starts new workers and retires the old ones, so nothing in
-flight is dropped and no connection is refused. Measured: worker pids went from 634 and 635 to 644
-and 646 while the master pid never changed. In a container, where the app server is PID 1 and there
-is nothing to signal, you replace the container instead.
+flight is dropped and no connection is refused. Measured: worker pids went from 643 and 644 to 655
+and 657 while the master pid never changed. In a container gunicorn is usually PID 1 and
+`docker kill -s HUP <container>` does the same, but an image is not edited in place: new code
+means a new image, so you replace the container instead.
 
 ### Trust the proxy in front of you
 
-Both servers reconstruct the client IP and the scheme from `X-Forwarded-For` and
-`X-Forwarded-Proto`, but only when the connection comes from an address they trust. The default is
-loopback only: `[127.0.0.1,::1]` for gunicorn, `127.0.0.1` for uvicorn. If the proxy is another
-container or another host, name it:
+Both servers take the scheme from `X-Forwarded-Proto`, but only when the connection comes from an
+address they trust. Uvicorn also takes the client IP from `X-Forwarded-For`; gunicorn does not, and
+`REMOTE_ADDR` stays the proxy's address. The default is loopback only, `127.0.0.1,::1`, for both.
+If the proxy is another container or another host, name it:
 
 ```shell
 gunicorn --forwarded-allow-ips 10.0.0.0/8 ...
@@ -101,8 +102,8 @@ uvicorn --host 0.0.0.0 --port 8000 myapp:app
 
 `gunicorn app:app` with no flags boots exactly one sync worker. Six requests all came back with the
 same pid. Then, with one request sleeping in a handler, an unrelated request to `/` waited
-**28.2 s**: it was not served by a busy worker, it was served by the *replacement* worker once the
-first one had been killed for timing out.
+**29.2 s**, about the 30 s default timeout: it was not served by a busy worker, it was served by
+the *replacement* worker once the first one had been killed for timing out.
 
 Always pass `-w`. One worker is a development default that looks fine until two people use the site
 at once.
@@ -143,15 +144,17 @@ The default trusts loopback, which cuts both ways.
 
 Behind a proxy that is not on loopback, the headers are ignored: the same request arrived as
 `scheme=http` with the proxy's address as the client, while from loopback it arrived as
-`scheme=https` with the spoofed `203.0.113.7`. An app that builds absolute URLs then emits `http://`
-links and redirect loops, and anything keyed on the client IP keys on the proxy.
+`scheme=https`, and under uvicorn with the spoofed `203.0.113.7` as the client. An app that builds
+absolute URLs then emits `http://` links and redirect loops, and anything keyed on the client IP
+keys on the proxy.
 
 The other direction is why `--forwarded-allow-ips '*'` is not the fix: it lets whoever can reach the
 port set their own IP and scheme. Name the proxy's address or network.
 
 ### uvicorn.workers is deprecated, the worker moved to its own package
 
-`gunicorn -k uvicorn.workers.UvicornWorker` still runs, and warns:
+`gunicorn -k uvicorn.workers.UvicornWorker` still runs. It raises a `DeprecationWarning`, which
+Python hides by default, so the gunicorn log stays silent; with `PYTHONWARNINGS=default` it reads:
 
 ```
 DeprecationWarning: The `uvicorn.workers` module is deprecated.
@@ -174,11 +177,11 @@ gunicorn or uvicorn is the shorter path.
 
 ## Links and references
 
-* [Gunicorn design](https://docs.gunicorn.org/en/stable/design.html), worker classes and the worker
+* [Gunicorn design](https://gunicorn.org/design/), worker classes and the worker
   count formula.
-* [Gunicorn settings](https://docs.gunicorn.org/en/stable/settings.html), every flag with its
+* [Gunicorn settings](https://gunicorn.org/reference/settings/), every flag with its
   default.
-* [Uvicorn deployment](https://www.uvicorn.org/deployment/), and
+* [Uvicorn deployment](https://uvicorn.dev/deployment/), and
   [uvicorn-worker](https://github.com/Kludex/uvicorn-worker).
 * [Things to know (best practices) - uWSGI documentation](https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html),
   worth reading in full if you maintain a uWSGI deployment.
