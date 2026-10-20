@@ -1,7 +1,7 @@
 ---
 title: Starlette
 description: "Starlette in practice: middleware ordering, the BaseHTTPMiddleware contextvars trap, and what the 1.x hardening releases changed."
-checkedOn: 2026-09-18
+checkedOn: 2026-10-20
 ---
 
 Starlette is the ASGI toolkit under <Link to="fastapi" />: routing, middleware, websockets,
@@ -11,7 +11,7 @@ those on top.
 Its governance, ownership and the 1.0 milestone are covered on <Link to="web-frameworks" />. This
 page is what bites when you use it.
 
-Checked against Starlette 1.6.0.
+Checked against Starlette 1.9.0.
 
 ## BaseHTTPMiddleware breaks contextvars
 
@@ -36,11 +36,12 @@ after the call:
 | pure ASGI middleware above a `BaseHTTPMiddleware` | `unset` |
 
 So a `ContextVar` set inside an endpoint is not readable from middleware sitting above a
-`BaseHTTPMiddleware`. The damage is not local: *"if a `BaseHTTPMiddleware` is positioned earlier in
-the middleware stack, it will disrupt `contextvars` propagation for any subsequent Pure ASGI
-Middleware that relies on them."* One convenient middleware silently disables correlation IDs,
-request-scoped tenancy or structured-logging context for everything above it. Nothing raises, the
-values simply come back at their defaults.
+`BaseHTTPMiddleware`. The damage is not local: one convenient middleware silently disables
+correlation IDs, request-scoped tenancy or structured-logging context for every middleware above it.
+A pure ASGI middleware declared after it, so sitting below it, still reads `set-in-endpoint`. The
+docs word the same warning the other way round (*"positioned earlier in the middleware stack, it will
+disrupt `contextvars` propagation for any subsequent Pure ASGI Middleware"*); the run above is what
+happens. Nothing raises, the values simply come back at their defaults.
 
 The documented answer is to write pure ASGI middleware instead. `BaseHTTPMiddleware` is the
 comfortable subclass; it is also the one with the caveat.
@@ -65,7 +66,7 @@ install `httpx2` instead.
 ```
 
 That is the visible edge of a larger shift: `httpx` stalled and was superseded by
-`pydantic/httpx2` (2.13.0 at the time of writing). Installing `httpx2` silences the warning. See
+`pydantic/httpx2` (2.15.1 at the time of writing). Installing `httpx2` silences the warning. See
 <Link to="web-frameworks" />.
 
 ## Notes
@@ -75,4 +76,4 @@ That is the visible edge of a larger shift: `httpx` stalled and was superseded b
 * `encode/uvicorn` moved to `Kludex/uvicorn` alongside Starlette, and both are active. What stayed
   at encode did not: `databases`, `orm`, `typesystem` and `broadcaster` are archived.
 
-* https://www.starlette.io/
+* https://starlette.dev/

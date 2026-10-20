@@ -1,7 +1,7 @@
 ---
 title: Message Queues
 description: "RabbitMQ notes: users and permissions, exporting and importing schema definitions, seeding a broker at boot, exchange to exchange bindings."
-checkedOn: 2026-08-21
+checkedOn: 2026-10-20
 ---
 
 ## AMQP
@@ -51,15 +51,9 @@ definitions.local.path = /etc/rabbitmq/definitions.json
 Bake both the config and the definitions file into a derived image and the entities are created
 at startup. The path can also be a directory, in which case every file in it is imported.
 
-Two things worth knowing about those keys. `definitions.local.path` is the newer spelling of the
-older `load_definitions`; both are still accepted by the server schema, and this is old versus new
-syntax, not 3.x versus 4.x (the 3.13 and 4.x docs both document the `definitions.*` form). And
-`definitions.import_backend` already defaults to `local_filesystem`, so pointing
-`definitions.local.path` at a file is enough on its own. The other backend is `https`, with
-`definitions.https.url`.
+Two things worth knowing about those keys. `definitions.local.path` is the newer spelling of the older `load_definitions`; both still work on 4.4, and this is old versus new syntax, not 3.x versus 4.x (the 3.13 and 4.x docs both document the `definitions.*` form). The new form needs both lines: on 4.4, `definitions.local.path` without `definitions.import_backend` stops the node at boot with `definition import source is configured but definitions.import_backend is not set`. The legacy `load_definitions` works on its own. The other backend is `https`, with `definitions.https.url`.
 
-Import never overwrites what is already in the broker, and it runs on every node at every boot.
-Set `definitions.skip_if_unchanged = true` to only import when the file contents actually change.
+Import runs on every node at every boot, and it overwrites: a password or a permission changed at runtime is put back to the file's value on the next restart. Set `definitions.skip_if_unchanged = true` to only import when the file contents actually change.
 
 Definitions file (`/etc/rabbitmq/definitions.json`):
 
@@ -101,7 +95,7 @@ and the first one is the one to reach for:
 rabbitmqctl export_definitions /path/to/definitions.json
 
 # over the HTTP API, needs the management plugin
-rabbitmqadmin definitions export /path/to/definitions.json
+rabbitmqadmin definitions export --file /path/to/definitions.json
 
 # same thing by hand
 curl -u user:password http://localhost:15672/api/definitions | jq
@@ -119,8 +113,7 @@ rabbitmqadmin definitions export --stdout --transformations exclude_users,exclud
 
 Note that `rabbitmqadmin` v2 is not the old Python script: it is a separate project shipped as a
 native binary ([rabbitmqadmin-ng](https://github.com/rabbitmq/rabbitmqadmin-ng)), with its own
-release cycle, and recent versions still talk to 3.12.x nodes. The v1 Python script is the one you download
-from a node running the management plugin, and its command syntax differs.
+release cycle, and recent versions still talk to 3.12.x nodes. The `management` images ship v2 as `rabbitmqadmin`. The v1 Python script, whose command syntax differs, used to be downloaded from the node at `/cli/rabbitmqadmin`: 3.12 still serves it, 4.4 answers 404.
 
 To reach the HTTP API of a broker running in Kubernetes, port-forward the management port first:
 
@@ -128,8 +121,7 @@ To reach the HTTP API of a broker running in Kubernetes, port-forward the manage
 kubectl port-forward rabbitmq-54644f7685-gf8hw 15672:15672
 ```
 
-Then open [http://localhost:15672/](http://localhost:15672/) (default login `guest:guest`). The
-official Docker image only ships the management plugin under the `management` tags.
+Then open [http://localhost:15672/](http://localhost:15672/) (default login `guest:guest`). Every official Docker image contains the management plugin, but only the `management` tags enable it (and bundle `rabbitmqadmin`).
 
 ## Clients
 

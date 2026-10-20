@@ -1,7 +1,7 @@
 ---
 title: aiohttp
 description: "aiohttp cookbook: sharing a client session, timeouts, concurrent requests, streaming, a minimal server, and the defaults that bite (silent 500s, dead response bodies, dropped cookies)."
-checkedOn: 2026-09-10
+checkedOn: 2026-10-20
 ---
 
 aiohttp is both an asyncio HTTP client and an asyncio HTTP server. The client half is the one
@@ -9,7 +9,7 @@ most projects use, usually to call other services. Its defaults are not the ones
 coming from `requests`: errors do not raise, the body of a response stops existing when you leave
 the `async with`, and the timeout is five minutes.
 
-Everything below is verified on **aiohttp 3.14.3** (Python 3.10).
+Everything below is verified on **aiohttp 3.14.5** (Python 3.15).
 
 ## Cookbook
 
@@ -59,8 +59,9 @@ async with aiohttp.ClientSession(timeout=timeout) as session:      # for every r
 ```
 
 `total` covers the whole exchange, connection included. `connect` covers getting a connection
-from the pool or opening one, `sock_read` the gap between two chunks of the answer. A timeout
-raises `TimeoutError`, and its message is empty, so log the URL yourself.
+from the pool or opening one, `sock_read` the gap between two chunks of the answer. Every timeout is a `TimeoutError`, so one `except TimeoutError` catches them all. The `total` one
+carries an empty message, so log the URL yourself; `sock_read` raises `SocketTimeoutError`, a
+subclass, with "Timeout on reading data from socket".
 
 ### Run requests concurrently
 
@@ -73,7 +74,7 @@ async with aiohttp.ClientSession() as session:
     pages = await asyncio.gather(*(fetch(session, url) for url in urls))
 ```
 
-Measured on five requests to a handler that sleeps 300 ms: 1.81 s in a `for` loop, 0.51 s with
+Measured on five requests to a handler that sleeps 300 ms: 1.51 s in a `for` loop, 0.30 s with
 `gather`. Use `return_exceptions=True` if one failure must not cancel the batch, and a
 `asyncio.Semaphore` to cap how many run at once.
 
@@ -222,7 +223,8 @@ session = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True))
 ### `run_app` owns the loop
 
 `web.run_app()` creates and runs the event loop itself, so calling it from inside a running loop
-raises `RuntimeError: Cannot run the event loop while another loop is running`. To start a server
+fails: `RuntimeError: Cannot run the event loop while another loop is running` on Python 3.10, a
+`ValueError` about a future belonging to a different loop on Python 3.15. To start a server
 from code that is already async (tests, an embedded server), use the runner API:
 
 ```python

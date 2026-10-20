@@ -1,15 +1,15 @@
 ---
 title: Git
 description: "Git cookbook: recovering lost commits, undoing at the right level, fixup and autosquash, replanting a branch with rebase --onto, bisect, worktrees, hooks, submodules, plus the object model underneath."
-checkedOn: 2026-10-13
+checkedOn: 2026-10-20
 ---
 
 Everyone knows `commit`, `pull` and `push`. What follows is the rest: the commands I reach for
 when something went wrong, when history needs cleaning before review, or when I need to find out
 where a change came from. Then, at the end, the object model that explains why any of this works.
 
-The snippets below were all replayed on **git 2.43.0**; they hold on 2.34 too, and `switch` and
-`restore` need git 2.23 or later.
+The snippets below were all replayed on **git 2.56.0** (and 2.43.0); `switch` and `restore` need git
+2.23 or later.
 
 ## Cookbook
 
@@ -235,7 +235,7 @@ Four things to know before relying on any of this:
 - **Without the executable bit, the hook is skipped**, and the only sign is a hint on the way
   past: `hint: The '.git/hooks/pre-commit' hook was ignored because it's not set as executable`.
   Easy to scroll past.
-- **Hooks are not cloned.** `.git` is not versioned, and a fresh clone ships fourteen `.sample`
+- **Hooks are not cloned.** `.git` is not versioned, and a fresh clone ships a handful of `.sample`
   files and nothing else. To share them, commit them in the tree and point git at that directory
   with `git config core.hooksPath .githooks`. That setting **replaces** `.git/hooks` entirely: a
   local hook that used to block no longer runs at all.
@@ -379,8 +379,8 @@ two different files sharing the same SHA-1, so a blob can in principle be crafte
 another. A commit still cannot be altered silently: changing it changes its hash, and because
 every descendant stores its parent's hash, rewriting one commit forces every later commit to
 change too, which is what makes mid-history tampering visible. Modern git ships a hardened SHA-1
-(the sha1dc collision detector, on by default) that aborts when it sees a SHAttered-style
-collision attempt, and an experimental SHA-256 object format exists for new repositories.
+(the sha1dc collision detector, on by default since git 2.13) that aborts when it sees a SHAttered-style
+collision attempt, and new repositories can opt into SHA-256 with `git init --object-format=sha256`. SHA-1 stays the default, and the two formats do not interoperate yet.
 
 ## Config
 
@@ -401,7 +401,7 @@ git config --global user.name "Romain Dorgueil"
 git config --global user.email "romain@dorgueil.net"
 ```
 
-Verified on git 2.43.0.
+Verified on git 2.56.0.
 
 ## References
 

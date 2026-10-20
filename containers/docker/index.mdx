@@ -1,7 +1,7 @@
 ---
 title: Docker
 description: "Docker cookbook: layer order and the build cache, multi-stage builds, build context, build secrets, plus the defaults that silently bloat an image or swallow a failed build."
-checkedOn: 2026-09-25
+checkedOn: 2026-10-20
 ---
 
 Docker rarely fails loudly. It ships an image that is ten times too big, or one that is missing the
@@ -9,9 +9,9 @@ dependency the build was supposed to install, and says nothing. Almost none of t
 follows from two rules. A layer only ever adds, and the cache keys on the instruction plus what it
 copied.
 
-Everything below was run against Docker Engine 29.4.3 (buildx v0.33.0, BuildKit is the default
-builder) on `alpine:3.22` and `python:3.12-alpine`. Sizes are the `DISK USAGE` column of
-`docker images` unless stated otherwise.
+Everything below was run against Docker Engine 29.9.0 (buildx v0.38.0, BuildKit is the default
+builder, containerd image store) on `alpine:3.22` and `python:3.12-alpine`. Sizes are the
+`DISK USAGE` column of `docker images` unless stated otherwise.
 
 ## Cookbook
 
@@ -33,8 +33,8 @@ everything that follows. Measured on a 5 second install step, changing one sourc
 rebuilding:
 
 ```
-COPY . . before the install : 5.60 s
-manifest first              : 0.36 s
+COPY . . before the install : 12.4 s
+manifest first              :  0.9 s
 ```
 
 ### Keep the build toolchain out of the final image
@@ -71,8 +71,7 @@ RUN apk add --no-cache --virtual .builddeps build-base \
 .builddeps` drops the whole group. `--no-cache` fetches a fresh package index on the fly and keeps
 nothing in `/var/cache/apk`, which replaces the old `--update` plus `rm -rf /var/cache/apk/*`
 dance; passing `--update` as well is redundant. The single `RUN` is the whole point: the same three
-commands split into three `RUN` instructions give 353 MB, against 12.8 MB in one, which is the
-size of the base image itself.
+commands split into three `RUN` instructions give 353 MB, against 13 MB in one, barely above the 12.8 MB of the base image.
 
 ### Keep the build context small
 
@@ -82,13 +81,13 @@ node_modules
 .git
 ```
 
-BuildKit is lazy: with a targeted `COPY app/ /app/` it transferred 74 bytes whether or not
+BuildKit is lazy: with a targeted `COPY app/ /app/` it transferred a few dozen bytes whether or not
 `.dockerignore` existed, because that is all the build asked for. With `COPY . /app/` the
 difference is the whole repository:
 
 ```
 without .dockerignore : 62.93 MB of context, 139 MB image, .git and node_modules inside it
-with .dockerignore    :    173 B of context, 12.8 MB image
+with .dockerignore    :    267 B of context, 12.8 MB image
 ```
 
 ### Pass a secret to the build without baking it in
@@ -206,10 +205,12 @@ locally and fails in production, where nothing is mounted.
 
 ### docker images reports two sizes
 
-The single `SIZE` column is gone in the 29.x line. `DISK USAGE` is what the image occupies on this
-machine (content blobs plus the unpacked snapshot), `CONTENT SIZE` is what gets pushed and pulled.
-They differ by roughly a factor of three on small images: `alpine:3.22` is 12.8 MB of disk usage
-for 3.88 MB of content. Quote the one you mean.
+With the containerd image store, the default on fresh installs since Engine 29.0, the single
+`SIZE` column is gone. `DISK USAGE` is what the image occupies on this machine (content blobs plus
+the unpacked snapshot), `CONTENT SIZE` is what gets pushed and pulled. They differ by roughly a
+factor of three on small images: `alpine:3.22` is 12.8 MB of disk usage for 3.88 MB of content.
+A daemon upgraded from an older release keeps the legacy store: the same two columns appear, but
+`CONTENT SIZE` reads 0B. Quote the one you mean.
 
 ### The build cache grows where you are not looking
 
@@ -219,10 +220,10 @@ docker builder prune      # the build cache only
 docker system prune -a    # everything unused, including tagged images with no container
 ```
 
-`docker system df` reported 948.7 MB of build cache of which 698.4 kB was reclaimable, because the
-rest was still referenced by tagged images. `docker system prune` will not touch it; `docker
-builder prune` is the one that clears the cache, and `--filter until=168h` keeps it bounded without
-throwing away this week's work.
+`docker system df` reported 1.06 GB of build cache of which 13.4 MB was reclaimable, because the
+rest was still referenced by tagged images. `docker system prune` and `docker builder prune` both
+clear only that reclaimable part; `docker builder prune -a` is the one that drops the whole cache,
+and `--filter until=168h` keeps it bounded without throwing away this week's work.
 
 ## See also
 

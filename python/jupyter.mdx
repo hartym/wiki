@@ -1,7 +1,7 @@
 ---
 title: Jupyter
 description: "Jupyter cookbook: running notebooks from the command line, one kernel per virtualenv, parameterised runs, keeping notebooks out of git diffs, and the traps of hidden state."
-checkedOn: 2026-09-11
+checkedOn: 2026-10-20
 ---
 
 A notebook is two things at once: a JSON file on disk, and a kernel process holding state. Most
@@ -9,14 +9,14 @@ Jupyter surprises live in the gap between them. The file shows outputs the code 
 produces, the kernel still knows a variable whose cell you deleted, and the shell that `!`
 talks to is not the Python the kernel runs.
 
-Everything below is verified on **IPython 8.39, nbconvert 7.17.1, papermill 2.7.0** (Python 3.10).
+Everything below is verified on **IPython 9.17, nbconvert 7.17.2, papermill 2.7.0** (Python 3.15).
 
 {/*
-  Run 2026-09-11, Linux sandbox, Python 3.10.12.
-  ipython 8.39.0, ipykernel 7.3.0, nbconvert 7.17.1, nbclient 0.11.0, nbformat 5.11.1,
-  jupytext 1.19.5, papermill 2.7.0, nbstripout 0.9.1.
-  Every command and every gotcha below was executed: magics through InteractiveShell,
-  notebooks built with nbformat and run through nbconvert and papermill.
+  Run 2026-10-20, Docker python:3-slim, Python 3.15.0.
+  ipython 9.17.1, ipykernel 7.4.0, nbconvert 7.17.2, nbclient 0.11.0, nbformat 5.11.1,
+  jupytext 1.19.6, papermill 2.7.0, nbstripout 0.9.1.
+  Every command and every gotcha below was executed: magics in a venv kernel through
+  nbconvert --execute, notebooks built with nbformat and run through nbconvert and papermill.
 */}
 
 ## Cookbook
@@ -89,10 +89,12 @@ recorded, the source stays clean.
 ### Convert and clean
 
 ```bash
-jupyter nbconvert --to html analysis.ipynb        # a standalone page, styles inlined
+jupyter nbconvert --to html analysis.ipynb        # one HTML file, styles inlined
 jupyter nbconvert --to script analysis.ipynb      # -> analysis.py
 jupyter nbconvert --clear-output --inplace analysis.ipynb
 ```
+
+The HTML still loads require.js and MathJax from a CDN, so it is one file, not an offline one.
 
 `--clear-output` drops both the outputs and the execution counters, leaving the code untouched.
 
@@ -162,8 +164,8 @@ virtualenv kernel:
 
 ```text
 kernel  : /tmp/scratch/venv/bin/python
-!shell  : /usr/bin/python
-pip 25.3 from /usr/local/lib/python3.10/dist-packages/pip
+!shell  : /usr/local/bin/python
+pip 26.2.1 from /usr/local/lib/python3.15/site-packages/pip (python 3.15)
 ```
 
 `!pip install pandas` there installs into the system Python and the import still fails. `%pip`
@@ -191,9 +193,9 @@ sum(range(10))
 UsageError: Line magic function `%%timeit` not found.
 ```
 
-A `%%` magic applies to the whole cell and has to be the very first line. Not a comment, not a
-blank line before it. The error message is misleading: it complains about a line magic, because
-that is all IPython can make of a `%%` that is not at the top.
+A `%%` magic applies to the whole cell and has to be its first line of code: a comment above it
+breaks it (blank lines are fine). The error message is misleading: it complains about a line
+magic, because that is all IPython can make of a `%%` that is not at the top.
 
 ### `autoreload` does not refresh values imported by name
 
@@ -216,11 +218,12 @@ notebook, above the cell holding the defaults. The defaults then run and overwri
 
 ```bash
 papermill nb.ipynb out.ipynb -p alpha 5
+# Passed unknown parameter: alpha
 # Input notebook does not contain a cell with tag 'parameters'
 # out.ipynb prints: alpha = 1
 ```
 
-The only signal is that one line on stderr, and the run succeeds. Tag the cell, and the injected
+The only signal is those two warnings, and the run succeeds. Tag the cell, and the injected
 cell lands after it: `alpha = 5`.
 
 ### nbconvert and papermill disagree on the working directory

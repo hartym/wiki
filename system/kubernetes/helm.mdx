@@ -1,10 +1,10 @@
 ---
 title: Helm
 description: Helm cookbook - chart structure, rendering and linting without a cluster, values precedence and subcharts, the release lifecycle, and the gotchas that render fine locally and break in the cluster.
-checkedOn: 2026-09-15
+checkedOn: 2026-10-20
 ---
 
-[Helm](https://helm.sh/) is the package manager for Kubernetes. A **chart** is a templated bundle of manifests, an **install** of a chart into a cluster is a **release**, and each change produces a numbered **revision** you can roll back to. Helm 3 talks to the cluster directly (no more Tiller). Everything below was rechecked with helm v3.21.3, and every local recipe runs without a cluster.
+[Helm](https://helm.sh/) is the package manager for Kubernetes. A **chart** is a templated bundle of manifests, an **install** of a chart into a cluster is a **release**, and each change produces a numbered **revision** you can roll back to. Helm 3 and later talk to the cluster directly (no more Tiller). Everything below was rechecked with helm v4.3.1 and v3.22.1, and every local recipe runs without a cluster. Where Helm 4 renamed a flag, it says so.
 
 ## A chart's structure
 
@@ -75,7 +75,7 @@ given (right-most wins), then the command line.
 
 ```
 helm template r mychart -f base.yaml -f prod.yaml --set image.tag=1.4.2
-helm template r mychart --set-string version=0123        # keep it a string, not a number
+helm template r mychart --set-string image.tag=1234     # keep it a string, --set would make it an int
 helm template r mychart --set-json 'ports=[80,443]'
 helm template r mychart --set-file ca=./ca.pem           # value read from a file
 ```
@@ -119,7 +119,7 @@ Against a cluster (uses the current kubectl context and namespace):
 helm install myrelease mychart                  # install a release
 helm install myrelease mychart -f prod-values.yaml --set image.tag=1.4.2
 helm upgrade --install myrelease mychart        # create or update (idempotent)
-helm upgrade --install myrelease mychart --atomic --timeout 5m
+helm upgrade --install myrelease mychart --rollback-on-failure --timeout 5m   # Helm 3: --atomic
 helm list -A                                    # releases across all namespaces
 helm history myrelease                          # revisions of a release
 helm rollback myrelease 2                       # roll back to revision 2
@@ -130,9 +130,11 @@ helm get values myrelease -a                    # those merged with the chart de
 ```
 
 `helm upgrade --install` is the usual CI/CD form: it installs on first run and upgrades afterwards.
-`--atomic` implies `--wait` and rolls the release back to the previous revision if the new one is not
-ready within `--timeout` (5 minutes by default), which is what you want in a pipeline: a failed
-deploy leaves the cluster where it was rather than half-migrated.
+`--rollback-on-failure` (`--atomic` in Helm 3, deprecated in Helm 4) implies `--wait` and rolls the
+release back to the previous revision if the new one is not ready within `--timeout` (5 minutes by
+default), which is what you want in a pipeline: a failed deploy leaves the cluster where it was
+rather than half-migrated. On a first install, there is nothing to roll back to: the release is
+uninstalled.
 
 ## Validate values with a schema
 
@@ -156,8 +158,8 @@ mychart:
 - at '/replicaCount': minimum: got 0, want 1
 ```
 
-Ten lines well spent: it is the only mechanism that turns a typo in values into an error instead of
-an empty string.
+Ten lines well spent: `required` guards one value at a time, the schema checks all of them before
+anything renders.
 
 ## Repositories
 
@@ -203,8 +205,9 @@ dsn: {{ required "dsn is required" .Values.dsn | quote }}
 **Neither `template` nor `lint` knows the Kubernetes schema.** A Deployment carrying `replicaz: 3`
 and a container field spelled `imag:` passes both with exit code 0, then the API server rejects it.
 `helm lint` has a handful of Kubernetes-aware rules (a Deployment with no `matchLabels` does fail)
-but no schema. The real check needs a cluster: `helm template --validate`, or
-`helm upgrade --dry-run=server`.
+but no schema. The dry runs do not catch it either: `helm upgrade --install --dry-run=server`, and Helm 3's
+`helm template --validate`, both passed this chart against a live cluster. Only a real install
+fails, so the check is an install into a throwaway namespace or cluster (kind is enough).
 
 **`lookup` returns an empty map offline.** During `helm template` it never queries anything, so a
 chart that branches on what already exists in the cluster renders one way in CI and another way on
@@ -214,14 +217,16 @@ install. Test those branches against a real cluster, not in the render loop.
 `--set mode=x` sets the parent's value and the subchart keeps its own default. Address it by name,
 `--set dep.mode=x`, or move the value under `global:`.
 
-**`helm upgrade` starts from the chart's defaults again.** The values of the previous revision are
-not carried over: pass the same `-f` and `--set` on every upgrade, which is the right answer anyway
-since they then live in git. `--reuse-values` and `--reset-then-reuse-values` exist for the cases
-where you cannot.
+**`helm upgrade` does not merge with the previous values.** With no `-f` and no `--set` at all, it
+reuses the last release's values; pass a single `--set` and every other previous value is dropped
+for the chart's defaults. Pass the same `-f` and `--set` on every upgrade, which is the right answer
+anyway since they then live in git. `--reuse-values` and `--reset-then-reuse-values` exist for the
+cases where you cannot.
 
 **Release names are capped at 53 characters** and must match
 `^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`. Long branch names fed into a
-release name from CI hit this, and the error only shows up at deploy time.
+release name from CI hit this. `helm template` checks it too, so render with the real name in CI
+and it fails there, not at deploy time.
 
 ## See also
 

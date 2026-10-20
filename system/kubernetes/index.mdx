@@ -1,15 +1,14 @@
 ---
 title: Kubernetes
 description: Kubernetes cookbook - deployment rollouts and rollbacks, environment from ConfigMaps, liveness/readiness/startup probes, requests and limits, triaging a pod that will not start, RBAC and who can do what, capacity planning, and the GKE checklist.
-checkedOn: 2026-10-08
+checkedOn: 2026-10-20
 ---
 
 [Kubernetes](https://kubernetes.io/) automates the deployment, scaling and operation of containerized
 applications. This page is the section hub and a cookbook of things I actually run.
 
-Commands and manifests below are checked against a Kubernetes v1.37.1 API server with kubectl
-v1.37.1. The page was first written against v1.37.0 and re-run end to end on v1.37.1 with no
-behaviour change.
+Commands and manifests below are checked with kubectl v1.37.1 against a Kubernetes v1.37.0 API
+server (kind).
 
 ## Pages in this section
 
@@ -152,8 +151,8 @@ least want it to.
 Two numbers that look like a pair but do different jobs.
 
 * **Requests** are what the scheduler reserves. It sums the requests of the pods already assigned to
-  a node and refuses to place one more if the node has nothing left. Nothing else about the pod
-  enters that decision.
+  a node and refuses to place one more if the node's allocatable resources have nothing left.
+  Limits play no part in that check.
 * **Limits** are what the node enforces once the container runs. The scheduler never compares them
   to the node's capacity.
 
@@ -187,7 +186,7 @@ keeps running slower, while a container over its memory limit may be killed by t
 `OOMKilled` you read in `kubectl describe pod`). Hence the usual rule of thumb: set a memory limit
 close to what you measured, and think twice before setting a tight CPU limit.
 
-Set limits and no requests, and the API server copies the limits into the requests:
+Set limits and no requests on a pod, and the API server copies the limits into the requests. A Deployment's template keeps what you wrote; the pods it creates get the copy:
 
 ```yaml
 # what you wrote
@@ -315,7 +314,7 @@ Nothing in a binding is checked against reality. Users and groups come from the 
 from the API, so a binding to a misspelled user is created without a word and grants nothing. A
 binding to a `ServiceAccount` that does not exist is accepted too, and so is a binding to a role
 that does not exist. The last one is the loud failure: the dangling reference shows up in the
-`can-i` answer for unrelated questions in the same namespace.
+`can-i` answers of the binding's own subjects, even for unrelated questions in that namespace.
 
 ```
 no - rbac: RBAC: role.rbac.authorization.k8s.io "no-such-role" not found
@@ -417,22 +416,26 @@ That warning line is the only hint, and it is easy to scroll past. A `ClusterRol
 `RoleBinding` grants nothing at all on cluster-scoped resources, whatever `can-i` says with a
 namespace attached.
 
-**`resourceNames` is silently useless on `list`.** Names only work for verbs that address a single
-object. A rule with `resourceNames: ["web-1"]` and `verbs: ["get","list","watch"]` is accepted
-without a warning, and the `list` never authorizes anything:
+**`resourceNames` on `list` needs a field selector.** A rule with `resourceNames: ["web-1"]` and
+`verbs: ["get","list","watch"]` is accepted without a warning, and a plain `list` is refused:
 
 ```
 Error from server (Forbidden): pods is forbidden: User "zoe" cannot list resource "pods"
 in API group "" in the namespace "dev"
 ```
 
+The list only goes through when it asks for that one name,
+`kubectl get pods --field-selector=metadata.name=web-1`, which few clients do. `deletecollection`
+and top-level `create` cannot be restricted by name at all.
+
 Same trap in reverse: `get pods` without a name is a different request from `get pods/web-1`, so a
 `resourceNames` rule gives `yes` on the second and `no` on the first.
 
 **`delete` is not `deletecollection`.** They are two verbs, granted separately, and the one that
 bites is the direction you do not expect. `kubectl delete pods --all` lists and then deletes one
-object at a time, so `delete` alone is enough to empty a namespace. `deletecollection` is the
-single call on the collection endpoint, which is what controllers and clients use:
+object at a time, so `list` and `delete`, without `deletecollection`, are enough to empty a
+namespace. `deletecollection` is the single call on the collection endpoint, which is what
+controllers and clients use:
 
 ```shell
 kubectl delete --raw "/api/v1/namespaces/dev/pods"
@@ -468,13 +471,17 @@ allows a binding to that role without holding its rules.
 ```yaml
 rules:
 - apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["rolebindings"]
+  verbs: ["create"]
+- apiGroups: ["rbac.authorization.k8s.io"]
   resources: ["clusterroles"]
   resourceNames: ["admin"]
   verbs: ["bind"]
 ```
 
-With that rule and nothing else, the user binds the whole `admin` ClusterRole to themselves and the
-API server accepts it.
+With those two rules, the user binds the whole `admin` ClusterRole to themselves in that
+namespace and the API server accepts it, without holding a single one of its rules. `bind`
+alone is not enough: the binding still needs `create` on `rolebindings`.
 
 **Do not edit `view`, `edit` or `admin`.** They carry an `aggregationRule`, and the controller
 rewrites their `rules` from the ClusterRoles matching its selector. A rule added by hand is gone a
@@ -498,9 +505,10 @@ Its rules show up in `kubectl get clusterrole view -o yaml` within a couple of s
 everyone already bound to `view` gets them.
 
 **`can-i` needs the resource to be served.** Ask about a custom resource whose CRD is not installed
-and kubectl cannot resolve it through discovery, so it sends the string it was given as the resource
-name and gets a `no` that says nothing about RBAC. Install the CRD and the same command answers
-`yes`.
+and kubectl cannot resolve it through discovery: it warns
+`the server doesn't have a resource type 'crontabs'`, sends the string as a resource of the core
+API group, and gets a `no` that says nothing about RBAC. Install the CRD and the same command
+answers `yes`.
 
 Reference: [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/),
 which is also where the full list of default roles lives.
@@ -557,10 +565,12 @@ hands the container about 7% less memory than you meant, silently.
 
 **Quantities come back normalized.** Write `1000m` and `1024Mi`, read back `"1"` and `1Gi`. The
 stored object is equivalent but not textually what you sent, so a manifest written one way and a
-cluster state written the other produce a permanent diff in any tool that compares them.
+cluster state written the other produce a permanent diff in any tool that compares them as text.
 
-**`--record` is gone, and the annotation that replaced it is sticky.** Change causes now come from a
-`kubernetes.io/change-cause` annotation on the deployment:
+**`--record` is deprecated, and the annotation that replaced it is sticky.** kubectl still accepts
+`--record` but hides it from `--help` and warns
+`Flag --record has been deprecated, --record will be removed in the future`. Change causes come
+from a `kubernetes.io/change-cause` annotation on the deployment:
 
 ```shell
 kubectl annotate deployment/$DEPLOYMENT kubernetes.io/change-cause="security bump"
@@ -590,8 +600,10 @@ The Deployment "web" is invalid:
 
 **`kubectl rollout status` is a real CI gate.** It exits non-zero when the rollout does not converge
 in time, so `kubectl rollout status deployment/$DEPLOYMENT --timeout=5m` is enough to fail a
-pipeline on a bad deploy. Without `--timeout` it waits forever, which in CI means until the job is
-killed.
+pipeline on a bad deploy. Without `--timeout`, a stuck deployment still fails once its
+`progressDeadlineSeconds` (600 by default) passes without progress, with
+`error: deployment "web" exceeded its progress deadline`. A StatefulSet or a DaemonSet has no
+such deadline and waits forever, which in CI means until the job is killed.
 
 **`kubectl set image` checks the container name client-side.** A typo gives
 `error: unable to find container named "nope"` and nothing is sent, so it cannot silently add a

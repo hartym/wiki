@@ -1,12 +1,12 @@
 ---
 title: "ImageMagick (and GraphicsMagick)"
 description: "ImageMagick command-line cookbook: inspect, batch-optimise, convert, flatten, trim and tile images, plus the options that silently rotate or enlarge your files."
-checkedOn: 2026-09-22
+checkedOn: 2026-10-20
 ---
 
 * [imagemagick.org](https://imagemagick.org/), the current 7.x line
 * [legacy.imagemagick.org](https://legacy.imagemagick.org/), the 6.x line, end of life announced for
-  2029-04-01, last release 6.9.13-56
+  2029-04-01
 * [GraphicsMagick](http://www.graphicsmagick.org/)
 
 On ImageMagick 7 the single `magick` command replaces the old per-tool binaries, so the recipes
@@ -15,8 +15,8 @@ below use `magick`, `magick identify`, `magick mogrify`, `magick montage`. On Im
 in 7 as symbolic links to `magick`, but the
 [porting guide](https://imagemagick.org/porting/) asks for `magick identify` and friends and is
 explicit about one form: do not write `magick convert`, which switches the legacy parser back on.
-Debian and Ubuntu still ship the 6.x line, which is what everything below was run against
-(6.9.11-60 on Ubuntu 22.04).
+Debian 13 and Ubuntu 25.10 and later ship the 7.x line; Debian 12 and Ubuntu 24.04 LTS still ship
+6.9. Everything below was run on 7.1.2-34, and the gotchas also on 6.9.11-60 and 6.9.12-98.
 
 ## Cookbook
 
@@ -47,11 +47,11 @@ tag away, which is the whole point of putting it first (see the gotchas). `-stri
 the JPEG quality, and `-resize '1800x>'` caps the width at 1800px while leaving smaller images
 alone. Quote the geometry, or the shell reads `>` as a redirection.
 
-Measured: a 2400x1600 source of 84kB comes out 1800x1200 and 21kB, and an 800x600 source stays
-800x600 and drops from 18kB to 10kB.
+Measured on synthetic test images: a 2400x1600 source of 609kB comes out 1800x1200 and 125kB, and
+an 800x600 source stays 800x600 and drops from 86kB to 29kB.
 
 Add `-gaussian-blur 0.05` when the source is grainy: on a deliberately noisy 2000x1400 image the
-same pipeline gave 280kB with it against 327kB without. On a clean gradient the two outputs were
+same pipeline gave 290kB with it against 548kB without. On a clean gradient the two outputs were
 byte for byte identical, so it buys nothing there.
 
 ### Convert a whole folder without the loop
@@ -72,7 +72,7 @@ magick -define jpeg:size=800x600 huge.jpg -resize 400x thumb.jpg
 
 The JPEG decoder scales the image while reading it, so the full resolution is never decompressed.
 Keep the hint at twice the target size or so, to leave the resampling something to work with. On a
-6000x4000 source of 7.8MB, the same 400x267 thumbnail took 0.11s instead of 0.29s. This is a
+6000x4000 source of 7.7MB, the same 400x267 thumbnail took 0.12s instead of 0.45s. This is a
 setting, not an operator, so it goes before the input file.
 
 ### Flatten a transparent PNG onto a JPEG
@@ -95,8 +95,9 @@ magick scan.png -trim +repage cropped.png
 
 `-trim` removes a uniform border, like the white margin around a scan or the padding around a logo.
 `+repage` resets the virtual canvas afterwards. Add `-fuzz 5%` before `-trim` when the border is not
-perfectly uniform: a `#fefefe` block inside a white border does not trim at all without it, and
-trims to 101x41 with it.
+perfectly uniform, a scan's off-white margin for instance. Keep the fuzz below the contrast of what
+you want to keep: a `#fefefe` block inside a white border trims to 101x41 without fuzz, and with
+`-fuzz 5%` it counts as border too and the whole image trims away.
 
 ### Build a contact sheet
 
@@ -110,7 +111,7 @@ shoot on a single page.
 
 ## Gotchas
 
-Everything here was reproduced on 6.9.11-60.
+Everything here was reproduced on 7.1.2-34, and on 6.9.11-60 and 6.9.12-98.
 
 ### `-strip` rotates photos, silently
 
@@ -122,21 +123,22 @@ browser. Now:
 * `magick in.jpg -auto-orient -strip out.jpg` gives 200x400, upright, no tag. This is the one you
   want.
 * `-resize` alone keeps the tag (200x100, still `RightTop`), so resizing without stripping is safe.
-* `-thumbnail` is `-resize` plus a strip, so it carries the same trap.
+* `-thumbnail` is `-resize` that also throws profiles away, the orientation tag with them (200x100,
+  no tag), so it carries the same trap.
 
 Put `-auto-orient` first in any pipeline that removes metadata.
 
 ### `-resize` enlarges unless you stop it
 
-`-resize 1800x` on an 800x600 source produces 1800x1350, and the "optimised" file comes out twice
-the size of the original (18kB to 38kB, measured). `1800x>` only ever shrinks, `1800x<` only ever
-enlarges. Both need quoting in the shell.
+`-resize 1800x` on an 800x600 source produces 1800x1350, and the "optimised" file comes out three
+times the size of the original (86kB to 269kB, measured). `1800x>` only ever shrinks, `1800x<` only
+ever enlarges. Both need quoting in the shell.
 
 ### `-quality` on a PNG is not what you think
 
-PNG is lossless. Quality 00 and quality 95 on the same source gave 15766 and 15500 bytes, with zero
+PNG is lossless. Quality 00 and quality 95 on the same source gave 8302 and 8221 bytes, with zero
 differing pixels (`compare -metric AE` returns 0). The number only picks a zlib level and a row
-filter. On the same image as JPEG, quality 50 against 95 is 23kB against 131kB.
+filter. On the same image as JPEG, quality 50 against 95 is 2.4kB against 9.7kB.
 
 ### Blur geometry is radius first, and sigma defaults to 1
 
@@ -154,19 +156,20 @@ turns up later, in a viewer or in the next command. `+repage` resets it.
 
 ### `mogrify` really does overwrite
 
-Same file in, same file out: an 84kB source became 5.8kB in place. There is no undo. `-path` or
+Same file in, same file out: a 609kB source became 11kB in place. There is no undo. `-path` or
 `-format`, or work on a copy.
 
 ### The security policy blocks more than you expect
 
-Distributions ship a restrictive `policy.xml` (`/etc/ImageMagick-6/policy.xml` on Ubuntu). Read it
-with `magick identify -list policy` and the limits with `magick identify -list resource`. On Ubuntu
-22.04:
+Distributions ship their own `policy.xml` (`/etc/ImageMagick-6/policy.xml` on Ubuntu up to 24.04,
+`/etc/ImageMagick-7/policy.xml` on 26.04). Read it with `magick identify -list policy` and the limits
+with `magick identify -list resource`. Ubuntu 22.04 is the strictest:
 
 * PDF, PS and EPS coders are off: `attempt to perform an operation not allowed by the security
   policy 'PDF'`. Note that a 0 byte output file is still created.
-* The `@list.txt` syntax, which reads filenames from a file, is off through a `path` policy on the
-  `@*` pattern, and it fails **silently**: exit code 0, no message, no output file.
+* The `@list.txt` syntax, which reads filenames from a file, is covered by a `path` policy on the
+  `@*` pattern. On 24.04 and 26.04 it is refused with `not allowed by the security policy
+  '@list.txt'`; on 22.04 (6.9.11-60) the same policy line is there and the list is read anyway.
 * Width and height are capped at 16KP, area at 128MP, memory at 256MiB. A 20000x100 canvas gives
   `width or height exceeds limit`, while 12000x12000 gives `cache resources exhausted`, which reads
   like a machine problem and is a policy line.
@@ -178,7 +181,7 @@ From the [porting guide](https://imagemagick.org/porting/): version 7 walks the 
 strictly left to right, so an operator placed before any input image is an error, where version 6
 accepted it (`convert -resize 50% in.jpg out.jpg` does resize on 6.9.11-60). Version 7 also enables
 HDRI by default, so results can shift slightly (`-clamp` brings pixels back in range), defaults
-`-channel` to RGBA instead of RGB, which makes `-negate` hit the alpha channel too, and represents
+`-channel` to RGBA instead of RGB (`-channel RGB` restores the old behaviour), and represents
 grayscale with a single channel.
 
 ## GraphicsMagick

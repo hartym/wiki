@@ -1,7 +1,7 @@
 ---
 title: Django authentication
 description: "Django authentication cookbook: users, login, sessions and permissions with the built-in system, plus the defaults that silently store a plaintext password or log everyone out."
-checkedOn: 2026-09-08
+checkedOn: 2026-10-20
 ---
 
 Django ships a complete authentication system: user model, password hashing, sessions, groups and
@@ -10,7 +10,7 @@ defaults around it: a password stored in clear because you used the wrong manage
 permission that stays denied on an object you just granted it to, a whole user base logged out by
 a password change.
 
-Everything below is verified on **Django 5.2.17** (Python 3.10).
+Everything below is verified on **Django 6.1.2** and **Django 5.2.18 LTS** (Python 3.15). The two behave the same except for the PBKDF2 iteration count.
 
 ## Cookbook
 
@@ -162,10 +162,12 @@ good = User.objects.create_user(username="good", password="secret")
 
 ```text
 create()      -> secret
-create_user() -> pbkdf2_sha256$1000000
+create_user() -> pbkdf2_sha256$1500000
 check bad : False
 check good: True
 ```
+
+(`1500000` on Django 6.1, `1000000` on 5.2.)
 
 The plaintext row does not even work: `check_password()` fails, since it parses the field as
 `algorithm$iterations$salt$hash`. The account is unusable and the password is readable in the
@@ -174,10 +176,7 @@ only safe path is `user.set_password(raw)` then `user.save()`.
 
 ### Password validators do not apply to the model
 
-`AUTH_PASSWORD_VALIDATORS` is enforced by forms, not by the model layer. Verified:
-`create_user(password="123")` succeeds with the default validator set active, while
-`validate_password("123")` raises with two errors, too short and too common. If you create users
-outside a form (import script, API, admin command), call it yourself:
+`AUTH_PASSWORD_VALIDATORS` is enforced by the password forms and by the `createsuperuser` and `changepassword` commands, not by the model layer. Verified: `create_user(password="123")` succeeds with the four validators `startproject` writes, while `validate_password("123")` raises three errors: too short, too common, entirely numeric. If you create users outside a form (import script, API, admin command), call it yourself:
 
 ```python
 from django.contrib.auth.password_validation import validate_password
@@ -222,8 +221,9 @@ built-in `PasswordChangeView` already calls `update_session_auth_hash()`.
 
 The common belief is that `login()` wipes the session. Verified, it depends:
 
-- anonymous visitor, or the same user logging in again: the session key is rotated (session
-  fixation protection) and the **data is kept**. A cart written before login is still there.
+- anonymous visitor: the session key is rotated (session fixation protection) and the **data is
+  kept**. A cart written before login is still there.
+- the same user logging in again: nothing happens to the session, same key, same data.
 - a *different* user on the same session: the session is flushed, the data is gone.
 
 So a value written before login survives, and code that relies on it silently breaks the day a
@@ -238,10 +238,7 @@ deleting it without losing the rows that point at it.
 
 ### Password storage
 
-The default hasher is `pbkdf2_sha256`, at 1,000,000 iterations in Django 5.2. Django rehashes a
-password on the next successful login when the iteration count of the stored hash is out of date,
-so raising `PASSWORD_HASHERS` or upgrading Django migrates users transparently. In tests, that cost
-is pure waste: override the setting with `MD5PasswordHasher` in your test settings.
+The default hasher is `pbkdf2_sha256`, at 1,500,000 iterations in Django 6.1 (1,200,000 in 6.0, 1,000,000 in 5.2). Django rehashes a password on the next successful login when the stored hash uses an iteration count or an algorithm other than the preferred one (the first entry of `PASSWORD_HASHERS`), so upgrading Django or putting a stronger hasher first migrates users transparently. Never remove a hasher from the list while hashes still use it. In tests, that cost is pure waste: override the setting with `MD5PasswordHasher` in your test settings.
 
 ## Third-party libraries
 
@@ -249,11 +246,10 @@ The built-in system covers local accounts. Two libraries are worth knowing for t
 
 * [django-allauth](https://docs.allauth.org/) - local accounts *and* social login, plus email
   verification, MFA and headless mode. The broad one: it takes over signup and login flows.
-  Version 65.19.1, released 2026-08-13.
+  Version 65.20.0, released 2026-10-16.
 * [python-social-auth](https://python-social-auth.readthedocs.io/) - social and OAuth/SAML login
   only, on top of your existing accounts. Split into `social-auth-core` and the Django app
-  `social-auth-app-django` (6.0.1, released 2026-07-24), which supports the currently supported
-  Django releases.
+  `social-auth-app-django` (7.1.0, released 2026-10-08), which requires Django 5.2 or later and declares 5.2 and 6.0.
 
 Rule of thumb: allauth if you want the whole account experience handed to you, python-social-auth
 if you already have a login and only need identity providers plugged into it.

@@ -1,7 +1,7 @@
 ---
 title: Jinja2
 description: "Jinja2 cookbook: undefined values, whitespace control, inheritance and macros, native types, and the defaults that bite - no autoescaping, no sandbox, and a default filter that ignores None."
-checkedOn: 2026-09-21
+checkedOn: 2026-10-20
 ---
 
 Jinja is a text-based template engine for Python, written by Armin Ronacher. It looks like the
@@ -11,7 +11,7 @@ text, not just HTML: config files, SQL, source code.
 
 Tags, filters, tests and globals are all customisable on the `Environment`.
 
-Everything below is verified on **Jinja2 3.1.6** (Python 3.10).
+Everything below is verified on **Jinja2 3.1.6** (Python 3.15).
 
 ## Two defaults worth knowing
 
@@ -67,7 +67,7 @@ env.get_template("quest.html").render(knight="Lancelot")
 
 One `Environment` per application, built once and reused: it compiles each template to Python
 bytecode and keeps it in an LRU cache of 400 entries. `auto_reload` is on by default, so an edited
-file is recompiled on the next `get_template`. That stat call per render is what you want in
+file is recompiled on the next `get_template`. That freshness check on every `get_template` call is what you want in
 development and not in production, where `auto_reload=False` makes the cache authoritative.
 
 ### Make missing values loud

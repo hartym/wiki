@@ -1,15 +1,14 @@
 ---
 title: PostgreSQL
 description: "PostgreSQL cookbook: real table sizes, running and blocking queries, timeouts, indexing without locking, JSONB, pg_stat_statements, range partitioning, backup and restore."
-checkedOn: 2026-10-09
+checkedOn: 2026-10-20
 ---
 
 [PostgreSQL](https://github.com/postgres/postgres) is the default relational database, and the one
 that keeps absorbing the workloads you would otherwise hand to a second engine. See
 <Link to="relational" /> for where it sits among the others.
 
-Everything in the cookbook below was replayed in a throwaway cluster, first on PostgreSQL 14.23 and
-re-checked end to end on 16.15. Version differences are called out where they exist.
+Everything in the cookbook below was replayed in a throwaway cluster on PostgreSQL 18.6. Version differences are called out where they exist.
 
 ## Cookbook
 
@@ -21,7 +20,7 @@ PostgreSQL stores values too large to fit in a page.
 
 ```sql
 select pg_size_pretty(pg_relation_size('t'))       as relation,  -- main fork only
-       pg_size_pretty(pg_table_size('t'))          as tbl,       -- + TOAST + free space map
+       pg_size_pretty(pg_table_size('t'))          as tbl,       -- + TOAST + free space and visibility maps
        pg_size_pretty(pg_indexes_size('t'))        as idx,
        pg_size_pretty(pg_total_relation_size('t')) as total;     -- table + indexes
 ```
@@ -31,7 +30,7 @@ On a 2000-row table whose rows each hold 6 kB of incompressible text:
 ```text
  relation |  tbl  |  idx  | total
 ----------+-------+-------+-------
- 104 kB   | 16 MB | 80 kB | 16 MB
+ 104 kB   | 16 MB | 64 kB | 16 MB
 ```
 
 104 kB against 16 MB. The rows in the main fork are little more than pointers, the payload lives in
@@ -65,8 +64,7 @@ select pg_cancel_backend(pid);     -- cancels the current query, keeps the conne
 select pg_terminate_backend(pid);  -- kills the whole session
 ```
 
-Always try `pg_cancel_backend()` first. It leaves the client connected, so an open transaction gets
-rolled back cleanly instead of the application discovering a dead socket. A non-superuser only sees
+Always try `pg_cancel_backend()` first. It leaves the client connected: an open transaction is aborted, and the application gets an error it can handle with a `ROLLBACK` instead of discovering a dead socket. A non-superuser only sees
 its own queries in `pg_stat_activity`; granting the `pg_monitor` or `pg_read_all_stats` role is
 enough to see everyone's, without handing out superuser.
 
@@ -84,8 +82,7 @@ where cardinality(pg_blocking_pids(pid)) > 0;
   28 | {25}       | Lock            | update t2 set blob='y' where id=1;
 ```
 
-`pg_blocking_pids()` gives the whole chain of holders, so you can walk back to the session that is
-actually at fault rather than killing the first victim you find.
+`pg_blocking_pids()` lists only the sessions directly in the way: the holder of the lock, or a session queued ahead for it. With three sessions on one row, the third reports the second, not the first. Call it again on those pids to walk back to the session that is actually at fault, rather than killing the first victim you find.
 
 ### Why is my query slow?
 
@@ -95,7 +92,7 @@ explain (analyze, buffers) select ...;
 
 `analyze` is the part that makes this useful: it reports actual rows and actual time next to the
 planner's estimates, and a large gap between the two is usually the bug. `buffers` adds how many
-pages were read and how many came from cache.
+pages were read and how many came from cache; from PostgreSQL 18 it is included automatically with `analyze`.
 
 The trap is that `EXPLAIN ANALYZE` **runs the statement**. On a `DELETE` it deletes. Verified:
 `explain (analyze) delete from t2 where id = 1` took the table from 2001 rows to 1999. Wrap
@@ -145,8 +142,7 @@ select indexrelid::regclass as index, indisvalid from pg_index where not indisva
  t2_uniq | f
 ```
 
-An invalid index is dead weight: it is not used for queries but it is still maintained on every
-write. `psql`'s `\d t2` flags it as `INVALID`. Drop it (with `DROP INDEX CONCURRENTLY`) and retry.
+An invalid index is not used for queries. Whether it still costs writes depends on where the build failed: this one failed in the first pass and was never marked ready (`indisready = f`, it stays at 0 bytes while rows keep arriving), while one that fails in the second pass is maintained on every write and keeps enforcing uniqueness. `psql`'s `\d t2` flags it as `INVALID`. Drop it (with `DROP INDEX CONCURRENTLY`) and retry.
 Full detail in
 [the manual](https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY).
 
@@ -160,7 +156,7 @@ set lock_timeout = '2s';                            -- waiting for a lock
 set idle_in_transaction_session_timeout = '60s';    -- transaction left open and idle
 ```
 
-All three verified on 14.23:
+All three verified on 18.6:
 
 ```text
 ERROR:  canceling statement due to statement timeout
@@ -172,9 +168,7 @@ Note the third one is `FATAL`: the connection is dropped, not just the statement
 the one people forget, and it is what keeps a schema migration from queuing behind a long report and
 in turn blocking everything that arrives after it.
 
-PostgreSQL 17 added `transaction_timeout`, which caps a whole transaction rather than one statement
-or one idle period. It does not exist before 17 (`pg_settings` confirms its absence on both 14 and
-16).
+PostgreSQL 17 added `transaction_timeout`, which caps a whole transaction rather than one statement or one idle period. Like the idle timeout it is `FATAL`: the session is dropped. It does not exist before 17 (absent on both 14 and 16).
 
 ### Dead tuples and bloat
 
@@ -202,8 +196,7 @@ select doc -> 'name'  as as_jsonb,   -- "n1"  (still jsonb, quotes included)
 from t limit 1;
 ```
 
-One arrow returns `jsonb`, two arrows return `text`. Comparing the result of a single arrow against a
-string literal is the usual cause of "the query matches nothing and I do not see why".
+One arrow returns `jsonb`, two arrows return `text`. Compare a single arrow against a string literal and the literal is parsed as JSON: `doc -> 'name' = 'n1'` fails with `invalid input syntax for type json`, and `doc -> 'id' = '42'` quietly matches nothing when the stored value is the string `"42"`. Use `->>` to compare against text.
 
 Containment is what GIN indexes accelerate:
 
@@ -235,9 +228,7 @@ pg_dump --format=c <dbname> -f dump.pgc      # custom archive format
 pg_restore --role=<role> -d <dbname> dump.pgc
 ```
 
-`--format=c` writes the custom archive format, which `pg_restore` reads. `--role` is ignored by
-`pg_dump` when the output is an archive format (`-Fc`, `-Ft`, `-Fd`): set the role at restore time
-instead. It only takes effect on `pg_dump` for plain SQL output (`-Fp`).
+`--format=c` writes the custom archive format, which `pg_restore` reads. `--role` on `pg_dump` is the role the dump runs as: it issues `SET ROLE` after connecting, whatever the format, and the role is not written into the output. Set the role the objects are restored as with `pg_restore --role`.
 
 Parallelism is asymmetric, which surprises people:
 
@@ -284,12 +275,11 @@ Statements are stored normalized: literals are replaced by placeholders, so a mi
 `where id = 1`, `where id = 2`, ... collapse into one row.
 
 ```text
- calls |                 query
--------+----------------------------------------
+ calls |                     query
+-------+-----------------------------------------------
      3 | select id from t where id = $1
      2 | SELECT   $1
-     1 | select id from t2 where id in ($1,$2)
-     1 | select id from t2 where id in ($1,$2,$3)
+     2 | select id from t2 where id in ($1 /*, ... */)
 ```
 
 Four things in that output are worth knowing:
@@ -298,26 +288,24 @@ Four things in that output are worth knowing:
 * `SELECT   1` and `select 1` also became one row: normalization works on the parsed statement, so
   keyword case and whitespace do not split it. The text kept is whichever spelling arrived first,
   which is why the table shows an upper-case `SELECT`.
-* An `IN` list of two literals and one of three literals are **two different rows**. A query built
-  by concatenating a variable number of placeholders fragments its own statistics.
+* Up to PostgreSQL 17, an `IN` list of two literals and one of three literals are **two different rows**, so a query built with a variable number of values fragments its own statistics. From 18 they collapse into one row, `in ($1 /*, ... */)`, and bind parameters are squashed the same way.
 * `alter table` and other utility commands are counted too (`track_utility` is `on` by default).
 
 Three traps, all verified:
 
 ```sql
 select count(*) from pg_stat_statements;
--- ERROR:  pg_stat_statements must be loaded via shared_preload_libraries
+-- ERROR:  pg_stat_statements must be loaded via "shared_preload_libraries"
 ```
 
 `CREATE EXTENSION` **succeeds** without the preload. Only reading the view fails, long after the
 migration that created the extension looked fine.
 
 ```sql
-set compute_query_id = off;   -- the view goes empty, and nothing says so
+set compute_query_id = off;   -- superuser only: new statements stop being counted, and nothing says so
 ```
 
-`compute_query_id` defaults to `auto`, which is what makes the module work at all. Turned off, the
-view collects nothing and reports no error.
+`compute_query_id` defaults to `auto`, which is what makes the module work at all. Turned off, the module stops recording: existing rows stay, nothing new arrives, and no error is reported.
 
 ```sql
 show pg_stat_statements.track;   -- top
@@ -376,9 +364,7 @@ Filter on anything else and every partition is scanned:
                Filter: (body = 'y'::text)
 ```
 
-So a partitioned table is faster for the queries that mention the key, and slower for the rest, by
-roughly the number of partitions. Partition on the column your reads filter on, not on the one that
-looks tidiest.
+So a partitioned table is faster for the queries that mention the key, and has to scan every partition for the rest. Partition on the column your reads filter on, not on the one that looks tidiest.
 
 A unique constraint has to contain the partition key, which rules out a plain surrogate primary key:
 
@@ -387,8 +373,7 @@ ERROR:  unique constraint on partitioned table must include all partitioning col
 DETAIL:  PRIMARY KEY constraint on table "events" lacks column "at" which is part of the partition key.
 ```
 
-The primary key becomes `(id, at)`. There is no global unique index across partitions, and no way
-to fake one.
+The primary key becomes `(id, at)`. There is no global unique index across partitions: uniqueness on `id` alone needs a separate, unpartitioned table holding that key.
 
 An insert that matches no partition is an error, not a silent drop:
 
@@ -426,15 +411,14 @@ create index events_body_idx on only events (body);                    -- invali
 create index concurrently events_2026_09_body on events_2026_09 (body);
 create index concurrently events_2026_10_body on events_2026_10 (body);
 alter index events_body_idx attach partition events_2026_09_body;
-alter index events_body_idx attach partition events_2026_10_body;      -- parent flips to valid here
+alter index events_body_idx attach partition events_2026_10_body;      -- valid once every partition, default included, is attached
 ```
 
 The parent index reads `indisvalid = false` until the last partition is attached, then flips on its
 own, which also means a half-finished job leaves an index that looks broken and is simply not
 done yet.
 
-`ATTACH PARTITION` validates the data by scanning the table, holding a lock that blocks the parent.
-An equivalent `CHECK` constraint already present on the table lets it skip that scan:
+`ATTACH PARTITION` validates the data by scanning the table being attached, under an `ACCESS EXCLUSIVE` lock on that table. The parent only takes `SHARE UPDATE EXCLUSIVE`, so reads and writes on the other partitions go through. An equivalent `CHECK` constraint already present on the table lets it skip that scan:
 
 ```sql
 alter table events_2027_07 add constraint c check (at >= '2027-07-01' and at < '2027-08-01');
@@ -442,8 +426,7 @@ alter table events attach partition events_2027_07 for values from ('2027-07-01'
 ```
 
 Counted on `pg_stat_user_tables.seq_scan` with a 50k-row table: the bare attach scans, adding the
-`CHECK` scans once, and the attach that follows scans nothing. The scan does not disappear, it moves
-to a moment when the parent is not locked.
+`CHECK` scans once, and the attach that follows scans nothing. The scan does not disappear, it moves to the `ADD CONSTRAINT`, before the table is part of the partition set.
 
 Concurrent detach is the mirror image, and like `CREATE INDEX CONCURRENTLY` it refuses to run inside
 a transaction:
@@ -465,8 +448,7 @@ Reference: [Table Partitioning](https://www.postgresql.org/docs/current/ddl-part
   (Tomas Vondra).
 * [PostgreSQL: Speeding up GROUP BY and joins](https://www.cybertec-postgresql.com/en/postgresql-speeding-up-group-by-and-joins/)
   shows how to aggregate before joining by hand. Still worth doing through PostgreSQL 18: the
-  planner does not do it for you. Eager aggregation is committed for 19, behind
-  `enable_eager_aggregate`.
+  planner does not do it for you. PostgreSQL 19 adds eager aggregation, on by default (`enable_eager_aggregate`).
 
 ## Related
 

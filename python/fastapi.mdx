@@ -1,7 +1,7 @@
 ---
 title: FastAPI
 description: "FastAPI cookbook: routers, dependencies, response shaping, lifespan and tests, plus the gotchas that fail silently (threadpool ceiling, exit code after the response, response_model bypass)."
-checkedOn: 2026-09-18
+checkedOn: 2026-10-20
 ---
 
 FastAPI is an ASGI framework built on <Link to="starlette" /> and Pydantic, where type hints drive
@@ -10,7 +10,7 @@ parsing, validation, serialization, dependency injection and OpenAPI generation.
 Whether to pick it - adoption, bus factor, the commercial pivot - is on
 <Link to="web-frameworks" />. This page is what bites once you have.
 
-Everything below is verified on **FastAPI 0.141.1** (Starlette 1.6.0, Pydantic 2.13.5, Python 3.10),
+Everything below is verified on **FastAPI 0.152.0** (Starlette 1.9.0, Pydantic 2.14.1, Python 3.15),
 each snippet run in a sandbox.
 
 ## Cookbook
@@ -247,14 +247,14 @@ endpoints queue.
 Measured, concurrent requests to a `def` handler blocking 500 ms:
 
 ```
-40 concurrent -> 0.53 s
-41 concurrent -> 1.03 s
-80 concurrent -> 1.03 s
+40 concurrent -> 0.55 s
+41 concurrent -> 1.02 s
+80 concurrent -> 1.17 s
 ```
 
 The cliff at 41 is the whole story: one request over the limit doubles the latency of the batch.
-A `def` endpoint is not free concurrency, it is 40 slots. Endpoints that are genuinely async stay
-unaffected (1 ms during the same saturation).
+A `def` endpoint is not free concurrency, it is 40 slots. Endpoints that are genuinely async keep
+answering during the same saturation (a few milliseconds to about 50 ms).
 
 ### A dependency's exit code runs after the response
 
@@ -370,7 +370,8 @@ release notes, so this is the part that requires reading diffs.
 * **Pydantic v1 support was removed in six days.** 0.127.0 (2025-12-21) added deprecation warnings
   for `pydantic.v1`; **0.128.0 (2025-12-27) dropped it entirely**. Anything still on the
   compatibility shim is pinned below 0.128 permanently. Current metadata requires
-  `pydantic>=2.9.0` and `starlette>=0.46.0`.
+  `pydantic>=2.9.0` and `starlette>=0.46.0`, and since 0.142.0 also
+  `opentelemetry-api>=1.44.0` as a hard dependency.
 * **0.137.0 (2026-06-14)** turned `router.routes` from a flat list into a tree. Observability, auth
   and codegen tooling commonly iterates or mutates it, and all of that breaks. The release notes
   retroactively declare it an internal implementation detail.
@@ -382,7 +383,7 @@ release notes, so this is the part that requires reading diffs.
 
 * Ships `py.typed`.
 * `app.frontend()` arrived in 0.141.0 (2026-07-29), moving FastAPI into full-stack territory.
-* Starlette 1.6.0 deprecates `httpx` under `TestClient`: importing `fastapi.testclient` emits
+* Since Starlette 1.2.0, `httpx` under `TestClient` is deprecated: importing `fastapi.testclient` emits
   `StarletteDeprecationWarning: Using httpx with starlette.testclient is deprecated; install httpx2
   instead.` Installing `httpx2` silences it.
 * Installing `fastapi[standard]` pulls a vendor CLI you did not ask for - see

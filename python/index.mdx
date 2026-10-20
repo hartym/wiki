@@ -44,7 +44,7 @@ HERE = Path(__file__).resolve().parent
 
 Older recipes join `__file__` to `os.getcwd()` first. That was for the script run from the command
 line, whose `__file__` used to be relative: since Python 3.9 it is absolute too, so the join is a
-no-op (checked on 3.13, from two different working directories). `resolve()` is still worth
+no-op (checked on 3.15, from two different working directories). `resolve()` is still worth
 keeping, it follows symlinks.
 
 ## Links and references

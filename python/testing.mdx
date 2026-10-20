@@ -1,7 +1,7 @@
 ---
 title: Testing with Python
 description: "pytest cookbook: project layout, fixtures and teardown, parametrization, mocking, coverage, the red-green loop, and the collection gotchas that fail silently."
-checkedOn: 2026-10-12
+checkedOn: 2026-10-20
 ---
 
 pytest needs almost no ceremony: a function named `test_something` containing a plain `assert` is
@@ -9,7 +9,7 @@ a test. The cost shows up later, in the parts that are implicit. A class that is
 a fixture shared by more tests than intended, an assertion that reports nothing useful because it
 lives in the wrong file, a coverage number that counts lines rather than cases.
 
-Everything below is verified on **pytest 9.1.1** (Python 3.13.16), with **pytest-cov 7.1.0** and
+Everything below is verified on **pytest 9.1.1** (Python 3.15.0), with **pytest-cov 7.1.0** and
 **coverage 7.16.2**.
 
 ## Cookbook
@@ -240,7 +240,7 @@ is the trap in a CI job that only checks the status. `precision = 2` compares 93
 ```bash
 pytest --sw        # stop at the first failure, resume there next run
 pytest -x --lf     # re-run last failures only, stop at the first
-pytest --sw-skip   # skip the test you are stuck on, move to the next
+pytest --sw-skip   # ignore the failure you are stuck on, stop at the next one
 ```
 
 `--sw` (stepwise) is the tight loop: it stops on the failing test, and the next run starts from it,
@@ -298,14 +298,15 @@ class TestKnights:
         assert False
 ```
 
-pytest emits a `PytestCollectionWarning` and moves on: zero tests run, the suite is green. Set up
-state in a fixture, or in `setup_method`, never in `__init__`.
+pytest emits a `PytestCollectionWarning` and moves on: the class contributes zero tests. If it is
+the only thing collected, pytest exits 5 ("no tests collected"); next to any other test, the suite is
+green. Set up state in a fixture, or in `setup_method`, never in `__init__`.
 
 ### An `async def` test needs a plugin
 
-Without `anyio`, `pytest-asyncio` or an equivalent, the coroutine is created and never awaited. On
-pytest 9 this fails with "async def functions are not natively supported"; older versions only
-warned and skipped, which is worse, because the test counted as passing.
+Without `anyio`, `pytest-asyncio` or an equivalent, the coroutine is created and never awaited. Since
+pytest 8.4 this fails with "async def functions are not natively supported"; up to 8.3 it was only a
+warning and a skip, which is worse: the body never ran and the run stayed green.
 
 ### Assertions in a helper module lose their diff
 
@@ -348,7 +349,7 @@ def toll(answers):
 ```
 
 One test calling `toll(["blue"])` executes every line of that function, so line coverage reports 100%.
-The `if` is never false, and the loop never ends without entering it: `--cov-branch` reports 93.75% on
+The `if` is never false, and the loop never ends without entering it: `--cov-branch` reports 90% on
 the same run, with `4->3` in the `Missing` column. Line coverage answers "was this line reached", which
 is not the question you had.
 
@@ -365,7 +366,7 @@ double to the real attributes, and the typo becomes
 `AttributeError: Mock object has no attribute 'airspeeed'`.
 
 One hole is plugged by default: an attribute whose name starts with `assert` (or a near miss such as
-`assret`), plus a short deny list (`called`, `called_once`, `called_once_with`, `called_with`,
+`assret`), plus a short deny list (`called_once`, `called_once_with`, `called_with`,
 `any_call`, `has_calls`, `not_called`), raises
 `AttributeError: 'assert_called_onse_with' is not a valid assertion` rather than passing. A name
 further from an assertion still goes through in silence.
