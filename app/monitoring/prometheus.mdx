@@ -1,7 +1,7 @@
 ---
 title: Prometheus, Alertmanager and Grafana
-description: The Prometheus monitoring stack - scrape config, PromQL, recording and alerting rules (tested with promtool), Alertmanager routing, Grafana, and the Kubernetes operator.
-checkedOn: 2026-07-20
+description: The Prometheus monitoring stack - scrape config, PromQL, recording and alerting rules (tested with promtool), Alertmanager routing, Grafana, and the gotchas that make a query silently wrong.
+checkedOn: 2026-10-20
 ---
 
 The common open-source monitoring stack, three separate components:
@@ -10,7 +10,9 @@ The common open-source monitoring stack, three separate components:
 * **Alertmanager** receives alerts from Prometheus and handles grouping, deduplication, silencing and routing to receivers (email, Slack, PagerDuty, ...).
 * **Grafana** queries Prometheus and draws dashboards.
 
-Config and rules below checked with promtool 3.13.1.
+Everything below was replayed on Prometheus 3.15.0 and Alertmanager 0.34.1: the configs through
+`promtool check config` and `amtool check-config`, the queries against a running server or through
+`promtool test rules`.
 
 ## Prometheus config
 
@@ -100,7 +102,110 @@ promtool check rules rules.yml
 promtool test rules tests.yml
 ```
 
-At `eval_time: 6m` the alert has held past its `for: 5m`, so the test passes.
+At `eval_time: 6m` the alert has held past its `for: 5m`, so the test passes. At `eval_time: 4m`
+it has not, and `exp_alerts: []` is what passes instead.
+
+A failing test prints both sides, which is also the fastest way to find out what an expression
+really returns: assert something absurd once, read the answer, then write the assertion.
+
+```text
+  FAILED:
+    expr: "increase(c_total[5m])", time: 5m,
+        exp: {job="x"} 9.99E+02
+        got: {job="x"} 3.75E+00
+```
+
+## Gotchas
+
+### A range shorter than two scrape intervals returns nothing
+
+`rate()` and `increase()` need at least two samples inside the range. Scraping every 5 seconds:
+
+```
+rate(prometheus_http_requests_total[5s])   # empty result
+rate(prometheus_http_requests_total[1m])   # a value
+```
+
+No error and no warning, just an empty panel or an alert that can never fire. Take a range of at
+least four scrape intervals, so that one missed scrape does not empty it.
+
+### increase() extrapolates, it does not count
+
+Five consecutive samples of a counter, scraped every 5 seconds:
+
+```text
+12  13  14  15  16
+```
+
+```
+increase(prometheus_http_requests_total{handler="/metrics"}[25s])   # 5
+```
+
+The counter moved by exactly 4, the function answers 5. `rate()` and `increase()` extrapolate to
+the edges of the range, because samples never land exactly on them, and the result is often not
+even an integer. It is an estimate of a rate, so do not use it to count events and do not round it
+into a number you then treat as exact.
+
+### rate() on a gauge is silently wrong
+
+`rate()` assumes a counter, so every decrease is read as a counter reset and the new value is added
+on top. A gauge that oscillates, one sample per minute:
+
+```text
+10  5  10  5  10  5
+```
+
+```
+rate(g_bytes[5m])    # 0.0833 per second, that is 25 over the window
+```
+
+The gauge ends below where it started and the answer is firmly positive. Nothing complains. For
+gauges, `delta()` and `deriv()` are the functions that allow the value to go down.
+
+Counter resets themselves are handled correctly: on `0 1 2 0 1 2`, a process restart in the middle
+of the window, `increase(c_total[5m])` gives 3.75, close to the true 4, not the naive last minus
+first of 2.
+
+### histogram_quantile cannot exceed your largest finite bucket
+
+Buckets `le="0.1"` and `le="+Inf"`, with every observation landing above 0.1:
+
+```
+histogram_quantile(0.95, sum by (le) (rate(h_seconds_bucket[5m])))   # 0.1
+```
+
+Not the real value and not `+Inf`: the upper bound of the highest finite bucket. A quantile read
+from a classic histogram is capped by the bucket layout chosen when the metric was instrumented, and
+it goes quietly flat the day latency grows past the last bucket. A p95 sitting exactly on a bucket
+boundary is a bucket problem until proven otherwise.
+
+### A removed job keeps answering for five minutes
+
+An instant query returns the most recent sample within the lookback window, five minutes by default.
+Verified on a series whose last sample is at `t=2m`: at `t=6m` it still resolves, at `t=7m`, exactly
+five minutes later, it is gone.
+
+Removing one target from a job is not affected: Prometheus writes a staleness marker and the series
+was gone within 15 seconds of the reload. Removing the whole `scrape_config` job is: its `up` series
+kept its last value for the full five minutes. Two consequences:
+
+* An `InstanceDown` alert on a job you just removed keeps firing for up to five minutes, then
+  resolves on its own.
+* The opposite case is worse: `up == 0` never fires for a target that stopped being discovered, or
+  that was never discovered, because there is no series at all. `absent(up{job="node"})` is what
+  catches that, and it is the alert people write only after the first outage nobody was paged for.
+
+### pending is not firing
+
+`for: 5m` means the expression must hold at every evaluation for five minutes. Until then the alert
+exists and is visible in Prometheus, but Alertmanager has heard nothing about it:
+
+```
+ALERTS{alertname="InstanceDown", alertstate="pending", instance="a", job="node", severity="page"}   1
+```
+
+`alertstate` becomes `firing` once `for` has elapsed. Querying `ALERTS` is the quickest way to find
+out why the page you were expecting never arrived.
 
 ## Alertmanager
 
@@ -122,7 +227,17 @@ receivers:
     # slack_configs / pagerduty_configs / email_configs ...
 ```
 
-Check it with `amtool check-config alertmanager.yml`, and manage silences with `amtool silence`.
+Check it, then walk the routing tree with the labels an alert would carry:
+
+```shell
+amtool check-config alertmanager.yml
+amtool config routes test --config.file=alertmanager.yml severity=page      # pager
+amtool config routes test --config.file=alertmanager.yml severity=warning   # default
+```
+
+`config routes test` prints the receiver that would get the alert. On a nested tree it is the only
+cheap way to find out that a route never matches, and the alternative is an incident finding out for
+you. Silences are managed with `amtool silence`.
 
 ## Grafana
 

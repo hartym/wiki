@@ -1,7 +1,7 @@
 ---
 title: Django
-description: "Django in practice: what async mode still cannot do, the 6.0 and 6.1 breaking changes, and a few recipes."
-checkedOn: 2026-08-11
+description: "Django in practice: a cookbook for queries and migrations, the gotchas that silently cost a query or a timestamp, and what async mode still cannot do."
+checkedOn: 2026-10-20
 ---
 
 Django is the batteries-included Python web framework: ORM, migrations, admin, auth and templates
@@ -10,7 +10,142 @@ in one release, on a published schedule.
 Whether to pick it - governance, release cadence, contributor base - is on
 <Link to="/python/web-frameworks" />. This page is what bites once you have.
 
-Checked against Django 6.1.
+Checked against Django 6.1.2 on Python 3.15, every snippet below run.
+
+## Cookbook
+
+### See the SQL before it runs
+
+```python
+qs = Knight.objects.filter(coconuts__gt=0)
+print(qs.query)      # the SELECT Django will send
+print(qs.explain())  # the database's own plan
+```
+
+`qs.query` is for reading, not for pasting into a shell: its parameters are interpolated without
+quoting. In a test, count queries instead of reading them:
+
+```python
+class QueryCountTests(TestCase):
+    def test_listing_is_one_query(self):
+        with self.assertNumQueries(1):
+            list(Knight.objects.all())
+```
+
+When that assertion fails it prints every query it captured, which is usually the whole answer.
+
+### Kill an N+1
+
+Measured on three knights pointing at two quests:
+
+```python
+for k in Knight.objects.all():                    # 4 queries: 1 + one per knight
+    k.quest.name
+for k in Knight.objects.select_related("quest"):  # 1 query, joined
+    k.quest.name
+
+for q in Quest.objects.all():                       # 3 queries
+    list(q.knights.all())
+for q in Quest.objects.prefetch_related("knights"): # 2 queries
+    list(q.knights.all())
+```
+
+`select_related` follows forward foreign keys with a JOIN. `prefetch_related` runs a second query
+and joins in Python, which is what reverse relations and many-to-many need.
+
+Deferred fields produce the same N+1, and `select_related` cannot help there. That is what fetch
+modes are for, below.
+
+### Migrations you can gate in CI
+
+```shell
+python manage.py makemigrations --check    # exit 1 if a migration is missing
+python manage.py sqlmigrate quests 0001    # the SQL that migration will run
+python manage.py showmigrations quests     # what is applied
+python manage.py migrate quests 0001       # roll back to a given migration
+python manage.py migrate quests zero       # roll back the whole app
+python manage.py makemigrations quests --empty --name seed   # data migration skeleton
+```
+
+`--check` already implies a dry run: it prints the plan, exits 1 and writes nothing. Adding
+`--dry-run` alongside it is redundant (checked on 6.1.2: no file appears either way).
+
+### Write without loading rows
+
+```python
+Knight.objects.filter(quest=grail).update(coconuts=F("coconuts") + 1)
+Knight.objects.bulk_create([Knight(name="bedevere", quest=grail)])
+Knight.objects.bulk_update(knights, ["coconuts"])
+```
+
+One query each, and none of them goes through `save()`. The gotchas below list what that skips.
+
+### Run code only if the transaction commits
+
+```python
+with transaction.atomic():
+    knight.save()
+    transaction.on_commit(lambda: enqueue_notification(knight.pk))
+```
+
+Checked: the callback does not run inside the block, runs once the outermost `atomic()` commits,
+and never runs if the block raises. That is where queueing a background job belongs. A worker that
+picks the task up before the commit reads a row that is not there yet.
+
+## Gotchas
+
+**`update()`, `bulk_update()` and `save(update_fields=...)` skip `auto_now`.** A queryset `update()`
+never goes through the field's `pre_save`, and `update_fields` restricts the UPDATE to the columns
+you listed. All three checked on a model with `updated_at = models.DateTimeField(auto_now=True)`:
+the timestamp does not move. Only a plain `save()` refreshes it.
+
+**A plain `save()` writes every column.**
+
+```sql
+UPDATE "app_knight" SET "name" = 'Arthur', "quest_id" = 1, "coconuts" = 1, "updated_at" = '...'
+WHERE "app_knight"."id" = 1
+```
+
+`save(update_fields=["name"])` writes one. The difference matters under concurrency: two processes
+saving the same instance silently overwrite each other's unrelated fields.
+
+**A QuerySet caches its results, a new QuerySet does not.** Checked: `list(qs)` twice on the same
+object is 1 query, two freshly built querysets is 2. `count()` on an unevaluated queryset issues
+`SELECT COUNT(*)`; on one already evaluated it issues nothing and counts the cache. `len(qs)`
+always fetches the rows. So `count()` when a number is all you want, `len()` when you were going to
+iterate anyway.
+
+**Catching `IntegrityError` inside `atomic()` poisons the block.** The next query raises
+`TransactionManagementError: An error occurred in the current transaction. You can't execute
+queries until the end of the 'atomic' block.` The fix is a savepoint, which is what a nested
+`atomic()` is:
+
+```python
+with transaction.atomic():
+    try:
+        with transaction.atomic():        # savepoint, rolled back on its own
+            Quest.objects.create(name="grail")
+    except IntegrityError:
+        pass
+    Quest.objects.create(name="shrubbery")  # still works
+```
+
+**`bulk_create()` fires no signals.** Checked: `post_save` fired zero times for two objects created
+in bulk, once for a plain `create()`. Overridden `save()` methods are skipped for the same reason.
+Primary keys do come back on the instances (SQLite and PostgreSQL).
+
+**Deleting a queryset loads the rows as soon as something cascades.** Checked: deleting a `Quest`
+that knights point at runs a SELECT of the quests, then a DELETE of the knights, then a DELETE of
+the quests. `on_delete=CASCADE` is enforced by Django, not by the database, which is why signals
+fire and why memory grows with the number of rows. Deleting a model nothing points at takes the
+fast path, a single DELETE.
+
+**`F()` after `save()` changed in 6.0.** On 5.2.18, the attribute is still a `CombinedExpression`
+after the save and `int(k.coconuts)` raises `TypeError`, hence the old habit of calling
+`refresh_from_db()`. On 6.0.9 and 6.1.2 it is the resolved value. From the 6.0 release notes:
+fields assigned expressions are refreshed after `save()` on backends that support the `RETURNING`
+clause (SQLite, PostgreSQL, Oracle); on MySQL and MariaDB they are marked deferred, so the refresh
+happens on first access instead.
 
 ## Async mode is a query API, not an async data layer
 
@@ -31,6 +166,22 @@ database connections, set via the `CONN_MAX_AGE` setting, should also be disable
 Instead, use your database backend's built-in connection pooling if available."* Leaving the
 synchronous default in place is a slow, hard-to-attribute failure under load rather than an error.
 
+What that looks like in practice, checked on 6.1.2:
+
+```python
+async with transaction.atomic():   # TypeError: 'Atomic' object does not support
+    ...                            # the asynchronous context manager protocol
+
+Knight.objects.count()             # SynchronousOnlyOperation: You cannot call this
+                                   # from an async context - use a thread or sync_to_async
+```
+
+The `TypeError` wording depends on the Python version; 3.15 adds "Did you mean to use 'with'?". The
+second one is the one that bites, because it fires from any synchronous ORM call reached indirectly
+from an async view, a serializer or a template. A plain `with transaction.atomic():` inside an async
+function raises it too, on entry, before anything inside the block runs. Wrap the whole
+transactional unit in a sync function and call it with `sync_to_async`.
+
 ## Breaking changes in 6.0 and 6.1
 
 Both quoted from the release notes, because both are the silent kind.
@@ -42,7 +193,16 @@ generated a token in `pre_save` now does it twice.
 
 **`first()` and `last()` changed which row they return.** From the 6.1 notes: *"`first()` and
 `last()` no longer order by the primary key when a `QuerySet`'s ordering has been forcibly cleared
-by calling `order_by()` with no arguments."* No exception, no warning - a different row.
+by calling `order_by()` with no arguments."* No exception, no warning - a different row. Checked on
+6.1.2: `Knight.objects.order_by().first()` emits `LIMIT 1` with no `ORDER BY` clause at all, where
+`Knight.objects.first()` still emits `ORDER BY "app_knight"."id" ASC LIMIT 1`.
+
+**Two deprecations in 6.1 that hit ordinary code.** Calling `select_related()` with no arguments is
+deprecated (specify the related fields, or use `FETCH_PEERS` below), and so is
+`values_list(flat=True)` with no field name (pass one, like `values_list("pk", flat=True)`). Both
+raise a pending-deprecation warning today and still work: `RemovedInDjango2028Warning` since 6.1.2,
+which renamed `RemovedInDjango70Warning` (kept as an alias) as Django moves to calendar versioning.
+Run the test suite with `-W error` to find them before the upgrade does.
 
 **`DEFAULT_AUTO_FIELD` now defaults to `BigAutoField`** in 6.0. Most projects are unaffected, since
 Django has raised the `models.W042` check for this since 3.2. If you never dealt with that warning,
@@ -58,10 +218,21 @@ default, existing behaviour, fetches the missing field for the current instance 
 (fetches it for every instance from the same `QuerySet`), and `FETCH_RAISE` (raises
 `FieldFetchBlocked`).
 
+Measured on the same three knights, with `coconuts` left out of the initial query:
+
+```python
+for k in Knight.objects.only("name"):                                  # 4 queries
+    k.coconuts
+for k in Knight.objects.only("name").fetch_mode(models.FETCH_PEERS):   # 2 queries
+    k.coconuts
+for k in Knight.objects.only("name").fetch_mode(models.FETCH_RAISE):
+    k.coconuts   # FieldFetchBlocked: Fetching of Knight.coconuts blocked.
+```
+
 `FETCH_RAISE` in tests is the useful one: it turns an accidental N+1 into a failure instead of a
 slow endpoint.
 
-## Recipes
+## Settings and model snippets
 
 Created and updated timestamps on a model:
 
@@ -85,13 +256,16 @@ EMAIL_PORT = 587
 
 ## Applications
 
-* [Django Filter](https://django-filter.readthedocs.io/) - queryset filtering from query parameters.
-* [Django Crispy Forms](https://django-crispy-forms.readthedocs.io/) - form rendering.
-* [Django Braces](https://django-braces.readthedocs.io/) - class-based view mixins.
-* [Django Vanilla Views](http://django-vanilla-views.org/) - simplified class-based views.
+* [Django Filter](https://django-filter.readthedocs.io/) - queryset filtering from query parameters. Active (26.2, October 2026).
+* [Django Crispy Forms](https://django-crispy-forms.readthedocs.io/) - form rendering. Active (2.7, July 2026).
+* [Django Braces](https://django-braces.readthedocs.io/) - class-based view mixins. Quiet (1.17.0, March 2025).
+* [Django Vanilla Views](https://github.com/encode/django-vanilla-views) - simplified class-based views. Dormant: last release 3.0.0 in May 2021, last commit September 2022, and its own site has no valid HTTPS.
 
 ## Related
 
 * <Link to="./authentication">Django Authentication</Link>
 * <Link to="/python/web-frameworks" /> - how Django compares to the rest of the field.
+* <Link to="/python/testing" /> - pytest in practice: layout, fixtures, mocking, coverage.
+* <Link to="/python/sqlalchemy" /> - the other Python data mapper, if the ORM is the reason you hesitate.
+* <Link to="/database/relational" /> - the databases underneath.
 * [Less Obvious Things To Do With Django's ORM](https://markusholtermann.eu/2019/03/less-obvious-things-to-do-with-djangos-orm/)

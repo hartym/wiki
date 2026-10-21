@@ -1,61 +1,390 @@
 ---
 title: Git
-description: "Git internals: the object model (blobs, trees, commits) and a few handy aliases."
-checkedOn: 2026-07-22
+description: "Git cookbook: recovering lost commits, undoing at the right level, fixup and autosquash, replanting a branch with rebase --onto, bisect, worktrees, hooks, submodules, plus the object model underneath."
+checkedOn: 2026-10-20
 ---
 
-## Data Model
+Everyone knows `commit`, `pull` and `push`. What follows is the rest: the commands I reach for
+when something went wrong, when history needs cleaning before review, or when I need to find out
+where a change came from. Then, at the end, the object model that explains why any of this works.
 
-* **Object** := (sha1) -> (headers, body)
+The snippets below were all replayed on **git 2.56.0** (and 2.43.0); `switch` and `restore` need git
+2.23 or later.
 
-  * The sha1 is always the full content hash (headers + body) and thus is a signature of the object and dependent objects.
-  
-  * On forging: SHA-1 collisions are practical. In 2017 the SHAttered attack (Google and CWI Amsterdam) produced two different files sharing the same SHA-1, so a blob can in principle be crafted to collide with another. A commit still cannot be altered silently: changing it changes its hash, and because every descendant stores its parent's hash, rewriting one commit forces every later commit to change too, which is what makes mid-history tampering visible. Modern git ships a hardened SHA-1 (the sha1dc collision detector, on by default) that aborts when it sees a SHAttered-style collision attempt, and an experimental SHA-256 object format exists for new repositories.
+## Cookbook
 
-* **Commit** (Object)
+### Get back a commit you thought you lost
 
-  A **commit** represents a snapshot of files, in a time-like topology that cannot determine "time" for sure, but that has the notion of ancestors and descendants, so one can follow the logical history of changes.
-  
-  Example:
+A bad `reset --hard`, a rebase that went sideways, a branch deleted too fast: the commits are
+still in the object database, and the reflog knows where HEAD has been.
 
+```shell
+git reflog                    # every position HEAD has been at, most recent first
+git reset --hard 'HEAD@{1}'   # go back to where HEAD was one move ago
+git switch -c rescue <sha>    # or park the lost commit on a new branch
+```
+
+{/* Verification notes (2.34.1): three commits, git reset --hard HEAD~2 leaves one, reflog shows
+the two dropped commits, git reset --hard HEAD@1 (brace form) restores both. */}
+
+Two limits. The reflog is **local**, it is never pushed, so a colleague's clone will not save
+you. And it expires: entries are pruned after 90 days, or 30 days for entries no longer reachable
+from a branch (`gc.reflogExpire` and `gc.reflogExpireUnreachable`), which is precisely the case of
+a commit you just dropped.
+
+### Undo at the right level
+
+Three different things are called "undo" in git, depending on what you want to move back: the
+working tree, the index, or history.
+
+```shell
+git restore file.txt                 # throw away working-tree changes to that file
+git restore --staged file.txt        # unstage, keep the changes in the working tree
+git restore --source=HEAD~1 file.txt # take that file back as it was one commit ago
+```
+
+`restore` and `switch` (git 2.23) split what `checkout` used to do. `git checkout` still works
+and still does both jobs, which is exactly why it was split.
+
+For history:
+
+```shell
+git reset --soft HEAD~1    # drop the commit, keep its changes staged
+git reset --mixed HEAD~1   # drop the commit, keep its changes unstaged (default)
+git reset --hard HEAD~1    # drop the commit and its changes (reflog still has it)
+git revert <sha>           # add a new commit that undoes <sha>, history untouched
+```
+
+Rule of thumb: `reset` for commits nobody has pulled yet, `revert` for anything already pushed.
+
+### Fix an old commit without a "fix typo" commit
+
+You spot a mistake in a commit that is three commits back. Instead of appending a fixup commit
+that will pollute the branch:
+
+```shell
+git add -p                          # stage only the fix
+git commit --fixup <sha>            # commit titled "fixup! <subject of sha>"
+git rebase -i --autosquash <sha>~1  # squash it into <sha>, in place
+```
+
+The rebase opens an editor with the fixup already moved under its target and marked `fixup`, so
+in practice you save and quit. Two ways to shorten it further:
+
+```shell
+git config --global rebase.autosquash true   # -i always autosquashes
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <sha>~1   # no editor at all
+```
+
+Same warning as `reset`: this rewrites commits, so only on history you have not shared.
+
+{/* Verification notes (2.34.1): three commits c1..c3, fix staged on the file of c2, commit
+--fixup c2 produces "fixup! c2", then GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash HEAD~3
+leaves three commits with the fix folded into c2. A fixup touching the same lines as a later
+commit conflicts like any rebase. */}
+
+### Replant a branch on another base
+
+You branched off the wrong place: `feature` sits on top of `release`, and it belongs on `main`. A
+plain rebase does not fix that, it replays everything `main` does not already have, the `release`
+commits included.
+
+```shell
+git switch feature
+git rebase main
+git log --oneline    # feat1, release-only, main moved on, base
+```
+
+The three-argument form says where to replant and where to cut:
+
+```shell
+git rebase --onto main release feature
+```
+
+Read it as: new base, last commit to leave behind, branch to move. The middle argument is the
+upstream, and it is **exclusive**: itself and everything before it stays put, everything after it
+is replayed on the new base.
+
+The same mechanism removes a commit from the middle of a branch:
+
+```shell
+git rebase --onto HEAD~3 HEAD~2   # replays the last two commits, dropping HEAD~2 itself
+```
+
+Still a rewrite, so still only on history you have not shared.
+
+{/* Verification notes (2.43.0): feature branched off release while main moved on. git rebase main
+keeps release-only in the log; git rebase --onto main release feature replants feat1 and feat2 on
+main and leaves release-only behind. Four commits A..D: git rebase --onto HEAD~3 HEAD~2 leaves A,
+C, D, and B.txt is gone. */}
+
+### Find the commit that broke it
+
+`bisect` does a binary search over a range of commits. With `run`, it is fully automatic: give it
+a command that exits 0 when the commit is fine, non-zero when it is not.
+
+```shell
+git bisect start <known-bad> <known-good>
+git bisect run ./test.sh
+git bisect reset
+```
+
+Exit code 125 means "cannot test this one, skip it", which matters when some commits do not even
+build.
+
+The trap is the test, not the bisect. A check like `grep -q ok state` looks right until you
+notice that `broken` contains the letters `ok`: every commit then tests good, and bisect calmly
+blames HEAD. Run the test by hand on a commit you know is good and one you know is bad before
+letting bisect loose.
+
+{/* Verification notes (2.34.1): nine-commit range, one commit flips a file from GOOD to BROKEN,
+test script grep -qx GOOD; three runs, output "<sha> is the first bad commit" matching the
+planted commit. */}
+
+### Work on two branches at the same time
+
+A worktree is a second working directory attached to the same repository: same objects, same
+branches, no second clone and no stashing to switch context.
+
+```shell
+git worktree add ../hotfix -b hotfix   # new directory, new branch checked out in it
+git worktree list
+git worktree remove ../hotfix
+```
+
+The new directory holds a `.git` **file** (not a directory) pointing back into
+`.git/worktrees/`. A given branch can only be checked out in one worktree at a time; use
+`git worktree add --detach ../review <sha>` to just look at some commit.
+
+### Search the history, not just the files
+
+```shell
+git log -S "connect_timeout" --oneline    # commits that change how many times that string appears
+git log -G "regex" --oneline              # commits whose diff matches a regex
+git log --oneline -- path/to/deleted/file # a file's history, deletion included
+```
+
+`-S` answers "when did this appear or disappear", `-G` answers "when was this line touched at
+all", including moves that leave the count unchanged.
+
+### Blame past the reformatting commit
+
+A repository-wide reformat makes `git blame` useless: every line is credited to the person who
+ran the formatter. Git can skip those commits.
+
+```shell
+git blame --ignore-rev <reformat-sha> file.py
+```
+
+To make it permanent, list the offending commits in a file and point git at it:
+
+```shell
+echo <reformat-sha> >> .git-blame-ignore-revs
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+Commit that file at the root of the repository: GitHub's blame view picks it up too.
+
+{/* Verification notes (2.34.1): file written, then a commit uppercasing every line; plain blame
+credits all three lines to "reformat: uppercase everything", blame --ignore-rev <sha> and
+blame.ignoreRevsFile both credit the original commit. GitHub support: changelog 2022-03-24. */}
+
+### Set work aside, new files included
+
+```shell
+git stash push -u -m "wip: trying the other adapter"
+git stash list
+git stash pop
+```
+
+`-u` also stashes untracked files. Without it they stay in the working tree, which is the usual
+way to believe a stash contains a new file when it does not. `-a` goes further and includes
+ignored files, which is rarely what you want.
+
+### Refuse your own bad commits
+
+A hook is an executable script in `.git/hooks`, named after the event. Three earn their keep:
+`pre-commit` to refuse a commit, `commit-msg` to refuse a message, `pre-push` to refuse a push.
+Non-zero exit means refuse.
+
+```shell
+cat > .git/hooks/pre-commit <<'EOF'
+#!/bin/sh
+if grep -rn TODO --include='*.py' . ; then
+  echo "pre-commit: TODO left in the tree" >&2
+  exit 1
+fi
+EOF
+chmod +x .git/hooks/pre-commit
+```
+
+`commit-msg` receives the path of the message file as its first argument, so it can read what you
+wrote:
+
+```shell
+cat > .git/hooks/commit-msg <<'EOF'
+#!/bin/sh
+head -1 "$1" | grep -qE '^(feat|fix|docs|chore)(\(.+\))?: ' \
+  || { echo "commit-msg: need a conventional subject" >&2; exit 1; }
+EOF
+chmod +x .git/hooks/commit-msg
+```
+
+Four things to know before relying on any of this:
+
+- **Without the executable bit, the hook is skipped**, and the only sign is a hint on the way
+  past: `hint: The '.git/hooks/pre-commit' hook was ignored because it's not set as executable`.
+  Easy to scroll past.
+- **Hooks are not cloned.** `.git` is not versioned, and a fresh clone ships a handful of `.sample`
+  files and nothing else. To share them, commit them in the tree and point git at that directory
+  with `git config core.hooksPath .githooks`. That setting **replaces** `.git/hooks` entirely: a
+  local hook that used to block no longer runs at all.
+- **They are one flag away from gone.** `git commit --no-verify` skips `pre-commit` and
+  `commit-msg`, `git push --no-verify` skips `pre-push`. Hooks that are not about verification
+  still run, `post-commit` for one. A hook is a favour you do yourself, not a rule you impose;
+  enforcement lives on the server (`pre-receive`), in branch protection, or in CI.
+- **They run from the top of the working tree**, whatever directory you called git from, so
+  relative paths inside a hook are relative to the repository root.
+
+{/* Verification notes (2.43.0): non-executable pre-commit, the commit goes through with the
+ignoredHook hint; after chmod +x the same commit is refused with rc 1; --no-verify commits anyway.
+commit-msg refuses "bad subject" and accepts "fix: good subject". post-commit still runs under
+--no-verify. A fresh clone holds fourteen .sample files and no pre-commit. core.hooksPath aimed at
+a directory whose pre-commit exits 0 lets a commit through that .git/hooks/pre-commit would have
+refused. pre-push reads the refs on stdin and refuses the push; push --no-verify goes through.
+Committing from deep/dir, the hook's cwd is the worktree root. */}
+
+### Pin another repository inside this one
+
+```shell
+git submodule add https://example.com/lib.git vendor/lib
+git commit -m "add lib submodule"
+```
+
+That commit carries two things: `.gitmodules`, which holds the path and the url and is versioned
+like any other file, and a **gitlink**, a tree entry with a mode of its own holding one commit id.
+
+```shell
+git ls-tree HEAD vendor/lib
+# 160000 commit 5b33816...	vendor/lib
+```
+
+So the parent pins one exact commit of the other repository. Not a branch, not a range.
+
+Filling it in:
+
+```shell
+git clone --recurse-submodules <url>      # at clone time
+git submodule update --init --recursive   # after a plain clone
+```
+
+A plain clone leaves `vendor/lib` empty, and `git submodule status` marks the line with a leading
+dash.
+
+Where it bites:
+
+- `submodule update` checks out the pinned commit as a **detached HEAD**. Commit there and the
+  commit belongs to no branch; the next `git submodule update` puts the checkout back on the pin,
+  and your work is only reachable through the submodule's reflog. Make a branch in the submodule
+  before working in it, and the commit survives that reset.
+- A commit inside the submodule shows in the parent as a modified `vendor/lib` and nothing else.
+  `git diff --submodule=log` names the commits behind that one line. Moving the pin is
+  `git add vendor/lib` plus a commit in the parent.
+- **The one that hurts.** Bump the pin, push the parent, forget to push the submodule: your push
+  succeeds, and the next clone dies on `fatal: Fetched in submodule path 'vendor/lib', but it did
+  not contain <sha>`. Git can watch for it: with `push.recurseSubmodules` set to `check` the push
+  is refused instead ("The following submodule paths contain changes that can not be found on any
+  remote"), and with `on-demand` the submodule is pushed first.
+
+  ```shell
+  git config push.recurseSubmodules on-demand
   ```
-  tree 0fdc764f4c477e55f9326b1340af175cd823518c 
-  parent 723781bf7cc1a6eb8bdecd987975b8af7ed960bb
-  author Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200
-  committer Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200
-  
-  commit message is the body
-  ```
-  
-  Headers:
-  
-  * `tree` is the root tree describing this commit's snapshot content. There needs to be one, and only one.
-  * `parent` represents one of this commit's ancestors. There can be 0, 1 or more parents (0 is first commit in a given history, 1 is normal/most common commit, more than one is merge commit, a.k.a. a commit that makes two or more divergent histories converge).
-  * `author` and `committer` headers represent the author and committer of the commit (what a surprise), along with the time at which the event happens. Mostly provided as information, can not and should not be trusted unless you trust the person that provided the information.
+- `git submodule update --remote` goes the other way: it moves the submodule to the tip of its
+  branch (`submodule.<name>.branch` in `.gitmodules`, the remote's default branch otherwise) and
+  leaves the parent dirty. The new pin still has to be committed.
 
-* **Tree** (Object)
+A submodule is the right tool when what you want is a pin. For code you edit on both sides every
+day, it is friction with a `.gitmodules` file attached.
 
-  A **tree** has no header, only a list of children, one per line. On each line the fields `perms type sha1` are separated by single spaces, then a tab separates the filename (this is exactly what `git cat-file -p <tree>` prints). It represents what a regular filesystem would call a "directory", replacing inodes by hashes so the sub-nodes are identified in a universal namespace instead of a locally determined namespace.
-    
-  Example:
+{/* Verification notes (2.43.0): bare local remotes for parent and submodule. submodule add writes
+.gitmodules plus a 160000 gitlink; a plain clone leaves the directory empty and submodule status
+prints a leading dash; update --init checks out a detached HEAD; a commit in the submodule shows as
+a modified gitlink and diff --submodule=log lists it; submodule update returns to the pin while the
+branch made beforehand still holds the work. Pin bumped and parent pushed without the submodule:
+push rc 0, then clone --recurse-submodules fails with "not our ref" and "did not contain <sha>".
+push.recurseSubmodules=check aborts with that message, on-demand pushes both and the fresh clone
+has every line. update --remote lands on the remote tip and leaves the gitlink modified. */}
+
+## Under the hood: the object model
+
+Everything above is just moving pointers around a content-addressed store. Three object types
+carry your work, commits, trees and blobs (annotated tags are a fourth, built the same way), and
+one rule: an object is `(sha1) -> (headers, body)`, where the sha1 is the hash of the whole thing,
+headers included, so it signs both the object and everything it points to.
+
+Look at it yourself, on any repository:
+
+```shell
+git cat-file -t HEAD          # commit
+git cat-file -p HEAD          # the raw commit object
+git cat-file -p HEAD^{tree}   # its root tree
+```
+
+**Commit.** A snapshot of files, in a time-like topology that cannot determine "time" for sure,
+but that has a notion of ancestors and descendants, so one can follow the logical history of
+changes.
+
+```
+tree 0fdc764f4c477e55f9326b1340af175cd823518c
+parent 723781bf7cc1a6eb8bdecd987975b8af7ed960bb
+author Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200
+committer Romain Dorgueil <romain@dorgueil.net> 1459760873 +0200
+
+commit message is the body
+```
+
+- `tree` is the root tree describing this commit's snapshot. There is one, and only one.
+- `parent` is one of this commit's ancestors. There can be 0, 1 or more of them (0 for the first
+  commit of a history, 1 for a normal commit, more than one for a merge commit, a commit that
+  makes two or more divergent histories converge).
+- `author` and `committer` carry who did what and when. Informational: they cannot and should not
+  be trusted unless you trust whoever provided them.
+
+**Tree.** No header, only a list of children, one per line: `perms type sha1` separated by single
+spaces, then a tab, then the filename. This is exactly what `git cat-file -p <tree>` prints. It is
+what a filesystem would call a directory, with hashes instead of inodes, so children are
+identified in a universal namespace rather than a locally determined one.
 
 ```
 040000 tree 67a00caf3712f4a38c9da6d14a07420530714fb5	doc
 100755 blob d22a068dc89ac8d25532b0fea8829832e278ee7a	docker-compose.yml
-```    
-* **Blob** (Object)
+```
 
-  A **blob** is representing a file content. It's important to understand that it only represents the content, and not where it is in the filesystem or what name points to it.
-  For example, if two files have the exact same content, it will be stored only once in the git object database, and the two tree entries (either in two different trees or even in the same tree) will point to the same sha1 hash.
+**Blob.** File content, and only content: not the name, not the place in the tree. Two files with
+identical content are stored once, and the two tree entries (in the same tree or in different
+ones) point to the same sha1. Check it on two files holding the same line:
+`git rev-parse HEAD:doc/a.txt HEAD:b.txt` prints the same hash twice.
 
-## More Information
+The header is part of what gets hashed, and you can check that by hand:
 
-* [Git Internals - Git Objects](https://git-scm.com/book/en/v2/Git-Internals-Git-Objects)
-* Not perfect, but here is an UML-like schema of what is said above
+```shell
+printf 'same\n' | git hash-object --stdin   # 1275430f1765c63e539cb0452565563bd6aef6a6
+printf 'blob 5\0same\n' | sha1sum           # same hash (shasum on macOS)
+```
 
-  <img src="https://2.bp.blogspot.com/-OupR0nuuahY/UT5t7BLWjzI/AAAAAAAABRM/lH9DCK6UaaA/s1600/GitUML.png" width="800" alt="UML-like schema of Git objects (blobs, trees, commits)" />
+### On forging
 
-## Aliases
+SHA-1 collisions are practical. In 2017 the SHAttered attack (Google and CWI Amsterdam) produced
+two different files sharing the same SHA-1, so a blob can in principle be crafted to collide with
+another. A commit still cannot be altered silently: changing it changes its hash, and because
+every descendant stores its parent's hash, rewriting one commit forces every later commit to
+change too, which is what makes mid-history tampering visible. Modern git ships a hardened SHA-1
+(the sha1dc collision detector, on by default since git 2.13) that aborts when it sees a SHAttered-style
+collision attempt, and new repositories can opt into SHA-256 with `git init --object-format=sha256`. SHA-1 stays the default, and the two formats do not interoperate yet.
+
+## Config
+
+Aliases:
 
 ```bash
 git config --global alias.ci commit
@@ -65,16 +394,25 @@ git config --global alias.br branch
 git config --global alias.lg "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 ```
 
-## User setup
+User setup:
 
 ```bash
 git config --global user.name "Romain Dorgueil"
 git config --global user.email "romain@dorgueil.net"
 ```
 
-	
+Verified on git 2.56.0.
+
 ## References
 
-* [Original article with my git config and aliases](/blog/en/git/2014/12/16/git-config/)
-* Github flow: [Understanding the GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)
-* Git-flow: [A Successful Git Branching Model](https://nvie.com/posts/a-successful-git-branching-model/)
+- [Git Internals - Git Objects](https://git-scm.com/book/en/v2/Git-Internals-Git-Objects)
+- [githooks](https://git-scm.com/docs/githooks) and [gitsubmodules](https://git-scm.com/docs/gitsubmodules), the reference pages for the two sections above
+- [git-rebase](https://git-scm.com/docs/git-rebase), whose "Transplanting" examples are the `--onto` forms used here
+- [Shell script](/wiki/shell/), the other half of the daily command line toolbox
+- [Original article with my git config and aliases](/blog/en/git/2014/12/16/git-config/)
+- [How to clean up already merged git branches?](/blog/en/tips/2016/09/09/cleanup-merged-git-branches/)
+- Github flow: [Understanding the GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)
+- Git-flow: [A Successful Git Branching Model](https://nvie.com/posts/a-successful-git-branching-model/)
+- An UML-like schema of the object model above:
+
+  <img src="https://2.bp.blogspot.com/-OupR0nuuahY/UT5t7BLWjzI/AAAAAAAABRM/lH9DCK6UaaA/s1600/GitUML.png" width="800" alt="UML-like schema of Git objects (blobs, trees, commits)" />

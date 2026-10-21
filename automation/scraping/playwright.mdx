@@ -1,0 +1,249 @@
+---
+title: Playwright (Python)
+description: "Playwright for Python: a scraping cookbook, and the defaults that quietly hand you the page before JavaScript ran."
+checkedOn: 2026-10-20
+---
+
+A scripted browser is the tool of last resort for scraping: it is slower and heavier than an HTTP
+client, so it only earns its place when the content you want does not exist until JavaScript has
+run. When it does, Playwright is where I would start today, rather than
+<Link to="selenium" />.
+
+The thing that makes it pleasant is auto-waiting. A locator is a description of an element,
+re-evaluated every time you use it, and every action retries until the element is there and
+actionable. Most of the sleeps and retry loops you would write by hand become unnecessary. The
+traps are what happens when you step outside that model, usually without noticing.
+
+Everything below was rerun on **Playwright 1.64.0** with its bundled Chromium
+**156.0.8078.4**, against a local page that renders part of its content from a timer and part
+from a `fetch`.
+
+```bash
+pip install playwright
+playwright install chromium
+```
+
+## Cookbook
+
+### Get the rendered page, not the source
+
+```python
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto("https://example.org/")
+    html = page.locator("body").inner_html()
+    browser.close()
+```
+
+`page.goto()` returns as soon as the `load` event fires, which is before most client-side
+rendering. Read the content through a locator that waits for what you actually want (next recipe),
+not with `page.content()` on the line after `goto`.
+
+### Wait for something, without sleeping
+
+```python
+page.goto(url)
+page.locator("#results .row").first.wait_for()          # waits up to 30 s
+rows = page.locator("#results .row").all()
+```
+
+Or assert the state you expect and let the assertion retry:
+
+```python
+from playwright.sync_api import expect
+
+expect(page.locator("#status")).to_have_text("ready")    # retries for 5 s
+```
+
+Measured on the test page, whose `#late` element is filled by a 1200 ms timer: reading it right
+after `goto` gives `loading`, while a locator filtered on the expected text returns the real value
+after 1.29 s, and `expect(...).to_have_text(...)` passes after 1.32 s. Neither needed a sleep, and
+neither waited longer than it had to.
+
+### Pin down one element among many
+
+A locator that matches more than one element refuses to act, instead of picking one for you:
+
+```
+Error: strict mode violation: locator("button") resolved to 2 elements
+```
+
+That is a feature. Narrow it, or say which one you mean:
+
+```python
+page.get_by_role("button", name="Submit").first.click()
+page.get_by_role("button", name="Submit").nth(1).click()
+page.locator("#signin-form").get_by_role("button").click()
+```
+
+`get_by_role` is worth the habit: it matches on what the element is and what it is labelled, so it
+survives a CSS refactor that would break a class selector.
+
+### Pull a table into rows
+
+```python
+rows = page.locator("#t tbody tr")
+data = [[cell.inner_text() for cell in row.locator("td").all()] for row in rows.all()]
+```
+
+One round trip per cell. For a big table, do the extraction in the page instead:
+
+```python
+data = page.eval_on_selector_all(
+    "#t tbody tr",
+    "rows => rows.map(r => [...r.cells].map(c => c.textContent))",
+)
+```
+
+Both returned the same rows on the test page.
+
+### Catch the API response instead of scraping the DOM
+
+When the page fetches JSON and then renders it, take the JSON. It is cleaner than parsing the
+result back out of the markup.
+
+```python
+with page.expect_response(lambda r: r.url.endswith("/data.json")) as info:
+    page.goto(url)
+response = info.value
+print(response.status, response.json())
+```
+
+Verified: status 200 and the parsed body, with no DOM selector involved.
+
+### Block images, fonts and stylesheets
+
+```python
+page.route(
+    "**/*",
+    lambda route: route.abort()
+    if route.request.resource_type in ("image", "font", "stylesheet", "media")
+    else route.continue_(),
+)
+```
+
+Measured on the test page (one document, one `fetch`, three images, one stylesheet): 6 responses
+without the route, 2 responses and 4 failed requests with it.
+
+### Reuse a logged-in session
+
+Log in once, save the state, and start later runs from it. This covers cookies and local storage.
+
+```python
+context = browser.new_context()
+# ... log in in this context ...
+context.storage_state(path="state.json")
+```
+
+```python
+context = browser.new_context(storage_state="state.json")
+```
+
+Round trip verified: a cookie and a `localStorage` key written in the first context both came back
+in a context created from the saved file.
+
+### Drive the browser once, then fetch over plain HTTP
+
+A context carries an HTTP client that shares its cookies. Use the browser for the login, then hit
+the endpoints directly, which is far faster than rendering pages you do not need.
+
+```python
+response = context.request.get("https://example.org/api/items?page=2")
+items = response.json()
+```
+
+### Scroll an infinite list to the end
+
+Same end-detection as the console recipe on <Link to="." />: stop after three rounds that added
+nothing.
+
+```python
+previous, idle = -1, 0
+while idle < 3:
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    page.wait_for_timeout(250)
+    count = page.locator("#list li").count()
+    if count == previous:
+        idle += 1
+    else:
+        previous, idle = count, 0
+```
+
+Verified against a page that appends a batch per scroll: 25 items before, 150 after, loop stopped
+on its own.
+
+### Let codegen write the selectors
+
+```bash
+playwright codegen https://example.org/
+```
+
+It opens a browser, records what you click, and prints the Python for it. Worth it even if you
+rewrite the result, because it shows you which role or label actually identifies an element.
+
+### Record a trace when a run fails
+
+```python
+context.tracing.start(screenshots=True, snapshots=True)
+# ... the run ...
+context.tracing.stop(path="trace.zip")
+```
+
+```bash
+playwright show-trace trace.zip
+```
+
+The trace is a DOM snapshot per action, so you can inspect the page as it was when the selector
+missed, which beats re-running a scrape to find out what changed.
+
+## Gotchas
+
+**`page.content()` right after `goto` is the page before JavaScript.** On the test page, the string
+rendered by the 1200 ms timer is absent from `page.content()` immediately after `goto` and present
+1.5 s later. Nothing raises, nothing warns: you get a valid HTML document that happens to be missing
+the part you came for. This is the single most common way a Playwright scrape silently returns
+nothing.
+
+**`wait_until="networkidle"` does not mean the page is ready.** Measured: `goto` with `load`
+returned in 0.03 s, with `networkidle` in 0.83 s. The `networkidle` wait did pick up the `fetch`,
+but the timer-driven text was *still* missing, because a timer is not network traffic. Waiting for
+the element you want is both faster and correct; the Playwright docs discourage `networkidle` for
+exactly this reason.
+
+**`query_selector_all` is a snapshot, locators are not.** `query_selector` and
+`query_selector_all` do not auto-wait, and the list they return is fixed when you call them: on a
+page that adds its rows from a timer, `query_selector_all` right after `goto` returned no rows and
+the same list was still empty 1.5 s later, while a locator counted 3. A handle does track its own
+node, so its text updates, but nothing waits for the node to be right before you read it. If you
+came from Selenium, this is the API that feels familiar and is the one to avoid.
+
+**A hidden element still gives you its text.** On a node with `display: none`, both
+`text_content()` and `inner_text()` returned `SECRET TEXT`, while the parent's `inner_text()` did
+not contain it at all. So `inner_text()` is not a reliable "is this visible to a user" filter when
+you call it on the element itself; check visibility explicitly, or read the text from an ancestor.
+
+**The two default timeouts are different, and both are silent until they are not.** Measured: an
+action on a selector that never appears fails after exactly 30 s, while `expect(...)` gives up
+after 5 s. Thirty seconds per missing element is a long time in a loop over a thousand pages, so
+set it deliberately: `page.set_default_timeout(5000)`.
+
+**Counting `request` events does not tell you what was fetched.** With the blocking route above,
+the `request` event count was unchanged at 6: routing happens after the event fires. The saving
+shows up in `response` and `requestfailed`. Measure the wrong one and you conclude your blocking
+does not work.
+
+**The browser announces itself.** In the bundled Chromium, `navigator.webdriver` is `true` and the
+user agent contains `HeadlessChrome`, here
+`Mozilla/5.0 (X11; Linux x86_64) ... HeadlessChrome/156.0.8078.4 Safari/537.36`. Any site that
+cares can see both. Playwright is an automation tool, not an evasion tool, and treating it as one
+is how you end up blocked.
+
+## Links and references
+
+* [Playwright for Python](https://playwright.dev/python/) and its
+  [locators guide](https://playwright.dev/python/docs/locators)
+* <Link to="." /> for the tool landscape, <Link to="selenium" /> for the previous generation
+* <Link to="/python/jupyter" /> if you prefer working out selectors in a notebook

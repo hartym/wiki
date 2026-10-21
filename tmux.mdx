@@ -1,12 +1,13 @@
 ---
 title: tmux
 description: "Terminal multiplexer: a verified cookbook for sessions, windows and panes."
-checkedOn: 2026-07-13
+checkedOn: 2026-10-20
 ---
 
 [tmux](https://github.com/tmux/tmux) is a terminal multiplexer: persistent sessions, plus
 windows and split panes inside a single terminal. The snippets below are verified on **tmux
-3.2a**. Shortcuts are written with <kbd>Ctrl-A</kbd> as the prefix; see the note at the end of the page.
+3.8**, with **3.6a** cross-checked where the two differ. Shortcuts are written with <kbd>Ctrl-A</kbd> as the prefix; see the note at the end of the
+page. For the scripts that end up running inside these panes, see [shell script](/wiki/shell/).
 
 ## Cookbook
 
@@ -165,7 +166,7 @@ tmux move-window -s 2 -t 4   # move window 2 to index 4 (target must be free)
 ```
 
 `swap-window` exchanges two windows, trading only their index numbers, so neither slot needs to be
-free. On 3.2a the focus stays on the current index (you end up on the swapped-in window); add `-d`
+free. The focus stays on the current index (you end up on the swapped-in window); add `-d`
 to make it follow the moved window instead, and beware that `-d` has flipped meaning between tmux
 versions. `move-window` slides one window to a new index, but
 that index must be empty, otherwise tmux refuses with `index in use` and changes nothing. From the
@@ -198,8 +199,8 @@ setw -g automatic-rename off   # ~/.tmux.conf: keep the names you set
 By default tmux runs with `automatic-rename on`, so each window is named after the program in its
 active pane and the title keeps shifting from `sh` to `vim` to `node` as you work. Renaming a
 window by hand turns `automatic-rename` off for that window alone, so the name sticks; setting it
-off globally does the same for every window. A separate option, `allow-rename` (off by default on
-3.2a), controls whether a program can push its own title through a terminal escape sequence.
+off globally does the same for every window. A separate option, `allow-rename` (off by default),
+controls whether a program can push its own title through a terminal escape sequence.
 
 Tip article: [How to stop tmux from renaming your windows?](/blog/en/tips/2026/06/22/control-tmux-automatic-window-rename/)
 
@@ -217,7 +218,7 @@ Run a long job in one window, switch away, and tmux highlights that window when 
 which is the better "the job finished" signal. With `visual-activity on` tmux also prints a status
 message instead of only flagging the window; `visual-silence` is the silence counterpart. A related
 option, `monitor-bell`, flags a window when a program rings the terminal bell and is `on` by
-default. Defaults on 3.2a: `monitor-activity off`, `monitor-silence 0`, `visual-activity off`,
+default. Defaults: `monitor-activity off`, `monitor-silence 0`, `visual-activity off`,
 `visual-silence off`, `monitor-bell on`.
 
 Tip article: [How to get notified of activity or silence in a tmux window?](/blog/en/tips/2026/06/23/monitor-tmux-window-activity-silence/)
@@ -283,6 +284,11 @@ moves the border in that direction by `N` cells (default `1`), and `-x/-y` set a
 only does something when there is a neighbour on that axis to give or take space: two panes side by
 side cannot change each other's height, only their width.
 
+The direction is the border's, not the pane's, so the same flag grows or shrinks depending on which
+side you are sitting on: with two panes side by side, `resize-pane -L 10` takes the left pane from
+100 to 90 columns and the right one from 99 to 109, because in both cases the shared border moves
+ten columns left.
+
 From the keyboard, both sets of binds are repeatable (`-r`), so you can hold the modifier and tap the
 arrow keys:
 
@@ -293,18 +299,21 @@ prefix M-Up / M-Down / M-Left / M-Right   resize-pane -U/-D/-L/-R 5 (step 5, Alt
 
 To rearrange every pane at once instead of nudging one border, change the layout (see below).
 
-{/* Verification notes (3.2a): with two panes side by side, the active pane goes from width 99
-to 109 after resize-pane -L 10, and to 80 after -x 80; -y 10 sets it to 10 rows. */}
+{/* Verification notes (3.6a): with two panes side by side, resize-pane -L 10 moves the shared
+border ten columns left either way, measured 100 -> 90 on the left pane and 99 -> 109 on the right
+one; -x 80 sets the active pane to 80 columns. On a side-by-side pair -y 10 changes nothing (no
+neighbour on that axis); on a stacked pair it sets the pane to 10 rows and the other to 39. */}
 
 Tip article: [How to resize a tmux pane?](/blog/en/tips/2026/06/29/resize-tmux-pane/)
 
 ### Select and copy with the mouse
 
 ```shell
-set -g mouse on   # ~/.tmux.conf: off by default
+set -g mouse on   # ~/.tmux.conf: the default since tmux 3.8, off before
 ```
 
-The mouse is `off` by default. With `mouse on`, a left-drag enters copy mode and copies the
+The mouse is `on` by default since tmux 3.8 and `off` in every earlier release, so on an older
+tmux you have to turn it on. With `mouse on`, a left-drag enters copy mode and copies the
 selection into the tmux paste buffer on release; paste it back with <kbd>Ctrl-A</kbd>
 <kbd>]</kbd>. That buffer is tmux's own, not the system clipboard, so another application sees
 nothing unless you pipe copy mode to a clipboard tool (`pbcopy`, `xclip`, `wl-copy`). To use the
@@ -313,8 +322,10 @@ which bypasses tmux entirely. Turning the mouse on also enables click-to-focus a
 window name to switch, scroll into the scrollback, and drag a border to resize; a right-click on a
 pane opens a context menu.
 
-{/* Verification notes (3.2a): mouse off by default, and the copy path is MouseDrag1Pane then
-MouseDragEnd1Pane (copy-pipe-and-cancel). */}
+{/* Verification notes (3.6a and 3.8): mouse off by default on 3.6a, on by default on 3.8 (CHANGES
+3.7c -> 3.8, "The mouse option now defaults to on"). The copy path is MouseDrag1Pane in the root
+table (if-shell, then copy-mode -M) and MouseDragEnd1Pane in the copy-mode and copy-mode-vi tables
+(send-keys -X copy-pipe-and-cancel), not in root, on both. */}
 
 Tip article: [How to select and copy text with the mouse in tmux?](/blog/en/tips/2026/06/30/copy-text-with-the-mouse-in-tmux/)
 
@@ -335,7 +346,7 @@ created afterwards, which is why they belong in `~/.tmux.conf`. Pair them with
 the first pane becoming `1` changes how a bare number reads as a pane target, so prefer a pane id
 (`%3`) or a `window.pane` form when a target must be unambiguous.
 
-{/* Verification notes (3.2a): defaults are 0/0; with the config above a fresh session reports
+{/* Verification notes (3.2a, re-run unchanged on 3.6a): defaults are 0/0; with the config above a fresh session reports
 window index 1 and panes 1 and 2. */}
 
 Tip article: [How to make tmux number windows and panes from 1?](/blog/en/tips/2026/07/01/number-tmux-windows-panes-from-one/)
@@ -356,7 +367,7 @@ Qualify the target to stay deterministic: a `window.pane` form (`3.1`), a pane i
 `#{pane_id}` and by `list-panes`), or a window name (`build.1`). A pane id is the strongest
 choice because it is stable for the life of the pane and is never re-read as a window.
 
-{/* Verification notes (3.2a), checking window_index.pane_index: with the current window holding
+{/* Verification notes (3.2a, re-run unchanged on 3.6a), checking window_index.pane_index: with the current window holding
 panes 0..3, -t 3 resolves to 0.3; with a single pane and a window 7 present, -t 7 resolves to
 window 7's active pane; grow the current window to eight panes and -t 7 flips back to 0.7. */}
 
@@ -373,14 +384,19 @@ tmux swap-window -s '{start}' -t '{end}'   # tokens work anywhere a window targe
 Besides plain indexes and names, a window target accepts special tokens: `{start}` and `{end}`
 are the lowest and highest numbered windows, `{last}` is the previously active one, and `{next}`
 and `{previous}` are the neighbours by number. Each has a one-character alias: `^`, `$`, `!`,
-`+` and `-`, and the last two accept an offset (`+2`, `-2`). Quote them in a shell: `{`, `$` and
-`!` all mean something to it. Tokens keep scripts independent of actual index numbers, so they
-keep working with `base-index 1` or after a renumbering. They are the window-level counterpart of
+`+` and `-`, and the last two accept an offset (`+2`, `-2`). One catch with `$`: a target starting
+with `$` is read as a session id, so the bare alias fails with `can't find session: $`. Write it
+after a colon, `:$`, which is also the form the manual uses for offsets (`select-window -t:+2`).
+Quote them in a shell: `{`, `$` and `!` all mean something to it. Tokens keep scripts
+independent of actual index numbers, so they keep working with `base-index 1` or after a
+renumbering. They are the window-level counterpart of
 the pane targets above; pane-relative tokens like `{left-of}` come with the pane-moving commands.
 
-{/* Verification notes (3.2a), current window 2 among 0..4, last active 4: {start}/^ -> 0,
-{end}/$ -> 4, {last}/! -> 4, {next}/+ -> 3, {previous}/- -> 1, +2 -> 4, -2 -> 0;
-swap-window -s '{start}' -t '{end}' swaps windows 0 and 4. */}
+{/* Verification notes (3.6a), current window 2 among 0..4, last active 4, via select-window -t:
+{start}/^ -> 0, {end}/:$ -> 4, {last}/! -> 4, {next}/+ -> 3, {previous}/- -> 1, +2 -> 4, -2 -> 0;
+swap-window -s '{start}' -t '{end}' swaps windows 0 and 4. The bare $ alias errors out with
+"can't find session: $" because a target starting with $ is read as a session id; ':$' and
+'session:$' both resolve to the highest-numbered window. */}
 
 Tip article: [How to target tmux windows with special tokens?](/blog/en/tips/2026/07/03/target-tmux-windows-special-tokens/)
 
@@ -392,20 +408,21 @@ tmux swap-pane -s '{marked}'   # swap the active pane with the marked one
 tmux join-pane -s '{marked}'   # bring the marked pane into this window
 ```
 
-<kbd>Ctrl-A</kbd> <kbd>m</kbd> marks the active pane, and the target `{marked}` then resolves to it
-from any window or session. That removes the index juggling from join and swap: mark the pane
-where it lives, go where you want it, run the command. The marked pane is also the default source
-for `join-pane`, `move-pane`, `swap-pane` and `swap-window`, so once something is marked a bare
-`tmux swap-pane` swaps it with the active pane. <kbd>Ctrl-A</kbd> <kbd>M</kbd> clears the mark,
-marking another pane moves it, and moving the marked pane with swap or join clears it too, so
-mark again before the next move. With
-no mark set, `{marked}` fails with `no marked target` instead of silently picking a pane, which
-is exactly what a bare-number target does not give you (see the N vs N.M trap above).
+<kbd>Ctrl-A</kbd> <kbd>m</kbd> marks the active pane, and the target `{marked}`, or its
+one-character alias `~`, then resolves to it from any window or session. That removes the index
+juggling from join and swap: mark the pane where it lives, go where you want it, run the command.
+The marked pane is also the default source for `join-pane`, `move-pane`, `swap-pane` and
+`swap-window`, so once something is marked a bare `tmux swap-pane` swaps it with the active pane.
+<kbd>Ctrl-A</kbd> <kbd>M</kbd> clears the mark, marking another pane moves it, and moving the marked
+pane with swap or join clears it too, so mark again before the next move. With no mark set,
+`{marked}` fails with `no marked target` instead of silently picking a pane, which is exactly what
+a bare-number target does not give you (see the N vs N.M trap above).
 
 {/* Verification notes (3.2a): select-pane -m on 0.1, then from window 1 join-pane -h -s
 '{marked}' moves %1 in; pane_marked_set drops back to 0 after the move; swap-pane -s '{marked}'
 with no mark errors out with "no marked target"; with a fresh mark, bare swap-pane and join-pane
-use the marked pane as source. */}
+use the marked pane as source (both re-measured on 3.6a). The alias ~ resolves to the marked pane
+like {marked}, and prefix M is bound to select-pane -M, which clears the mark. */}
 
 Tip article: [How to mark a tmux pane and target it from anywhere?](/blog/en/tips/2026/07/06/mark-tmux-pane-target-anywhere/)
 
@@ -449,16 +466,18 @@ Tip article: [How to move a pane from one tmux window to another?](/blog/en/tips
 tmux join-pane -h -s '{down-of}'   # pane below the active one -> re-attached to its right
 ```
 
-One command reshapes a stacked pair into a side-by-side one: `{down-of}` names the pane below
-the active pane, and `join-pane -h` breaks it out of its slot and re-attaches it as a split to
-the right. Add `-b` to insert it on the left instead. Relative targets remove the index lookup
+One command reshapes a stacked pair into a side-by-side one: `{down-of}` names the pane below the
+active pane, and `join-pane -h` breaks it out of its slot and re-attaches it as a split to the
+right. Add `-b` to insert it on the left instead. Relative targets remove the index lookup
 entirely: `{up-of}`, `{down-of}`, `{left-of}` and `{right-of}` are the neighbours of the active
-pane, `{top}`, `{bottom}`, `{left}` and `{right}` are the panes at the window edges, `{next}`
-and `{previous}` walk the panes in index order, and `{last}` is the previously active pane. They
-work anywhere a pane target does: `select-pane`, `swap-pane`, `resize-pane`, `join-pane`. Quote
-them, braces mean something to the shell. Two behaviours to know: directional targets wrap
-around the window edge, so the bottom pane's `{down-of}` is the top pane again, and when no pane
-lies in that direction at all the command fails with `can't find pane` instead of guessing.
+pane, `{top}`, `{bottom}`, `{left}` and `{right}` are the panes at the window edges and
+`{top-left}`, `{top-right}`, `{bottom-left}` and `{bottom-right}` the ones in the corners,
+`{next}` and `{previous}` walk the panes in index order, and `{last}` is the previously active
+pane. They work anywhere a pane target does: `select-pane`, `swap-pane`, `resize-pane`,
+`join-pane`. Quote them, braces mean something to the shell. Two behaviours to know: directional
+targets wrap around the window edge, so the bottom pane's `{down-of}` is the top pane again, and
+when no pane lies in that direction at all the command fails with `can't find pane` instead of
+guessing.
 
 {/* Verification notes (3.2a): stacked %0/%1 with %0 active, join-pane -h -s '{down-of}' ends
 with %0 at left=0 and %1 at left=101, both full height; -bh puts the pane below at left=0
@@ -484,7 +503,7 @@ session lands in the main workspace without going down. A source session that lo
 pane closes itself. Different servers (other sockets, `tmux -L`/`-S`) cannot exchange panes.
 The targeting rules above apply unchanged: qualify the source, prefer pane ids.
 
-{/* Verification notes (3.2a, isolated socket): sleep started in scratch keeps its pid across
+{/* Verification notes (3.2a, isolated socket, re-run unchanged on 3.6a): sleep started in scratch keeps its pid across
 join-pane -h -s scratch -t main and across move-window -s scratch:1 -t main:; the emptied
 scratch session closes itself. */}
 
@@ -521,21 +540,26 @@ tmux select-layout tiled            # apply the tiled (grid) layout now
 tmux select-layout main-vertical    # one large pane left, the rest stacked right
 ```
 
-tmux ships five preset layouts. <kbd>Ctrl-A</kbd> <kbd>Space</kbd> (`next-layout`) cycles through
+tmux ships seven preset layouts. <kbd>Ctrl-A</kbd> <kbd>Space</kbd> (`next-layout`) cycles through
 them in order: `even-horizontal` (equal columns), `even-vertical` (equal rows), `main-horizontal`
-(one large pane on top, the rest in a row below), `main-vertical` (one large pane on the left,
-the rest in a column on the right), and `tiled` (an even grid). `select-layout <name>` jumps
-straight to one without cycling, which is the tool you want after pulling several panes into a
-window (see "Pull a pane from another window") and ending up with a lopsided split:
-`select-layout tiled` re-tiles
-everything evenly. Each layout also has a direct key: <kbd>Ctrl-A</kbd> <kbd>M-1</kbd>
-even-horizontal, <kbd>M-2</kbd> even-vertical, <kbd>M-3</kbd> main-horizontal, <kbd>M-4</kbd>
-main-vertical, <kbd>M-5</kbd> tiled.
+(one large pane on top, the rest in a row below), `main-horizontal-mirrored` (the large pane at the
+bottom instead), `main-vertical` (one large pane on the left, the rest in a column on the right),
+`main-vertical-mirrored` (the large pane on the right instead), and `tiled` (an even grid). The
+two mirrored layouts arrived in tmux 3.5, so an older tmux cycles through five.
+`select-layout <name>` jumps straight to one without cycling, which is the tool you want after
+pulling several panes into a window (see "Pull a pane from another window") and ending up with a
+lopsided split: `select-layout tiled` re-tiles everything evenly. Each layout also has a direct
+key: <kbd>Ctrl-A</kbd> <kbd>M-1</kbd> even-horizontal, <kbd>M-2</kbd> even-vertical, <kbd>M-3</kbd>
+main-horizontal, <kbd>M-4</kbd> main-vertical, <kbd>M-5</kbd> tiled, and the two mirrored ones
+last, <kbd>M-6</kbd> main-horizontal-mirrored and <kbd>M-7</kbd> main-vertical-mirrored.
 
-{/* Verification notes (tmux 3.2a): 4 panes, next-layout observed order even-horizontal ->
-even-vertical -> main-horizontal -> main-vertical -> tiled -> (wraps). select-layout tiled gives a
+{/* Verification notes (tmux 3.6a): 4 panes, next-layout observed order even-horizontal ->
+even-vertical -> main-horizontal -> main-horizontal-mirrored -> main-vertical ->
+main-vertical-mirrored -> tiled -> (wraps), so seven steps, against five on 3.2a. The mirrored
+layouts are listed in CHANGES under "CHANGES FROM 3.4 TO 3.5". select-layout tiled still gives a
 2x2 grid (99x24 / 100x24 / 99x25 / 100x25 on 200x50). list-keys: prefix Space = next-layout;
-prefix M-1..M-5 = select-layout even-horizontal/even-vertical/main-horizontal/main-vertical/tiled. */}
+M-1..M-5 as before, plus M-6 main-horizontal-mirrored and M-7 main-vertical-mirrored, so the
+direct keys are not in cycle order. */}
 
 Tip article: [How to reorganize a tmux layout?](/blog/en/tips/2026/07/13/tmux-layouts/)
 
@@ -557,8 +581,9 @@ command that has no default binding. A template can even prompt for input first:
 `command-prompt -p "new name:" "rename-window '%%'"` shows the prompt, then substitutes what you
 type for `%%` (use `%1`, `%2`... to match several `-p` prompts).
 
-{/* Verification notes (3.2a): list-keys -T prefix shows ':' bound to command-prompt; list-commands
-gives command-prompt [-1kiNTW] [-I inputs] [-p prompts] [-t target-client] [template]. */}
+{/* Verification notes (3.2a, re-run unchanged on 3.6a): list-keys -T prefix shows ':' bound to command-prompt; list-commands
+gives, on 3.8, command-prompt [-1CbeFiklNP] [-I inputs] [-p prompts]
+[-t target-client] [-T prompt-type] [template] (3.6a: [-1bFkliN], 3.2a: [-1kiNTW]). */}
 
 Tip article: [How to run a tmux command from inside a session?](/blog/en/tips/2026/07/15/run-tmux-command-interactively/)
 
@@ -580,9 +605,12 @@ own binds. `list-commands` is the companion for the CLI: it prints the full synt
 every command, so it is the reference to reach for when you forget whether resize is `-L` or `-x`.
 These three commands are how every other snippet on this page was checked.
 
-{/* Verification notes (tmux 3.2a): list-keys -T prefix shows '?' bound to 'list-keys -N'.
-list-keys -N returns 83 noted bindings; list-keys -T copy-mode-vi returns its own table. list-commands
-prints e.g. "resize-pane (resizep) [-DLMRTUZ] [-x width] [-y height] [-t target-pane] [adjustment]". */}
+{/* Verification notes (tmux 3.8): list-keys -T prefix shows '?' bound to 'list-keys -N'.
+list-keys -N returns 93 noted bindings on 3.8 (87 on 3.6a, 83 on 3.2a); list-keys shows five
+tables on 3.8, root, prefix, copy-mode, copy-mode-vi and move (no move table on 3.6a). list-commands
+prints "resize-pane (resizep) [-MTZ] [-D lines] [-L columns] [-R columns] [-U lines] [-x width]
+[-y height] [-t target-pane]" on 3.8; 3.2a to 3.6a printed "[-DLMRTUZ] [-x width] [-y height]
+[-t target-pane] [adjustment]". */}
 
 Tip article: [How to discover and search tmux key bindings?](/blog/en/tips/2026/07/16/discover-tmux-key-bindings/)
 
@@ -634,9 +662,9 @@ Reloading only adds or overrides what the file sets; it does not reset options a
 to set, and it re-runs commands like `new-window`, so keep a config file idempotent (settings and
 binds, not one-off actions).
 
-Verified on tmux 3.2a.
+Verified on tmux 3.8 and 3.6a. First pass on 3.2a.
 
-{/* Verification notes (3.2a): bind r registers as source-file ... \; display-message; list-keys
+{/* Verification notes (3.2a, re-run unchanged on 3.6a): bind r registers as source-file ... \; display-message; list-keys
 -T prefix shows the two-command bind. Live test: status-left V1 in the file, edit to V2,
 source-file, show -g status-left -> V2 without restarting the server. */}
 

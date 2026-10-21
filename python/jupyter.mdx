@@ -1,10 +1,25 @@
 ---
 title: Jupyter
-description: "Jupyter notebook tips: reload modified modules automatically, install a package without restarting the kernel."
-checkedOn: 2026-07-09
+description: "Jupyter cookbook: running notebooks from the command line, one kernel per virtualenv, parameterised runs, keeping notebooks out of git diffs, and the traps of hidden state."
+checkedOn: 2026-10-20
 ---
 
-## Tips and tricks
+A notebook is two things at once: a JSON file on disk, and a kernel process holding state. Most
+Jupyter surprises live in the gap between them. The file shows outputs the code no longer
+produces, the kernel still knows a variable whose cell you deleted, and the shell that `!`
+talks to is not the Python the kernel runs.
+
+Everything below is verified on **IPython 9.17, nbconvert 7.17.2, papermill 2.7.0** (Python 3.15).
+
+{/*
+  Run 2026-10-20, Docker python:3-slim, Python 3.15.0.
+  ipython 9.17.1, ipykernel 7.4.0, nbconvert 7.17.2, nbclient 0.11.0, nbformat 5.11.1,
+  jupytext 1.19.6, papermill 2.7.0, nbstripout 0.9.1.
+  Every command and every gotcha below was executed: magics in a venv kernel through
+  nbconvert --execute, notebooks built with nbformat and run through nbconvert and papermill.
+*/}
+
+## Cookbook
 
 ### Reload modified modules automatically
 
@@ -13,17 +28,236 @@ checkedOn: 2026-07-09
 %autoreload 2
 ```
 
-Modules edited on disk are reloaded before each cell execution, so code changes are picked up
-without restarting the kernel.
-Reference: [IPython autoreload documentation](https://ipython.readthedocs.io/en/stable/config/extensions/autoreload.html)
+Modules edited on disk are reloaded before each cell runs, so code changes are picked up without
+restarting the kernel. See the gotcha below for what it does not reload.
 
-### Install a package without restarting the kernel
+### Install a package into the running kernel
 
 ```python
 %pip install bokeh
 ```
 
-`%pip` installs into the environment of the running kernel, which is what you want. The older
-`!pip install ...` form runs pip as a plain shell command and can target the wrong Python when
-several are installed. The `!` prefix itself is the general tool here: it runs any shell command
-from a cell (`!ls`, `!curl ...`).
+`%pip` runs pip from the interpreter the kernel runs, which is the one you want. It prints a
+reminder that already-imported packages need a kernel restart to be picked up. The older
+`!pip install ...` form is a plain shell command and frequently targets another environment
+(gotcha below). The `!` prefix is still the general tool for everything else: `!ls`, `!git status`.
+
+### Give each project its own kernel
+
+```bash
+python -m venv .venv && .venv/bin/pip install ipykernel
+.venv/bin/python -m ipykernel install --user --name myproject --display-name "myproject"
+```
+
+The kernel is registered for your user, and the notebook stores the name in its metadata, so the
+notebook always reopens against the right environment. Housekeeping:
+
+```bash
+jupyter kernelspec list                # name -> directory
+jupyter kernelspec remove -f myproject # without -f it asks for confirmation
+```
+
+### Run a notebook from the command line
+
+```bash
+jupyter nbconvert --to notebook --execute --inplace analysis.ipynb
+jupyter nbconvert --to notebook --execute --inplace \
+  --ExecutePreprocessor.timeout=60 analysis.ipynb
+```
+
+This is "Restart and Run All" without a browser, which makes it the right thing to run in CI: a
+notebook that fails top to bottom fails the build.
+
+Set the timeout explicitly: there is **no timeout by default** in nbconvert 7.17 and nbclient
+0.11, so one hung cell hangs the job forever. The nbconvert documentation still says the default
+is 30 seconds, which is out of date since execution moved to nbclient: `ExecutePreprocessor()`
+reads `timeout = None`, and a cell sleeping 35 seconds completes.
+
+### Parameterise a run
+
+Tag the cell holding your defaults with the tag `parameters` (a cell tag, set in the notebook
+editor, not in the code), then override them from outside:
+
+```bash
+papermill analysis.ipynb out/2026-09-11.ipynb -p sample_size 5000 -p source s3://bucket/day.parquet
+```
+
+papermill inserts a new cell right after the tagged one, so your defaults stay runnable in the
+notebook and the override wins at run time. The output notebook is a separate file: the run is
+recorded, the source stays clean.
+
+### Convert and clean
+
+```bash
+jupyter nbconvert --to html analysis.ipynb        # one HTML file, styles inlined
+jupyter nbconvert --to script analysis.ipynb      # -> analysis.py
+jupyter nbconvert --clear-output --inplace analysis.ipynb
+```
+
+The HTML still loads require.js and MathJax from a CDN, so it is one file, not an offline one.
+
+`--clear-output` drops both the outputs and the execution counters, leaving the code untouched.
+
+### Keep notebooks out of your diffs
+
+Outputs and execution counters are stored in the file, so re-running a cell that produced the
+exact same result still shows up as a change (`execution_count` goes from 1 to 7), and a diff of
+a plotting notebook is a wall of base64. Worse, anything a cell printed is committed with it,
+tokens included.
+
+```bash
+pip install nbstripout
+nbstripout --install        # in the repo: registers a git clean filter
+nbstripout analysis.ipynb   # or strip a file in place, one shot
+```
+
+`--install` writes a `clean`/`smudge` filter into `.git/config` and the matching rules into
+`.git/info/attributes`. Outputs are stripped on the way into git and left alone in your working
+copy.
+
+### Pair a notebook with a plain .py
+
+```bash
+jupytext --set-formats ipynb,py:percent analysis.ipynb
+jupytext --sync analysis.py    # after editing either side
+```
+
+Pairing keeps a `.py` next to the `.ipynb`, cells marked by `# %%` comments. The `.py` is what you
+review, grep and merge; the `.ipynb` is what you open. Editing the script and syncing updates the
+notebook, and the other way around.
+
+### Measure a cell
+
+```python
+%time slow_call()          # one run, wall and CPU time
+%timeit fast_call()        # repeated runs, mean and standard deviation
+```
+
+```python
+%%timeit
+# the whole cell, repeatedly
+build_frame()
+```
+
+## Gotchas
+
+### Stored outputs are not proof the notebook runs
+
+Cells run in the order you clicked them, not in the order they are stored. A notebook can sit
+there showing a correct output for `print(total)` above the cell that defines `total`, because in
+the live kernel you ran the definition first. Re-run it clean and it fails:
+
+```text
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+NameError: name 'total' is not defined
+```
+
+Same story for a variable whose cell you deleted: the name is gone from the file, still alive in
+the kernel, and everything keeps working until someone else opens the notebook. The only honest
+check is a clean top-to-bottom run, which is exactly the `nbconvert --execute` recipe above.
+
+### `!pip` installs somewhere else
+
+The `!` escape starts a shell, which resolves `python` and `pip` through `PATH`, inherited from
+whatever launched the kernel. That is not the kernel's interpreter. In a notebook running on a
+virtualenv kernel:
+
+```text
+kernel  : /tmp/scratch/venv/bin/python
+!shell  : /usr/local/bin/python
+pip 26.2.1 from /usr/local/lib/python3.15/site-packages/pip (python 3.15)
+```
+
+`!pip install pandas` there installs into the system Python and the import still fails. `%pip`
+uses the kernel interpreter and gets it right.
+
+### `%timeit` throws away what it assigns
+
+```python
+%timeit result = expensive()   # runs it, repeatedly
+result                         # NameError: name 'result' is not defined
+```
+
+`%timeit` runs the statement in a throwaway namespace, so nothing it assigns survives. Use `%time`
+when you want the value, or assign in a normal line and time the call separately.
+
+### A cell magic must be the first line
+
+```python
+# a quick note about what follows
+%%timeit
+sum(range(10))
+```
+
+```text
+UsageError: Line magic function `%%timeit` not found.
+```
+
+A `%%` magic applies to the whole cell and has to be its first line of code: a comment above it
+breaks it (blank lines are fine). The error message is misleading: it complains about a line
+magic, because that is all IPython can make of a `%%` that is not at the top.
+
+### `autoreload` does not refresh values imported by name
+
+```python
+from mymod import f, CONST
+# edit mymod.py: f now returns "v2", CONST becomes 2
+f()          # "v2"    -> the function object is patched in place
+CONST        # 1       -> still the old value
+mymod.CONST  # 2
+```
+
+`autoreload` patches functions and classes in place, so names bound to them follow. A name bound
+to an int, a string or any other plain value keeps pointing at the old object. Read module-level
+constants through the module (`mymod.CONST`) if you want them to track your edits.
+
+### An untagged papermill parameter is silently ignored
+
+Without the `parameters` tag, papermill still injects your values, but at the very top of the
+notebook, above the cell holding the defaults. The defaults then run and overwrite them:
+
+```bash
+papermill nb.ipynb out.ipynb -p alpha 5
+# Passed unknown parameter: alpha
+# Input notebook does not contain a cell with tag 'parameters'
+# out.ipynb prints: alpha = 1
+```
+
+The only signal is those two warnings, and the run succeeds. Tag the cell, and the injected
+cell lands after it: `alpha = 5`.
+
+### nbconvert and papermill disagree on the working directory
+
+The same notebook, containing `os.getcwd()`, run from the same shell:
+
+```bash
+jupyter nbconvert --to notebook --execute sub/nb.ipynb   # cwd = /work/sub
+papermill sub/nb.ipynb sub/out.ipynb                     # cwd = /work
+```
+
+nbconvert runs the notebook in its own directory, papermill runs it in yours. Every relative path
+in the notebook breaks when you switch runner. Either use paths relative to a root you compute
+yourself, or pin it: `papermill --cwd sub ...`.
+
+### `--to script` does not give you plain Python
+
+Shell escapes and magics survive the export as IPython calls:
+
+```python
+get_ipython().system('pip --version')
+```
+
+The file needs IPython to run, so it is not a drop-in for `python script.py`. Also, nbconvert
+takes the extension from the notebook's `language_info` metadata, which is only written when the
+notebook has been executed: a hand-built or never-run notebook exports to `.txt`.
+
+## Links and references
+
+* [Jupyter documentation](https://docs.jupyter.org/) and
+  [IPython built-in magics](https://ipython.readthedocs.io/en/stable/interactive/magics.html)
+* [autoreload](https://ipython.readthedocs.io/en/stable/config/extensions/autoreload.html),
+  [nbconvert](https://nbconvert.readthedocs.io/),
+  [papermill](https://papermill.readthedocs.io/),
+  [jupytext](https://jupytext.readthedocs.io/)
+* <Link to="pandas" /> - what most of these notebooks are actually doing.
+* <Link to="testing" /> - when a notebook has grown up enough to deserve real tests.

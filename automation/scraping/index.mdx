@@ -24,21 +24,40 @@ These tools run a scripted browser in the background, or even on a remote server
 Reach for them when a site fights back: heavy JavaScript, or content that only appears after real
 browser interaction.
 
-* <Link to="/python/jupyter" />
-* <Link to="selenium" />
+* <Link to="playwright" />, the one I would start from today
+* <Link to="selenium" />, the previous generation, kept here for the archive
+
+A notebook is a good place to drive any of these while you are still working out the selectors:
+see <Link to="/python/jupyter" />.
 
 ## Recipes
 
 ### Using Chrome Developer tools to autoload an infinite scrollable list
 
+Paste this in the console, let it run, then scrape the DOM once it stops. It scrolls to the bottom
+twice a second and gives up after three rounds that added nothing, which is how it detects the end
+of the list rather than spinning forever.
+
 ```javascript
-function scrollDown() {
-  window.scrollTo(0,document.body.scrollHeight)
-};
-$(document).ajaxSuccess(function() {
-  scrollDown();
-});
+let last = 0, idle = 0;
+const timer = setInterval(() => {
+  window.scrollTo(0, document.body.scrollHeight);
+  const h = document.body.scrollHeight;
+  if (h === last) {
+    if (++idle >= 3) { clearInterval(timer); console.log('done, height ' + h); }
+  } else { last = h; idle = 0; }
+}, 500);
 ```
+
+Verified against a page that appends a batch of items on scroll, loaded in headless Chromium: 25
+items before, 150 after, and the loop stopped on its own.
+
+Polling the height is deliberate. The older version of this recipe hooked jQuery's
+`$(document).ajaxSuccess(...)`, which only works on a page that happens to load jQuery: in the
+DevTools console `$` is [a shortcut for
+`document.querySelector`](https://developer.chrome.com/docs/devtools/console/utilities), so the
+call fails everywhere else. Plenty of infinite scrolls do not use XHR anyway.
+
 ## Ideas to explore
 
 * Distributing scraping work across machines with ZeroMQ or Dask.

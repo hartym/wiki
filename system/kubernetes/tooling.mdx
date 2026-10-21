@@ -1,83 +1,211 @@
 ---
 title: Kubernetes tooling
-description: The daily CLI toolbox around kubectl - context and namespace switching (kubectx, kubens), a terminal UI (k9s), and multi-pod log tailing (stern).
-checkedOn: 2026-07-20
+description: The daily CLI toolbox around kubectl - context and namespace switching (kubectx, kubens), a terminal UI (k9s), multi-pod log tailing (stern), overlays with kustomize, and plugins with krew.
+checkedOn: 2026-10-20
 ---
 
-The commands below are the everyday companions to `kubectl`. Verified with kubectx/kubens (ahmetb), k9s v0.32.5 and stern 1.30.0.
+The commands below are the everyday companions to `kubectl`. Verified with kubectx/kubens 0.11.0,
+k9s v0.51.0, stern 1.34.0, kustomize v5.8.3 and krew v0.5.0, against kubectl v1.37.1.
 
 ## kubectx and kubens
 
-[kubectx](https://github.com/ahmetb/kubectx) switches between clusters (contexts), [kubens](https://github.com/ahmetb/kubectx) switches namespaces. They ship together.
+[kubectx](https://github.com/ahmetb/kubectx) switches between clusters (contexts), kubens switches
+namespaces. They ship together.
 
-Install (macOS):
-
-```
-brew install kubectx
+```shell
+brew install kubectx                  # macOS
+kubectl krew install ctx ns           # anywhere krew runs, as kubectl plugins
 ```
 
 kubectx:
 
-```
+```shell
 kubectx                 # list contexts
 kubectx <name>          # switch to context <name>
 kubectx -               # switch back to the previous context
 kubectx -c              # print the current context name
-kubectx <new>=<old>     # rename context <old> to <new>
+kubectx <new>=<old>     # rename context <old> to <new> ('.' means the current one)
 kubectx -d <name>       # delete a context
 kubectx -u              # unset the current context
 ```
 
 kubens:
 
-```
+```shell
 kubens                  # list namespaces in the current context
 kubens <name>           # set the active namespace
 kubens -                # switch back to the previous namespace
 kubens -c               # print the current namespace
+kubens -f <name>        # set it without asking the API server whether it exists
+kubens -u               # unset the choice (back to 'default')
 ```
 
-With [fzf](https://github.com/junegunn/fzf) installed, running `kubectx` or `kubens` with no argument opens an interactive picker.
+With [fzf](https://github.com/junegunn/fzf) installed, running `kubectx` or `kubens` with no
+argument opens an interactive picker.
+
+### A context switch is global, unless you scope it
+
+Both tools edit the kubeconfig file on disk. Switching to production in one terminal switches every
+other terminal that reads the same file, including the one where you are about to paste a `delete`.
+
+`kubectx -s` (or `--shell`) avoids that: it starts a subshell with its own context, and leaves the
+file alone.
+
+```shell
+kubectx -s staging      # subshell on staging, 'exit' to leave
+kubectx -r staging      # same, but read-only: writes are rejected inside the shell
+```
+
+Verified: inside the subshell `kubectl config current-context` prints `staging`, and the outer
+shell still prints `prod` after it exits. kubectx itself refuses to run in there (`you are in a
+locked single-context shell`): `exit` first, then switch.
+
+Two more things worth knowing. `kubens <name>` queries the API server to check the namespace
+exists, so it fails outright when the cluster is unreachable, which is where `-f` earns its keep.
+And `kubectx -d` removes the context entry only: the `users` and `clusters` entries it pointed to
+stay in the kubeconfig.
 
 ## k9s
 
-[k9s](https://github.com/derailed/k9s) (v0.32.5) is a terminal UI to observe and manage a cluster: navigate resources, read logs, exec into pods, delete objects, all from the keyboard.
+[k9s](https://github.com/derailed/k9s) is a terminal UI to observe and manage a cluster: navigate
+resources, read logs, exec into pods, delete objects, all from the keyboard.
 
-Install:
-
-```
+```shell
 brew install k9s
 ```
 
-Launch with `k9s`. Inside:
+```shell
+k9s                     # current context and namespace
+k9s -c pods             # land directly on a given view
+k9s -A                  # start across all namespaces
+k9s --context prod --readonly   # observe a cluster with every write disabled
+k9s -r 5                # refresh every 5 seconds instead of 2
+```
+
+`--readonly` is the one to make a habit of on anything you care about: it turns off delete, edit
+and scale for the whole session, so a mistyped key cannot do damage.
+
+Inside:
 
 * `:` opens the command prompt, then a resource name (`:pods`, `:deploy`, `:svc`, `:ns`, ...).
 * `/` filters the current view.
 * `:ctx` switches context, `:ns` switches namespace.
 * `?` lists the shortcuts (they vary by view and version), `:q` quits.
 
+`k9s info` prints where it keeps its config, skins, hotkeys and logs, which is the fastest way to
+find the file you want to edit.
+
 ## stern
 
-[stern](https://github.com/stern/stern) (1.30.0) tails logs from multiple pods and containers at once, which `kubectl logs` cannot do. The pod query is a regular expression matched against pod names.
+[stern](https://github.com/stern/stern) tails logs from multiple pods and containers at once, which
+`kubectl logs` cannot do. The pod query is a regular expression matched against pod names.
 
-Install:
-
-```
+```shell
 brew install stern
 ```
 
-```
+```shell
 stern <pod-query>                 # tail all pods matching the query
 stern <pod-query> -n <namespace>  # limit to a namespace
 stern <pod-query> -A              # across all namespaces
 stern -l app=api                  # select by label instead of by name
 stern <query> -c <container>      # a specific container (regex) in multi-container pods
 stern <query> --tail 100          # start from the last 100 lines
-stern <query> -t                  # prefix each line with a timestamp
 stern <query> --no-follow         # print existing logs and exit
+stern <query> -i ERROR -e healthz # keep lines matching -i, drop lines matching -e
+stern <query> -o json             # one JSON object per line, for piping into jq
 ```
+
+Three defaults to keep in mind. `--since` is **48h**, so an older line will not show up no matter
+what you grep for. `--max-log-requests` caps concurrent streams at 50 (5 with `--no-follow`). A broad query that
+crosses it while following makes stern exit at once with `stern reached the maximum number of log
+requests`; with `--no-follow` it only limits how many logs are read at once, and every pod still
+shows up. And `--timestamps` takes an *optional* value, which means the `=`
+is mandatory when you give one: `--timestamps=short` works, `--timestamps short` does not assign
+anything. Bare `-t` is fine.
+
+`stern --stdin` parses logs coming from a pipe instead of the cluster, so the filtering and
+highlighting flags work on a file or on the output of something else.
+
+## kustomize
+
+kustomize builds manifests by layering patches over a base, with no templating language. It is
+[a standalone binary](https://github.com/kubernetes-sigs/kustomize) and it is also embedded in
+`kubectl`.
+
+A base and one overlay:
+
+```yaml
+# base/kustomization.yaml
+resources:
+  - deployment.yaml
+```
+
+```yaml
+# overlays/prod/kustomization.yaml
+namespace: prod
+namePrefix: prod-
+resources:
+  - ../../base
+images:
+  - name: nginx
+    newTag: "1.29"
+replicas:
+  - name: api
+    count: 3
+```
+
+```shell
+kustomize build overlays/prod     # render to stdout
+kubectl kustomize overlays/prod   # same, using the copy embedded in kubectl
+kubectl apply -k overlays/prod    # render and apply in one go
+kubectl diff -k overlays/prod     # what would change, before applying
+```
+
+Verified on the tree above: a `nginx:1.25` deployment named `api` with 1 replica comes out as
+`prod-api` in namespace `prod`, image `nginx:1.29`, 3 replicas, and the two renderings are
+byte-identical.
+
+That last point is luck, not a guarantee. `kubectl` vendors a specific kustomize release rather
+than calling the binary on your `PATH`, so the two drift apart, and an overlay that builds on your
+laptop then fails in CI. They already differ today (kubectl v1.37.1 embeds v5.8.1, the standalone
+release is v5.8.3), and this tree happens to render the same with both. Check rather than assume:
+
+```shell
+kubectl version --client -o json | jq -r .kustomizeVersion
+kustomize version
+```
+
+## krew, and plugins worth having
+
+[krew](https://krew.sigs.k8s.io/) is the plugin manager for `kubectl`. Install it, add
+`~/.krew/bin` to your `PATH`, and every plugin becomes a `kubectl <name>` subcommand.
+
+```shell
+kubectl krew search <term>
+kubectl krew install neat
+kubectl krew list
+kubectl krew upgrade
+```
+
+The one to install first is `neat`. It strips the server-side noise from a manifest, which is what
+makes `kubectl get -o yaml` unusable as a starting point for a file you want to commit:
+
+```shell
+kubectl get pod demo -o yaml | kubectl neat
+```
+
+Verified: it drops `uid`, `resourceVersion`, `creationTimestamp` and the whole `status` block, plus
+`managedFields` and the `kubectl.kubernetes.io/last-applied-configuration` annotation when they are
+there (`kubectl get` hides the first unless `--show-managed-fields`). The pod it produced was
+re-applied as is and came up Ready.
+
+Note that krew plugins are not audited by the krew maintainers, and it says so on every install.
+Read what you are adding to your `kubectl`.
 
 ## See also
 
-* `kubectl` plugins via [krew](https://github.com/kubernetes-sigs/krew), the kubectl plugin manager.
-* `kustomize`, the overlay tool built into `kubectl` (`kubectl kustomize`) and available standalone ([kubernetes-sigs/kustomize](https://github.com/kubernetes-sigs/kustomize)).
+* <Link to="/system/kubernetes/" /> - the Kubernetes cookbook.
+* <Link to="/system/kubernetes/helm" /> - Helm, when the overlay approach is not enough and you
+  need a package.
+* <Link to="/shell" /> - shell scripting, for the loops these commands end up inside.

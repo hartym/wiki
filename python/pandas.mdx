@@ -1,65 +1,23 @@
 ---
 title: Pandas
-description: "Data analysis library for Python: DataFrame recipes for selection, grouping, merging, and dates."
-checkedOn: 2026-08-04
+description: "Pandas cookbook: selection, grouping, merging and dates, plus the defaults that quietly change your results - chained assignment, missing values, dtype coercion."
+checkedOn: 2026-10-20
 ---
 
-Pandas is an open source, BSD-licensed library providing high-performance, easy-to-use data
-structures and data analysis tools for the Python programming language.
+Pandas is easy to start with and easy to be quietly wrong with. Almost none of the surprises are
+bugs: they are defaults. A filter that keeps the rows you meant to exclude, a column that changes
+type because one value is absent, an assignment that goes nowhere and says nothing.
+
+Everything below is verified on **pandas 3.0.6** (Python 3.15) and, where 2.x behaves
+differently, on **pandas 2.3.3** (Python 3.13). The differences are stated where they matter.
+
+{/*
+  Run 2026-10-20, Docker python:3-slim: Python 3.15.0, pandas 3.0.6, numpy 2.5.4.
+  2.x line on python:3.13-slim: Python 3.13.16, pandas 2.3.3, numpy 2.5.4.
+  Every code block in the Cookbook and Gotchas sections was executed on both.
+*/}
 
 ## Cookbook
-
-### Setup notebook for pandas + bokeh
-
-```python
-import os
-import pandas as pd
-import numpy as np
-from bokeh.io import output_notebook, show
-
-# setup some globals we'll use as base paths
-BASE_DIR = os.path.realpath(os.path.join(os.getcwd(), '..'))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-
-# tell bokeh to output graphs in the notebook
-output_notebook()
-
-# depends on input data, but maybe handy to see untruncated data if you have a lot of columns
-pd.options.display.max_columns = 100
-
-# output the computed paths
-print('base:', BASE_DIR)
-print('data:', DATA_DIR)
-```
-
-### Reorder columns in a pandas dataframe
-
-```python
-df = df[['this', 'is', 'the', 'new', 'order']]
-```
-
-### Construct a DataFrame from a list of dicts
-
-```python
-import pandas as pd
-
-ds = []
-for user in users:
-    ds.append({
-        'screen_name': user.screen_name,
-        'name': user.name,
-    })
-
-df = pd.DataFrame(ds)
-```
-
-### Create an index afterward
-
-```python
-df = df.set_index('screen_name')
-```
-
-`set_index` returns a new DataFrame, so assign it back (or pass `inplace=True`).
 
 ### A frame to work with
 
@@ -81,13 +39,20 @@ speeds = pd.DataFrame({"knight": ["Arthur", "Robin"], "mph": [11, 9]})
 grail = df.loc[df["quest"] == "grail", ["knight", "coconuts"]]
 ```
 
-`.loc[rows, cols]` selects by label; here the row part is a boolean Series and the column part a list.
+`.loc[rows, cols]` selects by label; here the row part is a boolean Series and the column part a
+list. `.iloc` is the same thing by position.
 
 ### Group and aggregate
 
 ```python
 by_colour = df.groupby("colour")["coconuts"].sum().sort_values(ascending=False)
+
+# keep the grouping key as a column instead of an index
+flat = df.groupby("colour", as_index=False)["coconuts"].sum()
 ```
+
+By default the key becomes the index of the result. `as_index=False` gives back a plain frame
+with the key as an ordinary column, which is usually what you want before a merge or an export.
 
 ### Merge two frames
 
@@ -95,13 +60,24 @@ by_colour = df.groupby("colour")["coconuts"].sum().sort_values(ascending=False)
 joined = df.merge(speeds, on="knight", how="left")
 ```
 
-`how` is one of `left`, `right`, `inner`, `outer`.
+`how` is one of `left`, `right`, `inner`, `outer`, `cross`, and since pandas 3.0 also `left_anti`
+and `right_anti`. See the gotcha on repeated keys below.
 
 ### Count occurrences
 
 ```python
 counts = df["quest"].value_counts()
 ```
+
+### Take the top rows
+
+```python
+top = df.nlargest(2, "coconuts")        # not: df.sort_values(...).head(2)
+```
+
+Same result, less work: sorting orders the whole frame to look at a handful of rows. On a frame
+of 200000 random integers, `sort_values(...).head(5)` took 16 ms against 4 ms for `nlargest`.
+`nsmallest` is the other direction.
 
 ### Parse and filter dates
 
@@ -113,16 +89,192 @@ events = pd.DataFrame({
 recent = events[events["when"] >= "2024-03-01"]
 ```
 
-Pass an explicit `format` so parsing is consistent and fast. The default `datetime64[ns]` type
-only spans about 1677 to 2262 (nanoseconds held in a 64-bit integer); a value outside that range
-raises `OutOfBoundsDatetime`. For older or far-future dates, build the column at a coarser
-resolution, for example a numpy `datetime64[s]` array, which pandas keeps as `datetime64[s]`.
+Pass an explicit `format` so parsing is consistent and fast. Since pandas 3.0, parsed strings get
+microsecond resolution (`datetime64[us]`), which covers any date you are likely to meet. In
+pandas 2.x the default is `datetime64[ns]`, which only spans about 1677 to 2262 (nanoseconds in a
+64-bit integer); a value outside that range raises `OutOfBoundsDatetime`, and so does an explicit
+`astype("datetime64[ns]")` in 3.0. For a coarser resolution, build the column from a numpy
+`datetime64[s]` array, which pandas keeps as `datetime64[s]`.
+
+### Build a frame from a list of dicts
+
+```python
+rows = [{"screen_name": u.screen_name, "name": u.name} for u in users]
+df = pd.DataFrame(rows)
+```
+
+Column order follows the keys of the first dict. Missing keys become missing values.
+
+### Reorder columns, set an index
+
+```python
+df = df[["knight", "quest", "coconuts", "colour"]]
+df = df.set_index("knight")
+```
+
+`set_index` returns a new frame, so assign it back.
+
+## Gotchas
+
+Each one below was reproduced in the sandbox.
+
+### Chained assignment writes to a copy
+
+```python
+sub = df[df["quest"] == "grail"]
+sub["coconuts"] = 0            # df is unchanged
+```
+
+Two indexing steps in a row means pandas has to modify an intermediate object, and that object is
+a copy. In pandas 2.x this raises `SettingWithCopyWarning`, which is a warning, so it scrolls past
+in a notebook and the original frame keeps its old values. In pandas 3.0 copy-on-write is the
+only mode: `sub` is a copy, full stop, and the assignment above raises nothing at all. Written as
+one statement, `df[df["quest"] == "grail"]["coconuts"] = 0`, it raises a `ChainedAssignmentError`
+warning; either way, chained assignment never writes back.
+
+The fix is the same in both versions. One step, through `.loc`:
+
+```python
+df.loc[df["quest"] == "grail", "coconuts"] = 0
+```
+
+The same trap wears a second disguise: `df["foo"].replace(1, 5, inplace=True)` is also chained
+assignment. pandas 2.3 still writes it, with a `FutureWarning`; pandas 3.0 leaves `df` unchanged
+and raises `ChainedAssignmentError`. Write `df["foo"] = df["foo"].replace(1, 5)`.
+
+### Filtering with `!=` keeps the missing values
+
+```python
+d = pd.DataFrame({"quest": ["grail", "flee", None], "n": [1, 2, 3]})
+d[d["quest"] != "grail"]      # rows 2 AND 3: the missing one is kept
+d[d["quest"] == "grail"]      # row 1 only
+```
+
+This is the exact opposite of SQL, where a comparison against `NULL` is unknown and the row is
+dropped from both sides. In pandas the comparison returns `False` for equality and `True` for
+inequality, so a filter meant to exclude one value silently lets the unknown rows through. Be
+explicit:
+
+```python
+d[(d["quest"] != "grail") & d["quest"].notna()]
+```
+
+Note that `np.nan == np.nan` is `False`, so you can never test for a missing value by comparison.
+`isna()` and `notna()` are the only way.
+
+### One missing value turns an integer column into floats
+
+```python
+s = pd.Series([1, 2, 3])          # int64
+s.reindex([0, 1, 2, 3]).dtype     # float64
+```
+
+The default integer type has no room for a missing value, so pandas promotes the whole column to
+float. Your ids become `1.0`, and past 2^53 they stop being exact. Use the nullable type when a
+column may have holes:
+
+```python
+s = pd.Series([1, 2, 3], dtype="Int64")
+s.reindex([0, 1, 2, 3]).dtype     # Int64, missing value is pd.NA
+```
+
+Capital `Int64` is the nullable extension type, lowercase `int64` is the numpy one.
+
+### `iterrows` gives you one dtype per row, not per column
+
+```python
+df = pd.DataFrame({"n": [1, 2], "f": [0.5, 1.5]})    # int64, float64
+row = next(iter(df.iterrows()))[1]
+row["n"]                                              # np.float64(1.0)
+```
+
+A row is a Series, and a Series has a single dtype, so every value is cast to whatever type fits
+all the columns. With a string column in the frame everything becomes `object`. `itertuples()`
+keeps the per-column types (`1`, an `int`) and is faster. Better still, do not iterate at all.
+
+### `groupby` and `value_counts` drop missing keys
+
+```python
+g = pd.DataFrame({"k": ["a", None, "a"], "v": [1, 2, 3]})
+g.groupby("k")["v"].sum()                 # a -> 4. The 2 is gone.
+g.groupby("k", dropna=False)["v"].sum()   # a -> 4, NaN -> 2
+```
+
+Same default on `value_counts()`, same flag to turn it off. Totals computed after a groupby do
+not necessarily add up to the total of the column, and nothing tells you.
+
+### `merge` multiplies rows when keys repeat
+
+```python
+left  = pd.DataFrame({"k": ["a", "b"],      "x": [1, 2]})
+right = pd.DataFrame({"k": ["a", "a", "b"], "y": [10, 11, 12]})
+left.merge(right, on="k")                  # 3 rows, not 2
+```
+
+A `left` join does not guarantee one output row per input row: it guarantees one per match. A
+duplicate on the right side you did not know about doubles your rows and every sum computed
+afterwards. State the shape you expect and let pandas check it:
+
+```python
+left.merge(right, on="k", validate="one_to_one")
+# MergeError: Merge keys are not unique in right dataset; not a one-to-one merge
+```
+
+`validate` accepts `one_to_one`, `one_to_many`, `many_to_one`, `many_to_many`. The first three
+turn a silent data bug into an exception.
+
+### `apply` is a Python loop
+
+```python
+s = pd.Series(range(500_000))
+s.apply(lambda v: v * 2)     # 149 ms
+s * 2                        # 0.6 ms
+```
+
+Two orders of magnitude, measured. `apply` is not a vectorised operation, it calls your function
+once per element. It is the right tool when there is genuinely no vectorised equivalent, and the
+wrong one the rest of the time. The same goes for `iterrows`.
+
+## What changed in pandas 3.0
+
+pandas 3.0 was released on 2026-01-21 and needs Python 3.11 or later. Two changes are worth
+knowing before you upgrade:
+
+- **Copy-on-write is the only mode.** Anything derived from a frame behaves as a copy, so no
+  operation can modify two objects at once. `SettingWithCopyWarning` is gone, and the patterns it
+  used to flag now simply do not write. `to_numpy()` returns a read-only array when it shares
+  memory with the frame.
+- **Strings get their own dtype.** Text columns are no longer `object` holding Python strings.
+
+The recommended path is to run on 2.3 until your code is warning-free, then upgrade. In 2.2 and
+2.3 you can rehearse with `pd.options.mode.copy_on_write = "warn"`, which flags every operation
+whose behaviour will change.
+
+## Notebook setup
+
+```python
+import os
+import pandas as pd
+from bokeh.io import output_notebook
+
+BASE_DIR = os.path.realpath(os.path.join(os.getcwd(), ".."))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+output_notebook()
+
+# handy when a frame has more columns than the default display truncates to
+pd.options.display.max_columns = 100
+```
 
 ## Links and references
 
-* [Pandas homepage](https://pandas.pydata.org/)
 * [Pandas documentation](https://pandas.pydata.org/docs/)
+* [Copy-on-Write user guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html)
+* [What's new in pandas 3.0.0](https://pandas.pydata.org/docs/whatsnew/v3.0.0.html)
+* [Nullable integer data type](https://pandas.pydata.org/docs/user_guide/integer_na.html)
 
 ## See also
 
-* <Link to="./bokeh">Python/Bokeh</Link>
+* <Link to="jupyter" /> - where most of this gets typed.
+* <Link to="bokeh" /> - plotting the frames.
+* <Link to="testing" /> - pytest, for the transformations worth pinning down.

@@ -1,7 +1,7 @@
 ---
 title: FastAPI
-description: "FastAPI in practice: the async threadpool rule, when dependency exit code actually runs, response_model filtering, and the breaking changes that bite."
-checkedOn: 2026-08-11
+description: "FastAPI cookbook: routers, dependencies, response shaping, lifespan and tests, plus the gotchas that fail silently (threadpool ceiling, exit code after the response, response_model bypass)."
+checkedOn: 2026-10-20
 ---
 
 FastAPI is an ASGI framework built on <Link to="starlette" /> and Pydantic, where type hints drive
@@ -10,57 +10,357 @@ parsing, validation, serialization, dependency injection and OpenAPI generation.
 Whether to pick it - adoption, bus factor, the commercial pivot - is on
 <Link to="web-frameworks" />. This page is what bites once you have.
 
-Checked against FastAPI 0.141.x.
+Everything below is verified on **FastAPI 0.152.0** (Starlette 1.9.0, Pydantic 2.14.1, Python 3.15),
+each snippet run in a sandbox.
 
-## async def, def, and the threadpool
+## Cookbook
 
-The rule is inverted from most frameworks, and getting it backwards costs you the whole event loop.
+### The modern shape of an endpoint
 
-A plain `def` endpoint is safe: *"When you declare a path operation function with normal `def`
-instead of `async def`, it is run in an external threadpool that is then awaited."* An `async def`
-endpoint is called directly on the loop, so **any blocking call inside it stalls every other
-request in the process** - a synchronous database driver, `requests`, `time.sleep`, a large file
-read.
+Everything is declared with `Annotated`. The type carries the validation, the metadata object says
+where the value comes from.
 
-The docs are explicit that the default should be `async def`, and that plain `def` is the escape
-hatch *"unless your path operation functions use code that performs blocking I/O"*. The same rule
-applies to dependencies: a `def` dependency also goes to the threadpool.
+```python
+from typing import Annotated
+from fastapi import FastAPI, Query, Header, Path
 
-Nothing warns you. A blocking `async def` endpoint works perfectly under one user and collapses
-under load, which is why it usually reaches production. <Link to="web-frameworks" /> notes that
-Litestar requires an explicit `sync_to_thread` instead of inferring this - stricter, and harder to
-get wrong.
+app = FastAPI()
 
-## Dependency exit code runs after the response
+@app.get("/quests/{name}")
+def get_quest(
+    name: Annotated[str, Path(min_length=1)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    api_key: Annotated[str | None, Header()] = None,
+):
+    return {"quest": name, "limit": limit}
+```
 
-For a dependency with `yield`, the cleanup after the `yield` does **not** run before the client gets
-its answer: *"Normally the exit code of dependencies with `yield` is executed after the response is
-sent to the client."*
+A value that fails validation never reaches the function: the client gets a `422` with the exact
+location of the problem.
 
-That matters when the cleanup is a database transaction commit or rollback, because a failure there
-cannot change a response that has already gone out. Two consequences:
+```
+GET /quests/grail?limit=99
+422 {"detail": [{"type": "less_than_equal", "loc": ["query", "limit"], ...}]}
+```
 
-* An exception raised in the exit code cannot become a `500` for that request.
+### Group routes in a router
+
+A router carries a prefix, tags for the OpenAPI document, and dependencies that apply to every
+route it holds.
+
+```python
+from fastapi import APIRouter, Depends
+
+router = APIRouter(prefix="/v1/quests", tags=["quests"], dependencies=[Depends(require_key)])
+
+@router.get("/{name}")
+def get_quest(name: str):
+    ...
+
+app.include_router(router)
+```
+
+The route is now `/v1/quests/{name}` and the OpenAPI operation is tagged `quests`. A dependency
+listed in `dependencies=[...]` runs for its side effect only: its return value is discarded, which
+is what you want for an auth check.
+
+### Reuse a dependency as a type
+
+Once a dependency is wrapped in an `Annotated` alias, it reads like any other parameter.
+
+```python
+from fastapi import Depends, HTTPException
+
+def require_key(x_api_key: Annotated[str | None, Header()] = None) -> str:
+    if x_api_key != "swallow":
+        raise HTTPException(status_code=401, detail="bad key")
+    return x_api_key
+
+Key = Annotated[str, Depends(require_key)]
+
+@app.get("/secret")
+def secret(key: Key):
+    return {"ok": True}
+```
+
+A dependency is called **once per request** even when several parameters ask for it. Pass
+`use_cache=False` to opt out:
+
+```python
+CALLS = []
+
+def counted() -> int:
+    CALLS.append(1)
+    return len(CALLS)
+
+@app.get("/cached")
+def cached(a=Depends(counted), b=Depends(counted)):
+    return {"a": a, "b": b}                       # -> {"a": 1, "b": 1}
+
+@app.get("/nocache")
+def nocache(a=Depends(counted), b=Depends(counted, use_cache=False)):
+    return {"a": a, "b": b}                       # -> {"a": 1, "b": 2}
+```
+
+### Shape the response
+
+Three ways to declare the output model, with different reach.
+
+```python
+@app.get("/a", response_model=UserOut)   # explicit
+def a(): ...
+
+@app.get("/b")
+def b() -> UserOut: ...                  # inferred from the return annotation
+
+@app.get("/c", response_model=None)
+def c() -> UserOut: ...                  # inference turned off
+```
+
+Verified with a handler returning `{"name": "brian", "password": "leak"}` against a `UserOut` that
+only declares `name`:
+
+| declaration | response |
+|---|---|
+| `response_model=UserOut` | `{"name": "brian"}` |
+| `-> UserOut` | `{"name": "brian"}` |
+| `response_model=None` with `-> UserOut` | `{"name": "brian", "password": "leak"}` |
+| no annotation at all | `{"name": "brian", "password": "leak"}` |
+
+`response_model_exclude_unset=True` drops fields the caller never set, instead of serializing their
+defaults: `{"name": "brian"}` rather than `{"name": "brian", "nickname": null}`.
+
+### Startup and shutdown
+
+`lifespan` is an async context manager. What it yields lands in `request.state` via
+`request.scope["state"]`, so a connection pool built once is reachable from every handler.
+
+```python
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    pool = await open_pool()
+    yield {"pool": pool}
+    await pool.close()
+
+app = FastAPI(lifespan=lifespan)
+```
+
+`TestClient` only runs the lifespan when used as a context manager (`with TestClient(app) as c:`).
+Outside the `with`, startup never happens and the pool is missing.
+
+### Turn a domain exception into a response
+
+Handlers should not know about HTTP status codes. Register the translation once.
+
+```python
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+class NotFound(Exception):
+    def __init__(self, what): self.what = what
+
+@app.exception_handler(NotFound)
+async def handle_not_found(request: Request, exc: NotFound):
+    return JSONResponse(status_code=404, content={"missing": exc.what})
+```
+
+Any handler can now `raise NotFound("shrubbery")` and the client gets
+`404 {"missing": "shrubbery"}`.
+
+### Test it
+
+```python
+from fastapi.testclient import TestClient
+
+def test_quest():
+    with TestClient(app) as client:
+        assert client.get("/v1/quests/grail").status_code == 200
+```
+
+Swap a dependency for the test, then put it back:
+
+```python
+app.dependency_overrides[get_db] = lambda: "test-db"
+...
+app.dependency_overrides.clear()
+```
+
+The override is keyed on the original callable, so it reaches the dependency wherever it is
+declared, including inside a router. For async tests, `TestClient` is synchronous; drive the app
+directly instead:
+
+```python
+import httpx
+
+async with httpx.AsyncClient(
+    transport=httpx.ASGITransport(app=app), base_url="http://test"
+) as client:
+    response = await client.get("/v1/quests/grail")
+```
+
+### Run work after the response
+
+```python
+from fastapi import BackgroundTasks
+
+@app.post("/quests")
+def create(tasks: BackgroundTasks):
+    tasks.add_task(notify, "grail")
+    return {"accepted": True}
+```
+
+Verified ordering: the response is produced first, the task runs after.
+
+## Gotchas
+
+### `async def` blocks everything, plain `def` does not
+
+The rule is inverted from most frameworks, and getting it backwards costs the whole event loop.
+
+A plain `def` endpoint goes to a threadpool (thread name `AnyIO worker thread`, checked). An
+`async def` endpoint runs on the loop, so any blocking call inside it stalls every other request in
+the process: a synchronous database driver, `requests`, `time.sleep`, a large file read.
+
+Measured, four concurrent requests to a handler that blocks for 500 ms, timing an unrelated
+`async def /fast` fired at the same moment:
+
+| handler | `/fast` answered after |
+|---|---|
+| `async def` with `time.sleep(0.5)` | 2033 ms |
+| `def` with `time.sleep(0.5)` | 14 ms |
+
+Nothing warns you. A blocking `async def` works perfectly under one user and collapses under load,
+which is why it usually reaches production. Dependencies follow the same rule: a `def` dependency
+also goes to the threadpool.
+
+<Link to="web-frameworks" /> notes that Litestar requires an explicit `sync_to_thread` instead of
+inferring this. Stricter, and harder to get wrong.
+
+### The threadpool holds exactly 40 threads
+
+The escape hatch has a ceiling: AnyIO's default limiter
+(`anyio.to_thread.current_default_thread_limiter().total_tokens`) is **40**. Past that, `def`
+endpoints queue.
+
+Measured, concurrent requests to a `def` handler blocking 500 ms:
+
+```
+40 concurrent -> 0.55 s
+41 concurrent -> 1.02 s
+80 concurrent -> 1.17 s
+```
+
+The cliff at 41 is the whole story: one request over the limit doubles the latency of the batch.
+A `def` endpoint is not free concurrency, it is 40 slots. Endpoints that are genuinely async keep
+answering during the same saturation (a few milliseconds to about 50 ms).
+
+### A dependency's exit code runs after the response
+
+For a dependency with `yield`, the code after the `yield` does not run before the client gets its
+answer. The call order looks identical either way, so the only way to see the difference is to make
+the exit code fail:
+
+```python
+def boom():
+    yield 1
+    raise RuntimeError("late boom")
+
+@app.get("/late")
+def late(v=Depends(boom)):                      # default scope
+    return {"status": "handler ran"}
+
+@app.get("/early")
+def early(v=Depends(boom, scope="function")):
+    return {"status": "handler ran"}
+```
+
+`/late` returns **200** with the body, `/early` returns **500**. The default for a `yield`
+dependency computes to `scope="request"`, which means: exit code after the response is sent, so it
+cannot change the status any more.
+
+That matters when the cleanup is a transaction commit or rollback. Two consequences:
+
+* An exception in the exit code cannot become a `500` for that request.
 * Anything the client does immediately after the response may observe state the cleanup has not
-  finished touching yet.
+  finished touching.
 
-The escape hatch is `scope`: `Depends(get_thing, scope="function")` runs the exit code *before* the
-response is sent, where `scope="request"` is the default. A `scope="request"` dependency requires
-its sub-dependencies to be `"request"` too.
+`scope="function"` moves the exit code before the response. A `"request"` dependency cannot depend
+on a `"function"` one; FastAPI raises `DependencyScopeError` at import time, not at request time,
+so the mistake is cheap to find.
 
 If you catch an exception in such a dependency, re-raise it unless you are deliberately converting
 it to an `HTTPException`. Swallowing it hides the failure entirely.
 
-## response_model filters silently
+### Returning a `Response` bypasses `response_model`
 
-`response_model` *"will limit and filter the output data to what is defined in the return type"*.
-Fields the endpoint returns but the model does not declare are dropped, with no error and no
-warning.
+`response_model` limits and filters the output to what the model declares. Fields the endpoint
+returns but the model does not are dropped, with no error and no warning. This is the point of it:
+returning a `UserIn` that holds a password from an endpoint declared `response_model=UserOut`
+strips the password.
 
-This is deliberate and is the main reason to use it - returning a `UserIn` containing a password
-from an endpoint declared `response_model=UserOut` strips the password. It also means a field
-missing from a response is as likely to be a typo in the model as a bug in the query, and the two
-look identical from the outside.
+The filter only applies to values FastAPI serializes itself. Hand it a `Response` and it ships the
+bytes untouched:
+
+```python
+@app.get("/raw", response_model=UserOut)
+def raw():
+    return JSONResponse({"name": "brian", "password": "leak"})
+```
+
+Verified: `/raw` returns the password, the same handler returning a plain dict does not. Every
+`JSONResponse` shortcut taken for a custom header or status code silently leaves the filter behind.
+
+Second consequence, milder: a field missing from a response is as likely to be a typo in the model
+as a bug in the query, and the two look identical from the outside.
+
+### Route order decides, silently
+
+Routes are matched in declaration order, first match wins. A literal path declared after a
+parameterized one is dead code.
+
+```python
+@app.get("/users/{uid}")   # declared first
+@app.get("/users/me")      # never reached
+```
+
+Verified: `GET /users/me` hits `by_id` with `uid="me"`. Swap the two declarations and it hits the
+right handler. No warning, no startup check.
+
+### `strict_content_type=False` only covers a *missing* header
+
+Since 0.132.0, a JSON body is only parsed when the `Content-Type` is `application/json` or a
+`+json` suffix. `strict_content_type=False` is often described as the escape hatch, but it only
+re-enables parsing when the header is absent entirely. A wrong header is still rejected:
+
+| request `Content-Type` | default | `strict_content_type=False` |
+|---|---|---|
+| `application/json` | 200 | 200 |
+| `application/vnd.api+json` | 200 | 200 |
+| `text/plain` | 422 | 422 |
+| none | 422 | 200 |
+
+A client sending JSON labelled `text/plain` cannot be fixed on the server side. Fix the client, or
+read the body yourself with `await request.json()`.
+
+### A `204` drops the body without telling you
+
+```python
+@app.get("/204", status_code=204)
+def no_content():
+    return {"a": 1}
+```
+
+Verified: status `204`, body `b""`. The dict is discarded. If the caller needs data, the status is
+wrong.
+
+### A failing background task never reaches the client
+
+The response is already out. An exception raised in a background task cannot turn a `200` into a
+`500`, and the client has no way to learn about it. Verified: the handler returns
+`200 {"accepted": true}` while the task raises. Log inside the task, or use a real queue when the
+work has to be observable.
 
 ## Breaking changes worth tracking
 
@@ -70,20 +370,25 @@ release notes, so this is the part that requires reading diffs.
 * **Pydantic v1 support was removed in six days.** 0.127.0 (2025-12-21) added deprecation warnings
   for `pydantic.v1`; **0.128.0 (2025-12-27) dropped it entirely**. Anything still on the
   compatibility shim is pinned below 0.128 permanently. Current metadata requires
-  `pydantic>=2.9.0`.
+  `pydantic>=2.9.0` and `starlette>=0.46.0`, and since 0.142.0 also
+  `opentelemetry-api>=1.44.0` as a hard dependency.
 * **0.137.0 (2026-06-14)** turned `router.routes` from a flat list into a tree. Observability, auth
   and codegen tooling commonly iterates or mutates it, and all of that breaks. The release notes
   retroactively declare it an internal implementation detail.
-* **0.132.0 (2026-02-23)** made `strict_content_type` the default, rejecting JSON requests without a
-  valid `Content-Type`. Escape hatch: `strict_content_type=False`. This breaks sloppy clients
-  silently in production rather than in tests.
+* **0.132.0 (2026-02-23)** made `strict_content_type` the default. See the gotcha above for what
+  the escape hatch actually covers.
 * **0.131.0** deprecated `ORJSONResponse` and `UJSONResponse`. **0.129.0** dropped Python 3.9.
 
 ## Notes
 
 * Ships `py.typed`.
 * `app.frontend()` arrived in 0.141.0 (2026-07-29), moving FastAPI into full-stack territory.
+* Since Starlette 1.2.0, `httpx` under `TestClient` is deprecated: importing `fastapi.testclient` emits
+  `StarletteDeprecationWarning: Using httpx with starlette.testclient is deprecated; install httpx2
+  instead.` Installing `httpx2` silences it.
 * Installing `fastapi[standard]` pulls a vendor CLI you did not ask for - see
   <Link to="web-frameworks" /> for the detail and the opt-out extra.
+* Related: <Link to="starlette" /> for what sits underneath, <Link to="aiohttp" /> for the
+  non-ASGI async branch, <Link to="testing" /> for pytest itself.
 
 * https://fastapi.tiangolo.com/

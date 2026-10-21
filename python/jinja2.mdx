@@ -1,7 +1,7 @@
 ---
 title: Jinja2
-description: "Jinja2: Python template engine. Autoescaping and sandboxing are both opt-in, not defaults."
-checkedOn: 2026-08-05
+description: "Jinja2 cookbook: undefined values, whitespace control, inheritance and macros, native types, and the defaults that bite - no autoescaping, no sandbox, and a default filter that ignores None."
+checkedOn: 2026-10-20
 ---
 
 Jinja is a text-based template engine for Python, written by Armin Ronacher. It looks like the
@@ -10,6 +10,8 @@ arguments on the objects you pass in. It is Flask's default template engine, and
 text, not just HTML: config files, SQL, source code.
 
 Tags, filters, tests and globals are all customisable on the `Environment`.
+
+Everything below is verified on **Jinja2 3.1.6** (Python 3.15).
 
 ## Two defaults worth knowing
 
@@ -39,18 +41,286 @@ from jinja2.sandbox import SandboxedEnvironment
 
 payload = "{{ ''.__class__.__mro__[1].__subclasses__()|length }}"
 
-Environment().from_string(payload).render()           # 303, it runs
-SandboxedEnvironment().from_string(payload).render()  # jinja2.exceptions.SecurityError
+Environment().from_string(payload).render()           # a number, it runs
+SandboxedEnvironment().from_string(payload).render()  # SecurityError: access to
+                                                      # attribute '__class__' of
+                                                      # 'str' object is unsafe.
 ```
 
 So: never render a template whose *source* comes from a user without
 `jinja2.sandbox.SandboxedEnvironment`, and even then read its documented limits first. Passing
 untrusted *data* into a trusted template is fine, that is the normal case.
 
-Verified on Jinja2 3.1.6.
+## Cookbook
+
+### Load templates from a directory
+
+```python
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+env = Environment(
+    loader=FileSystemLoader("templates"),
+    autoescape=select_autoescape(["html", "xml"]),
+)
+env.get_template("quest.html").render(knight="Lancelot")
+```
+
+One `Environment` per application, built once and reused: it compiles each template to Python
+bytecode and keeps it in an LRU cache of 400 entries. `auto_reload` is on by default, so an edited
+file is recompiled on the next `get_template`. That freshness check on every `get_template` call is what you want in
+development and not in production, where `auto_reload=False` makes the cache authoritative.
+
+### Make missing values loud
+
+```python
+from jinja2 import Environment, StrictUndefined
+
+Environment(undefined=StrictUndefined)
+# rendering '{{ nope }}' now raises
+# jinja2.exceptions.UndefinedError: 'nope' is undefined
+```
+
+The default `Undefined` prints as an empty string, which turns a renamed variable into a blank in
+the output and nothing else. `StrictUndefined` is the setting you want anywhere the template
+generates something a machine will read: a config file, a query, a manifest.
+
+### Control the whitespace
+
+Block tags sit on their own line, and by default that line's newline ends up in the output.
+
+```python
+source = "{% for k in knights %}\n{{ k }}\n{% endfor %}\n"
+
+Environment().from_string(source).render(knights=["Lancelot", "Galahad"])
+# '\nLancelot\n\nGalahad\n'
+
+Environment(trim_blocks=True, lstrip_blocks=True).from_string(source).render(...)
+# 'Lancelot\nGalahad\n'
+```
+
+`trim_blocks` drops the newline right after a block tag, `lstrip_blocks` drops the whitespace
+before one, so an indented `{% for %}` line disappears completely instead of leaving its
+indentation behind. Set both on the `Environment` and stop fighting. For the odd place where you
+need the opposite, `{%- ... -%}` strips whitespace on that tag alone.
+
+### Filters, tests and globals of your own
+
+```python
+env.filters["shout"] = lambda s: s.upper() + "!"
+env.tests["knightly"] = lambda s: s.startswith("Sir")
+env.globals["quest"] = "grail"
+
+# {{ 'ni'|shout }}                -> 'NI!'
+# {{ 'Sir Robin' is knightly }}   -> True
+# {{ quest }}                     -> 'grail'
+```
+
+A filter transforms, a test answers yes or no and reads well after `is`, a global is visible to
+every template without being passed. `{% filter upper %}...{% endfilter %}` applies a filter to a
+whole block rather than to one expression.
+
+### Extend a base template
+
+```jinja
+{# base.html #}
+<title>{% block title %}Camelot{% endblock %}</title>
+{% block body %}nothing{% endblock %}
+
+{# child.html #}
+{% extends "base.html" %}
+{% block title %}{{ super() }} - the grail{% endblock %}
+{% block body %}{{ quest }}{% endblock %}
+```
+
+Renders `<title>Camelot - the grail</title>` then the body. `super()` pulls in what the parent
+block contained, which is how you add to a base block instead of replacing it.
+
+### Macros
+
+```jinja
+{# macros.html #}
+{% macro field(name, value="") %}
+<input name="{{ name }}" value="{{ value }}">
+{% endmacro %}
+
+{# form.html #}
+{% from "macros.html" import field %}
+{{ field("quest", quest) }}
+```
+
+A macro is a function that returns template output. Pass it what it needs, explicitly. See the
+gotcha below about the context macros do *not* inherit.
+
+### Get a Python value back, not a string
+
+```python
+from jinja2.nativetypes import NativeEnvironment
+
+NativeEnvironment().from_string("{{ n }}").render(n=3)     # 3, an int
+Environment().from_string("{{ n }}").render(n=3)           # '3', a str
+
+NativeEnvironment().from_string("{{ ns }}").render(ns=[1, 2])   # [1, 2], a list
+```
+
+`NativeEnvironment` runs the output through `ast.literal_eval` when the whole template is a single
+expression, so booleans stay booleans and lists stay lists. This is what Ansible uses, and what you
+want when the template computes a value for your program rather than text for a file. A template
+with surrounding text still renders to a string.
+
+### Template something that already uses braces
+
+Generating a Helm chart, an Ansible playbook or a Vue component means emitting `{{ ... }}` that is
+*not* yours. Two ways out:
+
+```jinja
+{% raw %}{{ .Values.image.tag }}{% endraw %}
+```
+
+```python
+Environment(variable_start_string="[[", variable_end_string="]]")
+# 'image: [[ img ]]:{{ .Chart.AppVersion }}' -> 'image: alpine:{{ .Chart.AppVersion }}'
+```
+
+`{% raw %}` for a passage, custom delimiters for a whole file.
+
+### Put a value into YAML or JSON without quoting bugs
+
+```jinja
+greeting: {{ v|tojson }}
+port: {{ p|tojson }}
+```
+
+With `v` set to `yes: "no" #comment`, the naive `greeting: {{ v }}` produces a line PyYAML refuses
+to parse. `tojson` emits a quoted JSON scalar, which is valid YAML, and round-trips the exact
+string. It also escapes `<`, `>`, `&` and `'` as `<` and friends, so the same filter is what
+makes `<script>var d = {{ d|tojson }};</script>` safe to write.
+
+### Render from async code
+
+```python
+env = Environment(enable_async=True)
+await env.from_string("{{ quest }}").render_async(quest="grail")
+```
+
+`enable_async` compiles templates as coroutines and lets them await async iterators and
+attributes. `render()` still works on such an environment, by starting its own event loop, which
+means calling it from inside a running one raises `RuntimeError: asyncio.run() cannot be called
+from a running event loop`. In an async application, always `render_async`.
+
+## Gotchas
+
+### `default` does not fire on None
+
+```jinja
+{{ x|default("grail") }}
+```
+
+| `x` | output |
+| --- | --- |
+| undefined | `grail` |
+| `None` | `None` |
+| `""` | empty |
+| `0` | `0` |
+
+The filter replaces *undefined*, not falsy. A key that exists and holds `None`, which is what a
+database row or a parsed JSON payload hands you all day, goes straight through. Pass the second
+argument to switch to a truthiness test: `{{ x|default("grail", true) }}` returns `grail` for all
+three of `None`, `""` and `0`.
+
+### Undefined is silent when printed, loud one step later
+
+```jinja
+{{ nope }}          {# '' #}
+{{ knight.name }}   {# '' when knight is an empty dict #}
+{{ nope|length }}   {# 0 #}
+{{ nope + 1 }}      {# UndefinedError #}
+{{ a.b }}           {# UndefinedError: 'a' is undefined #}
+```
+
+Printing an undefined is fine, and so is `length`, and so is testing it in an `{% if %}`. Doing
+arithmetic on one, or reaching for an attribute *of* one, raises. So the same typo is invisible in
+one template and a 500 in the next. `StrictUndefined` removes the guesswork.
+
+### A `set` inside a loop does not escape it
+
+```jinja
+{% set found = false %}
+{% for k in knights %}{% if k == "Galahad" %}{% set found = true %}{% endif %}{% endfor %}
+{{ found }}   {# False #}
+```
+
+A `for` body is its own scope, and the assignment dies with each iteration. The fix is a namespace
+object, whose attributes are shared:
+
+```jinja
+{% set ns = namespace(found=false) %}
+{% for k in knights %}{% if k == "Galahad" %}{% set ns.found = true %}{% endif %}{% endfor %}
+{{ ns.found }}   {# True #}
+```
+
+### A block inside a loop cannot see the loop variable
+
+```jinja
+{% for k in knights %}{% block row %}[{{ k }}]{% endblock %}{% endfor %}
+{# '[][]' #}
+
+{% for k in knights %}{% block row scoped %}[{{ k }}]{% endblock %}{% endfor %}
+{# '[Lancelot][Galahad]' #}
+```
+
+Blocks exist so a child template can override them, so they do not close over the enclosing scope
+unless you add `scoped`. Without it the output is empty brackets and no warning.
+
+### `import` drops the context, `include` keeps it
+
+```jinja
+{% include "inc.html" %}                        {# sees quest #}
+{% from "macros.html" import shout %}           {# shout() does not #}
+{% from "macros.html" import shout with context %}   {# now it does #}
+```
+
+An included template is rendered with the current context. An imported macro is not: inside it,
+every variable you did not pass as an argument is undefined, and therefore renders as nothing.
+`with context` is the escape hatch, but passing arguments is the better habit.
+
+### The trailing newline is dropped
+
+```python
+Environment().from_string("ni\n").render()                            # 'ni'
+Environment(keep_trailing_newline=True).from_string("ni\n").render()  # 'ni\n'
+```
+
+Harmless in HTML, not harmless in a generated shell script, `.env` file or anything appended to.
+
+### `|safe` on a string you assembled yourself
+
+```jinja
+{{ ("<i>%s</i>" % x)|safe }}      {# x is injected raw #}
+{{ "<i>%s</i>"|format(x) }}       {# escaped, including the tags #}
+```
+
+Autoescaping tracks which strings are already safe; `|safe` says "trust this one", and it trusts
+everything you concatenated into it, user input included. Build markup with `markupsafe.Markup`,
+which escapes what you interpolate into it, or leave the tags in the template where they belong.
+
+### `|int` turns garbage into zero
+
+```jinja
+{{ "ni"|int }}      {# 0 #}
+{{ "ni"|int(-1) }}  {# -1 #}
+{{ "ni"|float }}    {# 0.0 #}
+```
+
+No exception, no warning. If the value matters, pass a sentinel as the default and check it, or
+convert in Python before the value reaches the template.
 
 ## References
 
-* [Jinja documentation](https://jinja.palletsprojects.com/)
-* [Sandbox API](https://jinja.palletsprojects.com/en/stable/sandbox/)
-* [Flask documentation](https://flask.palletsprojects.com/)
+- [Jinja documentation](https://jinja.palletsprojects.com/)
+- [Template designer documentation](https://jinja.palletsprojects.com/en/stable/templates/) - the
+  full tag, filter and test reference.
+- [Sandbox API](https://jinja.palletsprojects.com/en/stable/sandbox/)
+- [Flask documentation](https://flask.palletsprojects.com/)
+- [Python](/wiki/python/), and [Python web frameworks](/wiki/python/web-frameworks/), which is
+  where the engine usually gets wired in.
+- [Helm](/wiki/system/kubernetes/helm/) - Go templates, a different engine with the same braces.

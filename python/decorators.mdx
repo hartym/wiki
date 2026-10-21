@@ -1,7 +1,7 @@
 ---
 title: Decorators
 description: "Python decorators - the basic shape with functools.wraps, a taxonomy of what they are for, why the name is the whole contract, the failure modes around async and classes, and typing them with ParamSpec."
-checkedOn: 2026-08-11
+checkedOn: 2026-10-20
 ---
 
 A decorator is a callable that takes a function (or class) and returns a replacement. `@deco` above a `def` is sugar for `func = deco(func)`.
@@ -96,7 +96,7 @@ Each kind already has canonical examples in the standard library, which is the f
 * **Binding to the class.** Return a descriptor. `property`, `classmethod` and `staticmethod` are the everyday ones; see <Link to="descriptors" />.
 * **Rewriting the object.** Generate or rewrite code on the decorated object. `dataclasses.dataclass` writes `__init__`, `__repr__` and `__eq__` from the annotations, `enum.unique` inspects and rejects, and at the far end Cython and Numba rewrite a function for speed.
 
-Worth adding to that list: **marking**, a variant of registering that stamps an attribute instead of filling a collection, so a later pass can find the object by scanning. It also returns the object untouched, so no `wraps` is needed and identity is preserved. Two things to know: `f.__marker__ = value` fails on `__slots__` classes and on C-level builtins, and validation happens whenever the marks are read rather than at decoration time, so a typo surfaces far from the line that caused it.
+Worth adding to that list: **marking**, a variant of registering that stamps an attribute instead of filling a collection, so a later pass can find the object by scanning. It also returns the object untouched, so no `wraps` is needed and identity is preserved. Two things to know. The stamp needs an object with a `__dict__`: C-level builtins (`len`) and `property` objects refuse it, while `classmethod`, `staticmethod` and `cached_property` accept it. A class declaring `__slots__` accepts it too, since `__slots__` constrains its instances and the decorator stamps the class itself. And validation happens whenever the marks are read rather than at decoration time, so a typo surfaces far from the line that caused it.
 
 Registering and marking are the two least visible kinds. Neither changes the object, so the only evidence either ever ran is the decorator line itself. Registration also runs at import time, which makes it silently dependent on the module being imported at all - the usual reason a handler "is not registered" is that nothing imported it. Registries are worth calling out as the dominant architectural use of decorators in application code, most often to break an import cycle between infrastructure and the modules it dispatches to.
 
@@ -128,7 +128,13 @@ def lines():
     yield "b"
 ```
 
-`lines` is now the inner `apply` function rather than the wrapper, so calling it returns another function instead of a string. The classic fix is a `callable()` guard that accepts both forms:
+`lines` is now the inner `apply` function rather than the wrapper, so the first call fails on a parameter that appears nowhere at the call site:
+
+```
+TypeError: joined.<locals>.apply() missing 1 required positional argument: 'f'
+```
+
+Hand it an argument and it gets quieter rather than clearer: `apply` takes that argument as the function to decorate and returns a wrapper, so the call yields a function instead of a string. The classic fix is a `callable()` guard that accepts both forms:
 
 ```python
 def dual(arg=None):

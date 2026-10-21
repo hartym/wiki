@@ -1,39 +1,29 @@
 ---
 title: Web servers
-description: "Reverse Proxies & Service Meshes"
+description: "Nginx notes: the add_header inheritance trap and the directive that fixes it, the responses add_header silently skips, the Cache-Control it writes twice, plus reverse proxy and Kubernetes ingress pointers."
+checkedOn: 2026-10-20
 ---
-
-## Reverse Proxies & Service Meshes
-
-* Nginx (see below)
-* https://traefik.io/ (in go, can be used as a k8s ingress?)
-* Kong!
-
-## Application Servers
-
-* <Link to="/app/appserver/" />
 
 ## Nginx
 
-### Optimise for production
+### add_header replaces, it does not merge
 
-Tuning reference:
+The rule, from the [ngx_http_headers_module documentation](https://nginx.org/en/docs/http/ngx_http_headers_module.html):
+`add_header` directives are inherited from the previous configuration level **if and only if there
+are no `add_header` directives defined on the current level**. One `add_header` in a `location`
+wipes out every `add_header` set in the enclosing `server` and `http` blocks, silently.
 
-* https://gist.github.com/denji/8359866
+An `if` block inside a location is a configuration level of its own. So as soon as it contains an
+`add_header`, requests matching it get only the headers defined inside the block, and anything set
+outside is dropped for those requests. A header that must apply in both cases has to be repeated
+inside and outside the `if`.
 
-K8S ingresses based on nginx. Even out of K8S, the configuration templates can be used as a
-source of information.
-
-* https://github.com/kubernetes/ingress-nginx
-* https://github.com/nginxinc/kubernetes-ingress
-
-### Access-Control-Allow-Origin
-
-`add_header` directives are inherited from the previous configuration level only when the
-current level defines none. An `if` block is a configuration level of its own: as soon as it
-contains an `add_header`, requests matching it get only the headers defined inside the block,
-and any `add_header` set outside is ignored for those requests. So a header that must apply in
-both cases has to be repeated inside and outside the `if`.
+Reproduced on nginx 1.31.7, 1.30.6 and 1.24.0, with one header set at each level. A location that defines no
+`add_header` of its own returns the `server` level header and not the `http` one, because the
+`server` level already replaced it: the rule applies at every level, not just the deepest. A
+location that defines one returns only its own. And in a location whose `if` block defines one, a
+request matching the `if` gets only the `if` block header, while a request that does not match
+still gets the location's.
 
 ```nginx
 location @backend {
@@ -52,3 +42,117 @@ location @backend {
     proxy_pass_header Cache-Control;
 }
 ```
+
+Since nginx 1.29.3 the duplication is avoidable: `add_header_inherit` changes the inheritance rule
+for the level it sits on.
+
+```nginx
+add_header_inherit merge;   # keep the parent level's headers, appended after this level's
+add_header_inherit off;     # inherit nothing from the parent level
+add_header_inherit on;      # default: replace as soon as this level defines one add_header
+```
+
+Put `add_header_inherit merge;` at the `http` level and it applies recursively to every nested
+level until something redefines it. `add_trailer_inherit` does the same for `add_trailer`, and
+appeared in the same version. Available in the current stable branch (1.30.x) and mainline
+(1.31.x), not in the older long-lived branches, so check what your distribution ships before
+relying on it.
+
+Distributions lag well behind: the nginx that ships with Ubuntu 24.04 is 1.24.0, and it rejects
+the directive outright with `unknown directive "add_header_inherit"`, at configuration test time
+rather than at runtime.
+
+### add_header is skipped on most error responses
+
+By default `add_header` only fires when the response code is one of 200, 201, 204, 206, 301, 302,
+303, 304, 307 or 308. Anything else, a 404 or a 502 coming back from the backend, goes out without
+the header. The `always` parameter lifts that condition.
+
+```nginx
+add_header X-Cache-Note "set" always;
+```
+
+Verified on 1.31.7, 1.30.6 and 1.24.0: without `always`, the header is on the 200 and absent from the 404 of the same
+location; with `always`, it is on both. This is the one to remember for security headers, which are
+usually wanted on error pages too.
+
+### expires and add_header both write Cache-Control
+
+`expires 7d` emits an `Expires` header and a `Cache-Control: max-age=604800`. An `add_header`
+for `Cache-Control` next to it does not replace that value, it appends a second header line:
+
+```http
+Expires: Mon, 12 Oct 2026 04:14:05 GMT
+Cache-Control: max-age=604800
+Cache-Control: public
+```
+
+Two field lines with the same name read as one comma separated list, so `public` landing next to
+`max-age` is harmless, and it is what the configuration above means. A contradictory value is not:
+`add_header "Cache-Control" "no-store"` beside the same `expires` sends `max-age=604800` and
+`no-store` side by side, so the caches on the path get two conflicting directives instead of the
+one the config appears to set; RFC 9111 tells them to honour the most restrictive, so `no-store`
+usually wins, but that is the cache's call, not yours. Both outputs verified on 1.31.7, 1.30.6 and
+1.24.0. To own the whole value, drop `expires` and write the single header.
+
+### Tuning for production
+
+* [NGINX tuning for best performance](https://gist.github.com/denji/8359866), a third party
+  checklist (worker processes, buffers, timeouts, TLS), also kept as a repository at
+  [denji/nginx-tuning](https://github.com/denji/nginx-tuning). Read it as a list of knobs to look
+  up, not as a config to paste.
+
+## Reverse proxies and gateways
+
+* [Traefik](https://traefik.io/), written in Go. It is a Kubernetes ingress controller among other
+  things: it watches Ingress objects and derives its routing from them
+  ([Kubernetes Ingress provider](https://doc.traefik.io/traefik/reference/install-configuration/providers/kubernetes/kubernetes-ingress/)).
+* [Kong Gateway](https://konghq.com/products/kong-gateway), API gateway, also available as an
+  ingress controller.
+* <Link to="/app/appserver/" />
+
+## Kubernetes ingress
+
+The two nginx based ingress controllers are not interchangeable, and one of them is retired:
+
+* **kubernetes/ingress-nginx**, the community controller, is
+  [retired](https://www.kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/). Best effort
+  maintenance stopped in March 2026 and the repository was archived on 2026-03-24: no more
+  releases, no bugfixes, no security fixes. Existing deployments keep running and the published
+  charts and images stay available, but new clusters should pick a
+  [Gateway API](https://gateway-api.sigs.k8s.io/guides/) implementation instead. Traefik ships a
+  [dedicated provider](https://doc.traefik.io/traefik/reference/install-configuration/providers/kubernetes/kubernetes-ingress-nginx/)
+  that reads the same annotations, which makes it a migration path.
+* **[nginx/kubernetes-ingress](https://github.com/nginx/kubernetes-ingress)** is the one maintained
+  by nginx itself (F5), for both NGINX and NGINX Plus. It moved from the `nginxinc` organisation to
+  `nginx`. Its templates are worth reading even outside Kubernetes, as a source of production
+  configuration.
+
+See also <Link to="/system/kubernetes/" />.
+
+Checked against the official nginx documentation (stable 1.30.6, mainline 1.31.7), and the
+inheritance, `always` and Cache-Control behaviour reproduced on nginx 1.31.7, 1.30.6 and 1.24.0.
+
+{/*
+  Checked 2026-10-05. nginx-light 1.24.0 installed in the sandbox this time, so the inheritance
+  claims are no longer doc-only. What was run, each result read off the response headers:
+  - one add_header per level (http, server, location, and an if inside a location): a location
+    with none of its own returns the server one and NOT the http one; a location with one returns
+    only its own; the if block shadows the location header for matching requests only.
+  - add_header_inherit merge at http level: "unknown directive" at nginx -t on 1.24.0.
+  - always: header present on 200 and absent on 404 without it, present on both with it.
+  - expires 7d + add_header Cache-Control: two Cache-Control lines (max-age=604800 and the added
+    value), verified with both "public" and the conflicting "no-store".
+  Doc side, same date:
+  - add_header applies to 200/201/204/206/301/302/303/304/307/308 by default, always since 1.7.5;
+    add_header_inherit (on|off|merge) and add_trailer_inherit both appeared in 1.29.3:
+    nginx.org/en/docs/http/ngx_http_headers_module.html
+  - current branches: mainline 1.31.7, stable 1.30.6 (nginx.org/en/download.html)
+  Rerun 2026-10-20 on nginx 1.31.7, 1.30.6 and 1.24.0: same inheritance, always and Cache-Control
+  results; add_header_inherit merge appends the parent values after the current level's.
+  Carried over from the 2026-08-19 pass, not rechecked today:
+  - kubernetes/ingress-nginx archived on 2026-03-24, retirement announced 2025-11-11
+  - nginx.org now links its ingress controller as github.com/nginx/kubernetes-ingress
+  - denji/8359866 gist and denji/nginx-tuning repository both alive
+  - Traefik Kubernetes Ingress and Kubernetes Ingress NGINX providers exist in current docs
+*/}

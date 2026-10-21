@@ -1,21 +1,262 @@
 ---
 title: Django authentication
-description: Comparison and recipe of the different libraries available out there to implement authentication in django.
+description: "Django authentication cookbook: users, login, sessions and permissions with the built-in system, plus the defaults that silently store a plaintext password or log everyone out."
+checkedOn: 2026-10-20
 ---
 
-This page is a work in progress.
+Django ships a complete authentication system: user model, password hashing, sessions, groups and
+permissions. Most projects never need anything else. What bites is not the API, it is the set of
+defaults around it: a password stored in clear because you used the wrong manager method, a
+permission that stays denied on an object you just granted it to, a whole user base logged out by
+a password change.
 
-Comparison and recipe of the different libraries available out there to implement authentication in django.
+Everything below is verified on **Django 6.1.2** and **Django 5.2.18 LTS** (Python 3.15). The two behave the same except for the PBKDF2 iteration count.
 
-Candidates:
+## Cookbook
 
-* [Django Allauth](https://docs.allauth.org/)
-* [Python Social Auth](https://python-social-auth.readthedocs.io/)
+### Create a user
 
-## Allauth
+```python
+from django.contrib.auth import get_user_model
 
-... todo ...
+User = get_user_model()
 
-## Python Social Auth
+User.objects.create_user("arthur", "arthur@camelot.example", "swallow-laden")
+User.objects.create_superuser("bedevere", password="coconut-halves")
+```
 
-... todo ...
+Never `User.objects.create(...)`: it stores the password exactly as given. See the gotchas below.
+
+From the command line:
+
+```bash
+python manage.py createsuperuser
+python manage.py changepassword arthur
+```
+
+### Check credentials and log someone in
+
+```python
+from django.contrib.auth import authenticate, login, logout
+
+def my_login_view(request):
+    user = authenticate(request, username="arthur", password="swallow-laden")
+    if user is not None:
+        login(request, user)      # writes the user id into the session
+    ...
+
+def my_logout_view(request):
+    logout(request)               # flushes the session, sets request.user to AnonymousUser
+```
+
+`authenticate()` returns `None` for wrong credentials **and** for a correct password on an inactive
+user. `check_password()` on the model does not: it only compares the hash.
+
+### Restrict a view
+
+```python
+from django.contrib.auth.decorators import login_required, permission_required
+
+@login_required                              # redirects to settings.LOGIN_URL, default /accounts/login/
+def profile(request): ...
+
+@permission_required("quest.add_grail")      # 302 by default, raise_exception=True gives a 403
+def add_grail(request): ...
+```
+
+Since Django 5.1, the opposite default is available: log everyone in by default and open only what
+you name.
+
+```python
+MIDDLEWARE = [
+    # ...
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.auth.middleware.LoginRequiredMiddleware",
+]
+```
+
+```python
+from django.contrib.auth.decorators import login_not_required
+
+@login_not_required
+def public_page(request): ...
+```
+
+Verified: with the middleware on, an undecorated view returns `302` to an anonymous visitor, and
+the `@login_not_required` one returns `200`. Whitelisting beats blacklisting here, a forgotten
+decorator now fails closed.
+
+### Permissions and groups
+
+Django creates four permissions per model at `migrate` time: `add_`, `change_`, `delete_`,
+`view_`, prefixed by the app label.
+
+```python
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from quest.models import Grail
+
+ct = ContentType.objects.get_for_model(Grail)
+perm = Permission.objects.get(content_type=ct, codename="add_grail")
+
+knights = Group.objects.create(name="knights")
+knights.permissions.add(perm)
+
+user.groups.add(knights)             # group permissions count as the user's own
+user.user_permissions.add(perm)      # or grant directly
+
+user = User.objects.get(pk=user.pk)  # re-fetch, see the permission cache gotcha
+user.has_perm("quest.add_grail")
+```
+
+`is_superuser` short-circuits every check: `has_perm()` returns `True` for permissions that do not
+even exist. Convenient in the shell, misleading when you test authorization as an admin account.
+
+### Custom user model
+
+Do it in the very first migration of the project, even if the model is empty.
+
+```python
+# accounts/models.py
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    pass
+```
+
+```python
+# settings.py
+AUTH_USER_MODEL = "accounts.User"
+```
+
+Defining the class is not enough, `AUTH_USER_MODEL` is what switches Django over: without it,
+`get_user_model()` still returns `django.contrib.auth.models.User`. The Django documentation is
+explicit about the timing: the model referenced by `AUTH_USER_MODEL` must be created in the first
+migration of its app, usually `0001_initial`, or you get dependency issues, and possibly a
+`CircularDependencyError`. Retrofitting it on a project with data is a manual migration job.
+
+Everywhere else, refer to the user indirectly:
+
+```python
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
+class Quest(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+User = get_user_model()   # in code, at call time, not at import time in models.py
+```
+
+`AbstractUser` keeps the standard fields and lets you add to them. `AbstractBaseUser` keeps only
+the password and last login, and hands you back the whole identity design (login field, manager,
+required fields).
+
+## Gotchas
+
+### `create()` stores the password in clear
+
+```python
+bad = User.objects.create(username="bad", password="secret")
+good = User.objects.create_user(username="good", password="secret")
+```
+
+```text
+create()      -> secret
+create_user() -> pbkdf2_sha256$1500000
+check bad : False
+check good: True
+```
+
+(`1500000` on Django 6.1, `1000000` on 5.2.)
+
+The plaintext row does not even work: `check_password()` fails, since it parses the field as
+`algorithm$iterations$salt$hash`. The account is unusable and the password is readable in the
+database. Same trap in fixtures and in a `Model(...)` built by hand. Outside `create_user()`, the
+only safe path is `user.set_password(raw)` then `user.save()`.
+
+### Password validators do not apply to the model
+
+`AUTH_PASSWORD_VALIDATORS` is enforced by the password forms and by the `createsuperuser` and `changepassword` commands, not by the model layer. Verified: `create_user(password="123")` succeeds with the four validators `startproject` writes, while `validate_password("123")` raises three errors: too short, too common, entirely numeric. If you create users outside a form (import script, API, admin command), call it yourself:
+
+```python
+from django.contrib.auth.password_validation import validate_password
+
+validate_password(raw_password, user=user)   # raises ValidationError
+user.set_password(raw_password)
+user.save()
+```
+
+### The permission cache is per instance
+
+```python
+user.has_perm("quest.add_grail")        # False, and the answer is now cached
+user.user_permissions.add(perm)
+user.has_perm("quest.add_grail")        # still False, same instance
+User.objects.get(pk=user.pk).has_perm("quest.add_grail")   # True
+```
+
+Permissions are cached on the user object at the first check. Any grant made after that is invisible
+until you re-fetch the user from the database. This is mostly a test problem, where the same
+instance lives across the setup and the assertion, but it also hits a long-lived request that grants
+a permission and then checks it.
+
+### Changing a password logs that user out
+
+Sessions store a hash derived from the password field. `set_password()` plus `save()` invalidates
+every session of that user, including the one that made the change. Verified: a client at `200` on
+a protected view drops to `302` right after.
+
+```python
+from django.contrib.auth import update_session_auth_hash
+
+user.set_password(new_password)
+user.save()
+update_session_auth_hash(request, user)   # keep the current session alive
+```
+
+That is the correct default for a password reset, and a bug in a "change my password" form. The
+built-in `PasswordChangeView` already calls `update_session_auth_hash()`.
+
+### `login()` keeps the session data, unless the user changes
+
+The common belief is that `login()` wipes the session. Verified, it depends:
+
+- anonymous visitor: the session key is rotated (session fixation protection) and the **data is
+  kept**. A cart written before login is still there.
+- the same user logging in again: nothing happens to the session, same key, same data.
+- a *different* user on the same session: the session is flushed, the data is gone.
+
+So a value written before login survives, and code that relies on it silently breaks the day a
+second user logs in on the same browser session.
+
+### An inactive user loses everything
+
+`is_active = False` is not just a login block. With the default `ModelBackend`,
+`user_can_authenticate()` rejects the user, so `authenticate()` returns `None` and, verified, even
+a superuser's `has_perm()` returns `False`. Deactivating an account is the closest thing to
+deleting it without losing the rows that point at it.
+
+### Password storage
+
+The default hasher is `pbkdf2_sha256`, at 1,500,000 iterations in Django 6.1 (1,200,000 in 6.0, 1,000,000 in 5.2). Django rehashes a password on the next successful login when the stored hash uses an iteration count or an algorithm other than the preferred one (the first entry of `PASSWORD_HASHERS`), so upgrading Django or putting a stronger hasher first migrates users transparently. Never remove a hasher from the list while hashes still use it. In tests, that cost is pure waste: override the setting with `MD5PasswordHasher` in your test settings.
+
+## Third-party libraries
+
+The built-in system covers local accounts. Two libraries are worth knowing for the rest:
+
+* [django-allauth](https://docs.allauth.org/) - local accounts *and* social login, plus email
+  verification, MFA and headless mode. The broad one: it takes over signup and login flows.
+  Version 65.20.0, released 2026-10-16.
+* [python-social-auth](https://python-social-auth.readthedocs.io/) - social and OAuth/SAML login
+  only, on top of your existing accounts. Split into `social-auth-core` and the Django app
+  `social-auth-app-django` (7.1.0, released 2026-10-08), which requires Django 5.2 or later and declares 5.2 and 6.0.
+
+Rule of thumb: allauth if you want the whole account experience handed to you, python-social-auth
+if you already have a login and only need identity providers plugged into it.
+
+## Related
+
+* <Link to="/python/django" /> - the rest of Django in practice.
+* <Link to="/web/authentication" /> - protocols and concepts, above the framework.
+* [Using the Django authentication system](https://docs.djangoproject.com/en/5.2/topics/auth/default/)
+* [Customizing authentication in Django](https://docs.djangoproject.com/en/5.2/topics/auth/customizing/)

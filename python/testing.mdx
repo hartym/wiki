@@ -1,28 +1,81 @@
 ---
 title: Testing with Python
-description: "Python testing notes: pytest recipes (parametrized tests, fixtures) and pointers to property-based testing and HTTP recording libraries."
-checkedOn: 2026-07-28
+description: "pytest cookbook: project layout, fixtures and teardown, parametrization, mocking, coverage, the red-green loop, and the collection gotchas that fail silently."
+checkedOn: 2026-10-20
 ---
 
-## Pytest recipes
+pytest needs almost no ceremony: a function named `test_something` containing a plain `assert` is
+a test. The cost shows up later, in the parts that are implicit. A class that is never collected,
+a fixture shared by more tests than intended, an assertion that reports nothing useful because it
+lives in the wrong file, a coverage number that counts lines rather than cases.
 
-### Parametrizing fixtures and test functions
+Everything below is verified on **pytest 9.1.1** (Python 3.15.0), with **pytest-cov 7.1.0** and
+**coverage 7.16.2**.
 
-Reference: [pytest parametrize documentation](https://docs.pytest.org/en/stable/how-to/parametrize.html)
+## Cookbook
+
+### Run a subset of the suite
+
+```bash
+pytest                                  # everything, from the project root
+pytest tests/test_grail.py              # one file
+pytest tests/test_grail.py::test_eval   # one test (node id)
+pytest -k "fixture and not slow"        # by substring of the node id
+pytest -x                               # stop at the first failure
+pytest --lf                             # re-run only what failed last time
+pytest --collect-only -q                # list node ids without running anything
+```
+
+Node ids are what `--collect-only` prints, parametrized cases included
+(`test_grail.py::test_eval[6*9-54]`). Copy one and pass it back to pytest to run that case alone.
+
+### Lay out the project so the imports work
+
+```
+myproject/
+├── pyproject.toml
+├── src/
+│   └── quest/
+│       ├── __init__.py
+│       └── gate.py
+└── tests/
+    └── test_gate.py
+```
+
+```toml
+# pyproject.toml
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+```
+
+`pythonpath` puts `src/` on `sys.path` for the duration of the run, so `from quest.gate import toll`
+works without installing anything. Without it, and without a `pip install -e .`, collection stops on
+`ModuleNotFoundError: No module named 'quest'` before a single test runs. `testpaths` is what pytest
+collects when you give it no argument.
+
+The directory holding the config file becomes the rootdir, and pytest prints both at the top of every
+run (`rootdir:` and `configfile:`). When imports or node ids behave oddly, that header is the first
+thing to read.
+
+### Parametrize a test
 
 ```python
 import pytest
 
-@pytest.mark.parametrize("test_input,expected", [
+@pytest.mark.parametrize("expression,expected", [
     ("3+5", 8),
     ("2+4", 6),
     ("6*9", 54),
 ])
-def test_eval(test_input, expected):
-    assert eval(test_input) == expected
+def test_eval(expression, expected):
+    assert eval(expression) == expected
 ```
 
-### Fixtures
+Three separate tests, three separate failures. A loop inside a single test would stop at the first
+one and hide the rest.
+
+### Fixtures, and where to put them
 
 ```python
 import pytest
@@ -35,9 +88,304 @@ def test_answer(bridgekeeper):
     assert bridgekeeper["colour"] == "blue"
 ```
 
-A fixture is requested by naming it as a test argument; pytest builds it fresh for each test.
+A fixture is requested by naming it as a test argument. Move it to a `conftest.py` and every test
+module in that directory and below can request it, with no import.
+
+### Teardown: yield instead of a finalizer
+
+```python
+@pytest.fixture
+def connection():
+    conn = connect()
+    yield conn
+    conn.close()
+```
+
+Everything after the `yield` runs once the test is done, including when it fails.
+
+### Temporary files that clean themselves up
+
+```python
+def test_writes_a_note(tmp_path):
+    note = tmp_path / "shrubbery.txt"
+    note.write_text("ni")
+    assert note.read_text() == "ni"
+```
+
+`tmp_path` is a `pathlib.Path` to a fresh directory, unique per test. The directories of the last
+three sessions stay on disk (`tmp_path_retention_count`, and `tmp_path_retention_policy` to keep
+only the failures), which is what you want when a test fails and you need to look at the file it
+wrote. The path is printed in the failure output.
+
+### Patch the environment, an attribute, a function
+
+```python
+import time
+
+def test_env(monkeypatch):
+    monkeypatch.setenv("QUEST", "grail")
+    ...
+
+def test_clock(monkeypatch):
+    monkeypatch.setattr(time, "time", lambda: 0.0)
+    assert time.time() == 0.0
+```
+
+Every change is undone when the test ends, so the next test sees the real `time.time` again.
+`monkeypatch.delenv`, `delattr` and `syspath_prepend` behave the same way.
+
+### Replace a collaborator
+
+```python
+from unittest.mock import patch
+import quest.bridge
+
+def test_crossing():
+    with patch("quest.bridge.airspeed", autospec=True) as airspeed:
+        airspeed.return_value = 11.0
+        assert quest.bridge.crossing("swallow") is True
+    airspeed.assert_called_once_with("swallow")
+```
+
+Patch the name **where it is looked up**, not where it is defined. `bridge.py` did
+`from quest.weather import airspeed`, so it holds its own reference: patching `quest.weather.airspeed`
+leaves that reference alone and the test still calls the real function.
+
+`autospec=True` builds the double from the real signature, so a call the real function would reject
+fails the test (`TypeError: too many positional arguments`) instead of being recorded happily. Without
+it, `patch` hands you a plain `MagicMock` that accepts any arguments.
+
+`monkeypatch` and `patch` overlap. `monkeypatch` is the smaller tool, for setting a value and having it
+undone; `patch` is the one that also records the calls.
+
+### Assert that something raises
+
+```python
+with pytest.raises(ValueError, match="unladen"):
+    airspeed("swallow")
+```
+
+`match` is a regular expression searched in the string form of the exception. Without it, the test
+passes on any `ValueError`, including one raised by a typo three lines above the code you meant to
+exercise.
+
+### Capture stdout and log records
+
+```python
+import logging
+
+def test_output(capsys):
+    shout()
+    assert capsys.readouterr().out == "ni\n"
+
+def test_logs(caplog):
+    with caplog.at_level(logging.WARNING, logger="knights"):
+        shout()
+    assert "shrubbery" in caplog.text
+    assert caplog.records[0].levelname == "WARNING"
+```
+
+`readouterr()` drains the buffer: call it once and keep the result, a second call returns what was
+written since.
+
+### Register your custom markers
+
+```toml
+# pyproject.toml
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+markers = ["slow: takes more than a second"]
+```
+
+Then `pytest -m "not slow"` skips them. Without the `markers` entry, an unknown mark is only a
+`PytestUnknownMarkWarning` and the test still runs, so `@pytest.mark.sloow` silently marks nothing.
+With `--strict-markers` the same typo is a collection error.
+
+### Measure what the tests reach
+
+```bash
+pip install pytest-cov
+pytest --cov=quest --cov-branch --cov-report=term-missing
+```
+
+```toml
+# pyproject.toml
+[tool.pytest.ini_options]
+addopts = "--cov=quest --cov-branch --cov-report=term-missing"
+
+[tool.coverage.report]
+precision = 2
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]
+```
+
+`term-missing` adds a `Missing` column listing the line numbers never executed, and with
+`--cov-branch` the partial branches too, written `4->3` (line 4 never jumped back to line 3).
+
+`--cov-fail-under` makes the run exit 1 when coverage sits below the floor, with every test passing.
+Watch the rounding: the gate compares the total **rounded to `precision` digits**, which is zero by
+default. On a real 93.75%, `--cov-fail-under=94` prints
+
+```
+FAIL Required test coverage of 94% not reached. Total coverage: 93.75%
+```
+
+and still exits **0**, because 93.75 rounds to 94. The printed FAIL line is not the exit code, which
+is the trap in a CI job that only checks the status. `precision = 2` compares 93.75 to 94 and exits 1.
+
+`# pragma: no cover` excludes a line or a block. Keep it for code that cannot run under tests (an
+`if __name__ == "__main__":` entry point), not for code you did not get to.
+
+### The red-green loop
+
+```bash
+pytest --sw        # stop at the first failure, resume there next run
+pytest -x --lf     # re-run last failures only, stop at the first
+pytest --sw-skip   # ignore the failure you are stuck on, stop at the next one
+```
+
+`--sw` (stepwise) is the tight loop: it stops on the failing test, and the next run starts from it,
+deselecting whatever already passed (`1 failed, 1 deselected`). It never goes back, so once you are
+green, drop the flag and run the suite whole before believing it.
+
+To park a test for code that does not exist yet:
+
+```python
+@pytest.mark.xfail(strict=True, reason="not implemented yet")
+def test_future():
+    ...
+```
+
+It does not count as a failure while it fails, and it fails the suite the day it passes
+(`[XPASS(strict)]`), which is the reminder to drop the mark. Without `strict=True`, a passing xfail is
+reported as `xpassed` and nothing makes you look.
+
+## Gotchas
+
+### Two test files with the same name collide
+
+```
+tests/a/test_dup.py
+tests/b/test_dup.py
+```
+
+```
+import file mismatch:
+imported module 'test_dup' has this __file__ attribute:
+  /.../tests/a/test_dup.py
+which is not the same as the test file we want to collect:
+  /.../tests/b/test_dup.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+```
+
+In the default import mode a test file is imported as a top-level module named after its basename, so
+two `test_dup.py` in different directories claim the same name and collection stops. Two fixes: add an
+`__init__.py` to `tests/` and to every subdirectory, which makes the modules `tests.a.test_dup` and
+`tests.b.test_dup`, or change the import mode:
+
+```toml
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+```
+
+### A test class with `__init__` is never collected
+
+```python
+class TestKnights:
+    def __init__(self):        # this makes the whole class invisible
+        self.quest = "grail"
+
+    def test_never_runs(self):
+        assert False
+```
+
+pytest emits a `PytestCollectionWarning` and moves on: the class contributes zero tests. If it is
+the only thing collected, pytest exits 5 ("no tests collected"); next to any other test, the suite is
+green. Set up state in a fixture, or in `setup_method`, never in `__init__`.
+
+### An `async def` test needs a plugin
+
+Without `anyio`, `pytest-asyncio` or an equivalent, the coroutine is created and never awaited. Since
+pytest 8.4 this fails with "async def functions are not natively supported"; up to 8.3 it was only a
+warning and a skip, which is worse: the body never ran and the run stayed green.
+
+### Assertions in a helper module lose their diff
+
+pytest rewrites the bytecode of test modules and `conftest.py` to explain a failed `assert`. A
+helper module imported by the tests is not rewritten, so a failure there reports a bare
+`AssertionError` with no values. Declare it:
+
+```python
+# conftest.py
+import pytest
+
+pytest.register_assert_rewrite("tests.helpers")
+```
+
+The same failure then reports `assert 'parrot' == 'swallow'` with the diff. The call has to run
+before the module is imported, which is why it belongs at the top of `conftest.py`.
+
+### A broad-scope fixture hands out the same object
+
+```python
+@pytest.fixture(scope="session")
+def knights():
+    return ["Lancelot", "Galahad"]
+```
+
+Every test that requests it gets the same list. One test appending to it changes what the next
+one sees, and the failure lands on the innocent test. Worse, `pytest --lf` then re-runs that test
+alone, where it passes. Keep the default function scope unless the setup is genuinely expensive,
+and when it is, return something the tests cannot mutate.
+
+### 100% line coverage, and a branch never taken
+
+```python
+def toll(answers):
+    total = 0
+    for a in answers:
+        if a == "blue":
+            total += 1
+    return total
+```
+
+One test calling `toll(["blue"])` executes every line of that function, so line coverage reports 100%.
+The `if` is never false, and the loop never ends without entering it: `--cov-branch` reports 90% on
+the same run, with `4->3` in the `Missing` column. Line coverage answers "was this line reached", which
+is not the question you had.
+
+### A plain `Mock` says yes to everything
+
+```python
+m = MagicMock()
+bool(m.no_such_attribute_at_all())   # True
+```
+
+Every attribute of a plain mock exists, returns another mock, and is truthy, so a typo in a test
+asserts nothing. `MagicMock(spec=some_module_or_class)` and `patch(..., autospec=True)` restrict the
+double to the real attributes, and the typo becomes
+`AttributeError: Mock object has no attribute 'airspeeed'`.
+
+One hole is plugged by default: an attribute whose name starts with `assert` (or a near miss such as
+`assret`), plus a short deny list (`called_once`, `called_once_with`, `called_with`,
+`any_call`, `has_calls`, `not_called`), raises
+`AttributeError: 'assert_called_onse_with' is not a valid assertion` rather than passing. A name
+further from an assertion still goes through in silence.
 
 ## Other libraries
 
-* [Hypothesis](https://hypothesis.readthedocs.io/) - property-based testing.
+* [Hypothesis](https://hypothesis.readthedocs.io/) - property-based testing: describe the shape of
+  the input, let it look for the case that breaks you.
 * [vcrpy](https://vcrpy.readthedocs.io/) - record and replay HTTP interactions in tests.
+
+## References
+
+- [pytest documentation](https://docs.pytest.org/)
+- [Parametrizing tests](https://docs.pytest.org/en/stable/how-to/parametrize.html)
+- [Fixtures reference](https://docs.pytest.org/en/stable/reference/fixtures.html)
+- [Good integration practices](https://docs.pytest.org/en/stable/explanation/goodpractices.html),
+  on layouts and import modes
+- [unittest.mock](https://docs.python.org/3/library/unittest.mock.html)
+- [pytest-cov](https://pytest-cov.readthedocs.io/en/latest/) and
+  [branch coverage](https://coverage.readthedocs.io/en/latest/branch.html)
+- [Python](/wiki/python/), and [Python web frameworks](/wiki/python/web-frameworks/), whose test
+  clients plug into the fixtures above

@@ -1,34 +1,254 @@
 ---
-title: "Secure Sockets Layer (SSL)"
-description: "OpenSSL snippets: read a server's certificate chain, generate a self-signed certificate."
-checkedOn: 2026-07-23
+title: "TLS certificates with OpenSSL"
+description: "OpenSSL cookbook: read what a server presents, check expiry from a script, generate a certificate with the SAN browsers actually require, sign a CSR with your own CA, convert between PEM, DER and PKCS#12."
+checkedOn: 2026-10-20
 ---
 
-## Certificates
+Almost every certificate problem is one of five questions: what is this server sending me, when
+does it expire, does this key match this certificate, how do I make one for local development, and
+what format does this other tool want. `openssl` answers all five, but its subcommands are old and
+their flags are not obvious.
 
-Read the certificate chain a server presents:
+Everything below is verified on **OpenSSL 4.0.3**, with Ubuntu's 3.0.x builds cross-checked, and
+the flags that changed in the 3.x series are called out. OpenSSL 3.0 prints names with spaces
+around `=` (`subject=CN = example.com`); 3.5 and later print them packed, as shown here.
 
-```bash
-openssl s_client -showcerts -servername www.google.com -connect www.google.com:443 </dev/null
-```
+## Reading
 
-`-servername` sends the SNI name so a host serving several sites returns the right certificate,
-and `-showcerts` prints every certificate in the chain, not just the leaf. Add
-`| openssl x509 -noout -subject -issuer -dates` to a piped `s_client` to read just the subject,
-issuer and validity window.
-
-Generate a self-signed certificate and its key in one command (handy for local testing):
+### What certificate does this server present?
 
 ```bash
-openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 365 -subj "/CN=example.local"
+openssl s_client -servername example.com -connect example.com:443 </dev/null \
+  | openssl x509 -noout -subject -issuer -dates
 ```
 
-`-nodes` leaves the key unencrypted (no passphrase prompt), `-subj` fills the subject
-non-interactively, and `-days` sets the validity. Inspect the result with
-`openssl x509 -in cert.pem -noout -subject -dates`.
+```
+subject=CN=example.com
+issuer=C=US, O=SSL Corporation, CN=Cloudflare TLS Issuing ECC CA 3
+notBefore=Sep 26 22:49:11 2026 GMT
+notAfter=Dec 25 22:56:35 2026 GMT
+```
 
-For a full certificate authority setup (root CA, intermediate, signing), see the
-[OpenSSL documentation](https://docs.openssl.org/master/man1/).
+`-servername` sends the SNI name. Without it, a host serving several sites hands back whichever
+certificate it considers the default, which is how you end up debugging the wrong certificate for
+an hour. The `</dev/null` matters too: `s_client` opens an interactive session and waits on stdin
+otherwise.
 
-Verified on OpenSSL 3.x: the `s_client` chain read, the self-signed generation, and the `x509`
-inspection all run as shown.
+Add `-showcerts` to get every certificate in the chain, not just the leaf. To check whether the
+chain validates against your trust store, and what got negotiated, read the summary block
+`s_client` prints after the handshake:
+
+```bash
+openssl s_client -servername example.com -connect example.com:443 </dev/null 2>/dev/null \
+  | grep -E 'Verify return code|^New,'
+```
+
+```
+New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+Verify return code: 0 (ok)
+```
+
+Read the `New,` line with care: it names the cipher and the protocol version that cipher was
+defined for, not the version negotiated. A TLS 1.2 session on `AES256-SHA` prints
+`New, SSLv3, Cipher is AES256-SHA`; the `Protocol` line further down says `TLSv1.2`.
+
+### Is it about to expire?
+
+```bash
+openssl x509 -in cert.pem -noout -checkend 86400
+```
+
+`-checkend N` asks "will this certificate be expired N seconds from now". It prints a sentence,
+but the useful part is the **exit code**: 0 if still valid, 1 if it will have expired. That makes
+it a one-line monitoring check, remote server included:
+
+```bash
+openssl s_client -servername example.com -connect example.com:443 </dev/null 2>/dev/null \
+  | openssl x509 -noout -checkend $((30*86400)) || echo "expires within 30 days"
+```
+
+Beware if your script runs under `set -e`: a certificate near expiry makes `-checkend` return 1 and
+kills the script. Put it in an `if` or after `||`.
+
+### Which TLS versions does a server accept?
+
+```bash
+for v in tls1_1 tls1_2 tls1_3; do
+  if openssl s_client -$v -servername example.com -connect example.com:443 </dev/null >/dev/null 2>&1
+  then echo "$v: accepted"; else echo "$v: refused"; fi
+done
+```
+
+```
+tls1_1: refused
+tls1_2: accepted
+tls1_3: accepted
+```
+
+`s_client` exits 1 when the handshake never happens, so the exit code is the whole answer.
+
+One catch: a refusal can come from your own client. OpenSSL disables TLS 1.0 and 1.1 at
+**security level 1** and above, and the default level is 2, so any OpenSSL 3.x or 4.x refuses them
+before a packet leaves the machine. The level is not always in a file you can grep. Ubuntu
+compiles it in, and `openssl version -a` reports it among the compiler options as
+`-DOPENSSL_TLS_SECURITY_LEVEL=2`; Ubuntu 22.04 also pins it in `/etc/ssl/openssl.cnf`, as
+`CipherString = DEFAULT:@SECLEVEL=2` under `[system_default_sect]`, a line 24.04 dropped. Debian
+13 does neither and relies on the upstream default. To tell a client refusal from a server
+refusal, lower the level for one call:
+
+```bash
+openssl s_client -tls1_1 -cipher 'DEFAULT@SECLEVEL=0' -connect example.com:443 </dev/null
+```
+
+If the handshake succeeds that way, your client was the one saying no.
+
+### Does this key go with this certificate?
+
+Compare the public keys, not the files:
+
+```bash
+openssl x509 -in cert.pem -noout -pubkey | openssl sha256
+openssl pkey -in key.pem -pubout      | openssl sha256
+```
+
+Identical digests, they belong together. This is the modern form; the widespread recipe comparing
+`-modulus` output only works for RSA, while `pkey -pubout` handles EC keys the same way.
+
+To identify a certificate against a fingerprint someone gave you:
+
+```bash
+openssl x509 -in cert.pem -noout -fingerprint -sha256
+```
+
+## Creating
+
+### A self-signed certificate that browsers accept
+
+```bash
+openssl req -x509 -newkey rsa:2048 -noenc -keyout key.pem -out cert.pem -days 365 \
+  -subj "/CN=example.local" \
+  -addext "subjectAltName=DNS:example.local,DNS:*.example.local,IP:127.0.0.1"
+```
+
+Two things people miss here.
+
+**The SAN is not optional.** Browsers stopped reading the Common Name for host matching years ago.
+A certificate with only `-subj "/CN=example.local"` and no `subjectAltName` is rejected, and the
+error message rarely says why. Check that the extension landed:
+
+```bash
+openssl x509 -in cert.pem -noout -ext subjectAltName
+```
+
+```
+X509v3 Subject Alternative Name:
+    DNS:example.local, DNS:*.example.local, IP Address:127.0.0.1
+```
+
+**`-nodes` is now `-noenc`.** Both mean "do not encrypt the private key", so no passphrase prompt
+and no passphrase to supply at startup. `-nodes` still works but OpenSSL 3.x marks it deprecated in
+`openssl req -help`; new scripts should use `-noenc`.
+
+### A certificate signing request
+
+```bash
+openssl req -new -newkey rsa:2048 -noenc -keyout svc.key -out svc.csr \
+  -subj "/CN=svc.internal" -addext "subjectAltName=DNS:svc.internal"
+
+openssl req -in svc.csr -noout -verify -subject
+```
+
+```
+Certificate request self-signature verify OK
+subject=CN=svc.internal
+```
+
+Same command as above minus `-x509`: with `-x509` you get a finished certificate, without it you
+get a request for someone else to sign.
+
+### Signing that request with your own CA
+
+Useful for a development or internal PKI: one root you install once in the trust stores, then any
+number of certificates signed by it.
+
+```bash
+# the root, once
+openssl req -x509 -newkey rsa:2048 -noenc -keyout ca.key -out ca.crt -days 3650 \
+  -subj "/CN=Dev Root CA"
+
+# sign a request with it
+openssl x509 -req -in svc.csr -CA ca.crt -CAkey ca.key -out svc.crt -days 365 \
+  -copy_extensions copy
+
+openssl verify -CAfile ca.crt svc.crt
+```
+
+```
+svc.crt: OK
+```
+
+`-copy_extensions copy` is the flag that matters. Without it, `x509 -req` drops the extensions
+carried by the CSR, including the SAN. The result verifies fine and is still rejected by every
+browser, and the only hint is that `openssl x509 -noout -ext subjectAltName` answers
+`No extensions in certificate`. It is not the default on purpose: copying extensions from a
+request you did not write lets its author ask for anything, `basicConstraints CA:TRUE` included.
+Only use it on requests you control, or replace it with an explicit `-extfile`.
+
+Read that `No extensions in certificate` message for what it is: `x509 -ext` prints it whenever the
+extension you asked for is absent, including on a certificate that carries several others, and it
+exits 0 either way. A script checking for a SAN has to match the output text, not the exit code.
+
+## Converting
+
+### PEM to DER and back
+
+PEM is the base64 text form with `BEGIN CERTIFICATE` markers, DER is the raw binary. Java and
+Windows tooling often want DER.
+
+```bash
+openssl x509 -in cert.pem -outform der -out cert.der
+openssl x509 -inform der -in cert.der -out back.pem
+```
+
+The round trip is byte-identical.
+
+### PEM to PKCS#12
+
+A `.p12` (or `.pfx`) is a single password-protected file carrying the key and the certificate
+together, which is what Java keystores, Windows and many clients expect.
+
+```bash
+openssl pkcs12 -export -inkey key.pem -in cert.pem -out bundle.p12 \
+  -name "example.local" -passout pass:secret
+```
+
+And back out:
+
+```bash
+openssl pkcs12 -in bundle.p12 -passin pass:secret -nokeys  -out cert-only.pem
+openssl pkcs12 -in bundle.p12 -passin pass:secret -nocerts -noenc -out key-only.pem
+```
+
+`pass:secret` puts the password on the command line, so it lands in your shell history and in
+`ps`. Fine in a throwaway sandbox. Anywhere else, both `-passin` and `-passout` also accept
+`file:/path/to/file` and `env:VARNAME`.
+
+### Removing a passphrase from a key
+
+```bash
+openssl pkey -in enc.key -out plain.key
+```
+
+It prompts for the current passphrase and writes the key unencrypted. Add `-passin pass:...` to
+script it, with the same caveat as above. The reverse, encrypting a bare key, is
+`openssl pkey -in plain.key -aes-256-cbc -out enc.key`.
+
+## References
+
+- [OpenSSL command-line documentation](https://docs.openssl.org/master/man1/)
+- [Let's Encrypt](https://letsencrypt.org/) and [certbot](https://certbot.eff.org/), for anything
+  facing the public internet: there is no reason to hand-manage those certificates
+- [mkcert](https://github.com/FiloSottile/mkcert), which wraps the local CA recipe above into one
+  command if you do it often
+- [Shell script](/wiki/shell/), for the scripting side of these one-liners
+- [Web authentication](/wiki/web/authentication/), the layer above transport security
