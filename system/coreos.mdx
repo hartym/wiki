@@ -1,11 +1,13 @@
 ---
 title: CoreOS
 description: "CoreOS notes: fleet/fleetctl unit registry errors, the reboot workaround, a global fleet unit running the Datadog agent, and local cluster tooling links."
+checkedOn: 2026-10-24
 ---
 
 > **Note**: kept for the archives. CoreOS Container Linux reached end of life on May 26, 2020
-> (Fedora CoreOS and Flatcar picked up the torch), and fleet was deprecated back in 2017 in
-> favor of Kubernetes. Nothing below is actionable today.
+> (Fedora CoreOS and Flatcar picked up the torch). fleet stopped with its final release, v1.0.0,
+> in December 2016, and left Container Linux on February 1, 2018, CoreOS recommending Kubernetes
+> instead. Nothing below is actionable today.
 
 ## Issues
 
@@ -32,11 +34,17 @@ Jun 10 19:58:21 core3.c.rdorgueil.internal sshd[1341]: no more sessions
 Jun 10 19:58:25 core3.c.rdorgueil.internal fleetd[1386]: ERROR reconcile.go:79: Unable to determine agent's current state: failed fetching unit states from UnitManager: Unit name nginx-discovery@.service is not valid.
 Jun 10 19:58:35 core3.c.rdorgueil.internal fleetd[1386]: ERROR reconcile.go:79: Unable to determine agent's current state: failed fetching unit states from UnitManager: Unit name nginx@.service is not valid.
 ```
-Only solution found (https://github.com/coreos/fleet/issues/969) is to reboot faulty instances after destroying the faulty units.
+Only solution found (https://github.com/coreos/fleet/issues/969) is to reboot faulty instances after destroying the faulty units. The issue was closed in
+February 2016, after a report that fleet 0.11.5 no longer showed it.
 
 ```shell
 docker run -it --link postgres.1:postgres --rm postgres sh -c 'exec psql -h "$POSTGRES_PORT_5432_TCP_ADDR" -p "$POSTGRES_PORT_5432_TCP_PORT" -U postgres'
 ```
+
+This relies on the environment variables of [legacy container links](https://docs.docker.com/engine/network/links/),
+disabled by default since Docker Engine 29.0 and scheduled for removal in 30.0: on a current
+engine both variables are empty. Put the containers on a user-defined network and use the
+container name as host instead.
 
 ## A global unit: the Datadog agent on every node
 
@@ -97,8 +105,9 @@ Datadog agents. The command that works today is in <Link to="/app/monitoring/" /
 ## Local cluster tools
 
 * https://github.com/coreos/coreos-vagrant
-* https://github.com/rimusz/coreos-osx-gui-kubernetes-solo
-* https://github.com/rimusz/coreos-osx-gui-kubernetes-cluster
+* https://github.com/rimusz/coreos-kubernetes-solo-osx
+* https://github.com/rimusz/coreos-kubernetes-cluster-osx
 * https://github.com/TheNewNormal/kube-cluster-osx
 
-The above tools have a lot of problems on my laptop, but the idea sounds promising.
+The above tools have a lot of problems on my laptop, but the idea sounds promising. All four
+repositories are archived; the last one points to minikube.
