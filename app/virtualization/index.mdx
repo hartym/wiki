@@ -1,6 +1,7 @@
 ---
 title: Virtualization
 description: "VirtualBox notes: fixing very slow DNS inside a NAT guest."
+checkedOn: 2026-10-29
 ---
 
 * <Link to="/containers/docker" />
@@ -20,6 +21,10 @@ guest keeps using them after the host has moved to another network. Both setting
 different ways: proxy mode intercepts the queries and forwards them to whichever servers the host
 currently uses, while host resolver mode decodes the queries and answers them through the host's
 resolver API.
+
+The `1` is the NAT adapter number. The VirtualBox 7 `VBoxManage modifyvm` reference spells these
+options `--nat-dns-proxy1` and `--nat-dns-host-resolver1`; the old spellings above are still
+accepted as aliases.
 
 This is a boot2docker-era note. Docker on macOS and Windows no longer runs through VirtualBox, so
 it only applies if you still drive VirtualBox guests directly.
